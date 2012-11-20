@@ -1,5 +1,6 @@
 *.ini
 cache/
+.svn/
 
 
 
