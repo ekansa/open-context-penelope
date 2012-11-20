@@ -1,0 +1,52 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html>
+    <head>
+        <title>Ajax 101</title>
+        <script type="text/javascript" src="/public/scripts/prototype-1.6.0.2.js"></script>
+        <script type="text/javascript" src="/public/scripts/dojoroot/dojo/dojo.js" djConfig="parseOnLoad: true"></script>
+        <script type="text/javascript" src="/public/scripts/json.js"></script>
+        <script type="text/javascript" src="/public/scripts/ajax_funcs.js"></script>
+        <script>
+            dojo.require("dojo.data.ItemFileReadStore");
+            dojo.require("dojox.grid.Grid");
+            dojo.require("dojo.parser");
+        </script>
+        
+        <style>        
+            #hover_span
+            {
+                font-size: 12pt;
+            }        
+            #hover_span:hover
+            {
+                cursor: crosshair;
+                background-color: yellow;
+            }
+        </style>    
+    </head>
+        
+    <body>
+        <p>
+            <span id='hover_span' onmouseover="callAjax('do')" onmouseout="callAjax('undo')">
+                <b>Hover here to trigger Ajax call:</b>
+            </span>
+        </p>    
+        <span id='hello'> boring pre-Ajax-call text...</span>
+        
+        <!-- Example #2 -->
+        <p>
+            <span id='hover_span1' onmouseover="testJsonRequest()">
+                <b>Hover here to trigger Json Example call:</b>
+            </span>
+        </p>    
+        <span id='userResults'> boring pre-Ajax-call text...</span>
+    
+        
+        
+    </body>
+
+</html>
+
+
+
+

@@ -1,0 +1,18 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN">
+    <html lang="en">
+    <head>
+        <title><?php echo $this->title; ?></title>
+        <link id="themeStyles" rel="stylesheet" href="/public/scripts/dojoroot/dijit/themes/tundra/tundra.css">
+        <style type="text/css">
+            @import "/public/scripts/dojoroot/dojo/resources/dojo.css";
+            @import "/public/scripts/dojoroot/dojox/grid/resources/tundraGrid.css";            
+        </style> 
+    </head>
+    <body onload="parent.dataSuccessfullyUploaded('<?php echo $this->dataTableName ?>');">
+        This is the name of the table: 
+        <?php echo $this->dataTableName ?>
+        <br /><br /><br />
+        
+
+    </body>
+</html>

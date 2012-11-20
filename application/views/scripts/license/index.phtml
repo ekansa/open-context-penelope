@@ -1,0 +1,166 @@
+<html>
+    <head>
+        <title><?php echo $this->title; ?></title>
+        <link id="themeStyles" rel="stylesheet" href="/public/scripts/dojoroot/dijit/themes/tundra/tundra.css">
+        <style type="text/css">
+            @import "/public/scripts/dojoroot/dojo/resources/dojo.css";
+            @import "/public/scripts/dojoroot/dojox/grid/resources/tundraGrid.css";
+            @import "/public/scripts/dojoroot/dojox/layout/resources/FloatingPane.css";
+            @import "/public/styles/importer.css";         
+            @import "/public/styles/navigation.css";               
+        </style>        
+        <script type="text/javascript" src="/public/scripts/json2.js"></script>
+        <script type="text/javascript" src="/public/scripts/utils.js"></script>
+        <script type="text/javascript" src="/public/scripts/dojoroot/dojo/dojo.js" djConfig="parseOnLoad: true"></script>
+        <script type="text/javascript" src="/public/scripts/prototype-1.6.0.2.js"></script>
+        
+        <!-- custom application-level script files -->
+        <script type="text/javascript" src="/public/scripts/application/importer/wizard.js"></script>
+        <script type="text/javascript" src="/public/scripts/application/browserDetect.js"></script>
+        <script type="text/javascript" src="/public/scripts/application/importer/utils.js"></script>
+        <script type="text/javascript" src="/public/scripts/application/importer/navigation.js"></script>
+        <script type="text/javascript" src="/public/scripts/application/importer/license.js"></script> 
+        
+        <script type="text/javascript">        
+            dojo.require("dojo.parser");
+            dojo.require("dojo.data.ItemFileWriteStore");
+            dojo.require("dojox.grid.DataGrid");
+            dojo.require("dojox.grid.cells");
+            dojo.require("dijit.Dialog");
+            dojo.require("dijit.form.TextBox");
+            dojo.require("dijit.form.Button");
+            dojo.require("dojox.layout.FloatingPane");
+            
+            //added to make the radiobuttons:
+            dojo.require("dijit.form.CheckBox");
+            
+            <?php echo $this->state; ?>
+                       
+            //include all of the functions that need to be called on startup:
+            dojo.addOnLoad(function()
+            {
+                displayState();
+                displayWizardHeader("SELECT / UPDATE LICENSE");
+                initLicense();
+                
+                //hide initialization HTML until importer has completely loaded:
+                dojo.byId('loaderInner').innerHTML += " done.";
+                setTimeout(function hideLoader(){
+                        var loader = dojo.byId('loader'); 
+                        dojo.fadeOut({ node: loader, duration:500,
+                                onEnd: function(){ 
+                                        loader.style.display = "none"; 
+                                }
+                        }).play();
+                }, 250);
+            });
+        </script>
+    
+    </head>
+    <body class="tundra">
+        <div id="loader"><div id="loaderInner">Loading Importer ... </div></div>
+        <br />  
+        
+        <div>
+            Name: <strong><span id="spanUserName"></span></strong><br />
+            Project Selected: <strong><span id="spanProjectSelected"></span></strong> 
+        </div>
+        <table class="mainTable" align="center">
+        <tr>
+            <td colspan="2" class="headerCell">
+                <?php echo $this->header; ?>
+                <div id="errorMessage"></div>
+            </td>
+        </tr>
+        <tr>
+            <td class="navCell">
+                <?php echo $this->sidebar; ?>
+            </td>
+            <td class="contentCell" id="contentCell">
+                <?php echo $this->partial("wizardHeader.phtml") ?>              
+                <table width="100%" align="center" cellspacing="5" class="selectLicense">                            
+                    <tr>
+                        <td style="width:50%;" class="frame">
+                            <table border="0">
+                                <caption>1.  Answer Creative Commons Questions</caption>
+                                <tr>
+                                    <td colspan="2">Do you want to permit commercial uses?</td>
+                                </tr>
+                                <tr>
+                                    <td><input id="cc_com_y" name="cccom" type="radio" value="yes" dojoType="dijit.form.RadioButton" onclick="getLicense();" /></td>
+                                    <td><strong>Yes</strong> (<em>Recommended</em>)<br/>
+                                        <span class="tinyText">
+                                            <em>This choice reduces barriers to future publication, making
+                                            wider citation more likely, and increasing the impact of your contribution</em>
+                                        </span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><input id="cc_com_n" name="cccom" type="radio" value="no" dojoType="dijit.form.RadioButton" onclick="getLicense();" /></td>
+                                    <td><strong>No</strong></td>
+                                </tr>
+                                <tr>
+                                    <td colspan="2">&nbsp;</td>
+                                </tr>
+                                <tr>
+                                    <td colspan="2">
+                                        Do you want to allow others to create and share modified/adapted versions of your content?
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><input id="cc_dr_y" name="ccderivs" type="radio" value="yes" dojoType="dijit.form.RadioButton" checked onclick="getLicense();" /></td>
+                                    <td><strong>Yes</strong> (<em>Recommended</em>)</td>
+                                </tr>
+                                <tr>
+                                    <td width="30"><input id="cc_dr_sa" name="ccderivs" type="radio" value="sa" dojoType="dijit.form.RadioButton" onclick="getLicense();" /></td>
+                                    <td>
+                                        <strong>Yes, but only if people share-alike</strong><br />
+                                        <span class="tinyText"><em>Future works must also carry this same license</em></span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td width="30"><input id="cc_dr_n" name="ccderivs" type="radio" value="no" dojoType="dijit.form.RadioButton" onclick="getLicense();" /></td>
+                                    <td>
+                                        <strong>No</strong><br/>
+                                        <span class="tinyText"><em>Allow only exact copies of my work to be shared</em></span>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                        <td id="selectedLicense" class="frame">                                    
+                            <div class="frameHeader">2. Select Available License (Based on Selection Criteria)</div>
+                            <div>
+                                <div id="license" style="visibility: visible;height:1px;">
+                                    <img id="ccImg" align="bottom" /><strong>
+                                    <span id="name" style="font-size:1.3em;"></span></strong><br />
+                                    <a id="details" href="" target="_blank" style="margin-bottom: 3px;">License Deed</a> |
+                                    <a id="legal" href="" target="_blank" style="margin-bottom: 3px;">Legal Code</a><br /> 
+                                    <span id="description"></span>
+                                    <div style="text-align: center;">
+                                        <button id="buttonSelectLicense" dojoType="dijit.form.Button" type="submit" onclick="saveLicense();">Select This License</button>
+                                        <button id="buttonRevertLicense" dojoType="dijit.form.Button" type="submit" onclick="initLicense();">Cancel</button>
+                                    </div>
+                                </div>                                            
+                                <div id="noLicense" style="text-align: center; vertical-align: middle;">
+                                    No license has been selected.   
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td colspan="2" style="height: 75px;"
+                            class="greenFrame">
+                            <div class="licenseHeader" style="font-weight:bold;font-size:1.3em;">Selected License</div>
+                            <div id="licenseSelectionMessage" style="padding: 15px; text-align: center;"></div>
+                        </td>
+                </table>
+            </td>
+        </tr>
+        <tr>
+            <td colspan="2" class="footerCell">
+                <?php echo $this->footer; ?>
+            </td>
+        </tr>
+    </table>
+    </body>    
+</html>

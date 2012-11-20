@@ -1,0 +1,23 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN">
+    <html lang="en">
+    <head>
+        <title><?php echo $this->title; ?></title>
+        <link id="themeStyles" rel="stylesheet" href="/public/scripts/dojoroot/dijit/themes/tundra/tundra.css">
+        <style type="text/css">
+            @import "/public/scripts/dojoroot/dojo/resources/dojo.css";
+            @import "/public/scripts/dojoroot/dojox/grid/resources/tundraGrid.css";            
+        </style> 
+    </head>
+    <body>        
+        <!-- form enctype="multipart/form-data" id="upload" method="post" action="uploaddata/submit">
+            Description: <input type="text" name="description" size="40"><br />
+            Browse to File: <input type="file" name="photo" id="photo" size="40" maxlength="255"><br />            
+            <input type="submit" name="submit" value="Submit Data" /><br />  
+            <input type="text" name="projectID" value="<?php echo $this->projectID; ?>">
+            <input type="text" name="projectUUID" value="<?php echo $this->projectUUID; ?>">
+        </form -->
+        
+        <!-- ?php echo $this->bodyCopy ? -->
+        <?php echo $this->form ?>
+    </body>
+</html>

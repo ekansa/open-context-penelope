@@ -1,0 +1,67 @@
+<?php
+        
+    $data = $this->data;
+    $varLabel = $data[0]["var_label"];
+    
+?>
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"> 
+    <head> 
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    </head>
+    <body>
+        <h1>Variable: <?php echo $varLabel; ?></h1>
+        
+        
+        
+        <h2>Add Linked Data</h2>
+        <form action="var-link" method="post" >
+            <input type="hidden" name="varUUID" value="<?php echo $this->varUUID; ?>" />
+            <input type="hidden" name="projectUUID" value="<?php echo $this->projUUID; ?>" />
+            <p>Add URI to Variable (for classification vocabularies):
+                <input size="60" name="uri" type="text" value="<?php echo $this->varURI; ?>" />, Label:
+                <input size="20" name="linkedLabel" type="text" value="<?php echo $this->varLinkLabel; ?>" />
+                <input name="submit" type="submit" />
+            </p>
+        </form>
+        
+        <table>
+            <tr>
+                <th>Variable</th>
+                <th>Property Count</th>
+                <th>Value</th>
+                <th>Linked URI</th>
+                <th>Label</th>
+            </tr>
+        
+        <?php
+        
+        foreach($data as $row){
+        ?>
+            <tr>
+                <form action="prop-link" method="post" >
+                    <input type="hidden" name="propertyUUID" value="<?php echo $row["property_uuid"]; ?>" />
+                    <input type="hidden" name="projectUUID" value="<?php echo $row["project_id"]; ?>" />
+                    <input type="hidden" name="varUUID" value="<?php echo $this->varUUID; ?>" />
+                    <td><?php echo $row["var_label"]; ?></td>
+                    <td><?php echo $row["subCount"]; ?></td>
+                    <td><?php echo $row["val_text"]; ?>
+                    <br/>
+                    <span style="font-size:xx-small;"><?php echo $row["property_uuid"]; ?></span>
+                    </td>
+                    <td><input size="60" name="uri" type="text" value="<?php echo $row["linkedURI"]; ?>" /></td>
+                    <td><input size="20" name="linkedLabel" type="text" value="<?php echo $row["linkedLabel"]; ?>" /></td>
+                    <td><input name="submit" type="submit" /></td>
+                </form>
+            </tr>
+        
+        <?php
+        
+        };
+        
+        
+        ?>
+        </table>
+    </body>
+</html>

@@ -1,0 +1,40 @@
+var importer                            = new Object();
+importer.userName                       = "<?php echo $this->user->getFullName(); ?>";
+importer.rootURI                        = "<?php echo App_Constants::PEN_WEB_ROOT; ?>";
+importer.currentProject                 = new Object();
+<?php if(!isset($this->project)) { ?>
+    importer.currentProject.id              = -1;
+    importer.currentProject.uuID            = -1;
+    importer.currentProject.name            = "None Selected";
+    importer.currentProject.shortDesc       = null;
+    importer.currentProject.longDesc        = null;
+    importer.currentProject.hasDataRecords  = false;
+    importer.currentProject.dataTableName   = null;
+    importer.currentProject.dataTableDesc   = null;
+    importer.currentProject.fileName        = null;
+    importer.currentProject.numRows         = 0;
+    importer.currentProject.numCols         = 0;
+    importer.currentProject.licenseID       = null;
+    importer.controllerName                 = 'project';
+<?php
+}
+else
+{
+    
+    ?>
+    importer.currentProject.id              = "<?php echo $this->project->id; ?>";
+    importer.currentProject.uuID            = "<?php echo $this->project->uuID; ?>";
+    importer.currentProject.name            = "<?php echo $this->project->projectName; ?>";
+    importer.currentProject.shortDesc       = "<?php echo $this->project->shortDesc; ?>";
+    importer.currentProject.longDesc        = <?php echo ZEND_JSON::encode($this->project->longDesc); ?>;
+    importer.currentProject.hasDataRecords  = "<?php echo $this->project->hasDataRecords; ?>";
+    importer.currentProject.dataTableName   = "<?php echo $this->project->dataTableName; ?>";
+    importer.currentProject.dataTableDesc   = "<?php echo $this->project->dataTableDesc; ?>";
+    importer.currentProject.fileName        = "<?php echo $this->project->fileName; ?>";
+    importer.currentProject.numRows         = "<?php echo $this->project->numRows; ?>";
+    importer.currentProject.numCols         = "<?php echo $this->project->numCols; ?>";
+    importer.currentProject.licenseID       = "<?php echo $this->project->licenseID; ?>";    
+    importer.controllerName                 = "<?php echo $this->navigation->controllerName; ?>";   
+<?php } ?>
+importer.currentPageID                       = <?php echo $this->navigation->currentPageID; ?>;
+importer.dataTableProcessed		    = false;

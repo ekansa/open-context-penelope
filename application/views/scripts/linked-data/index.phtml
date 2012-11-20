@@ -1,0 +1,117 @@
+<?php
+
+$host = $this->host;
+
+
+
+?>
+
+<html>
+    <head>
+        <title>Update Link Data</title>
+        <link href="/public/styles/default_banner.css" rel="stylesheet" type="text/css" />
+        <link id="themeStyles" rel="stylesheet" href="/public/scripts/dojoroot/dijit/themes/tundra/tundra.css">
+        <style type="text/css">
+            @import "/public/scripts/dojoroot/dojo/resources/dojo.css";
+            @import "/public/scripts/dojoroot/dojox/grid/resources/tundraGrid.css";
+            @import "/public/scripts/dojoroot/dojox/layout/resources/FloatingPane.css";
+            @import "/public/scripts/dojoroot/dijit/themes/tundra/ProgressBar.css";
+            @import "/public/styles/importer.css";
+            @import "/public/styles/opencontext_style.css"; 
+        </style>
+        <script type="text/javascript" src="/public/scripts/json2.js"></script>
+        <script type="text/javascript" src="/public/scripts/utils.js"></script>
+        <script type="text/javascript" src="/public/scripts/dojoroot/dojo/dojo.js" djConfig="parseOnLoad: true"></script>
+        <script type="text/javascript" src="/public/scripts/prototype-1.6.0.2.js"></script>
+        
+        <!-- custom application-level script files -->
+        <script type="text/javascript" src="/public/scripts/application/linking/linkupdate.js"></script>
+           
+        
+        <script type="text/javascript">        
+            dojo.require("dojo.parser");
+
+            dojo.require("dijit.form.CheckBox");
+            dojo.require("dijit.form.ComboBox");
+            dojo.require("dijit.form.FilteringSelect");
+            dojo.require("dojox.form.DropDownSelect");
+
+            dojo.require("dijit.layout.ContentPane");
+	    dojo.require("dijit.layout.TabContainer");
+            dojo.require("dojo.data.ItemFileWriteStore");
+            dojo.require("dojox.grid.DataGrid");
+            dojo.require("dojox.grid.cells");
+            //for the dialog box:
+            dojo.require("dijit.Dialog");
+            dojo.require("dijit.form.TextBox");
+            dojo.require("dijit.form.TimeTextBox");
+            dojo.require("dijit.form.Button");
+            dojo.require("dijit.form.DateTextBox");
+            dojo.require("dijit.form.Textarea");
+
+            dojo.require("dojox.grid.cells.dijit");
+            dojo.require("dojox.layout.FloatingPane");
+            dojo.require("dijit.Tooltip");
+            dojo.require("dijit.TitlePane");
+            
+            dojo.require("dijit.Tree");
+            dojo.require("dijit.ProgressBar");
+  
+            dojo.require("dojo.io.iframe");
+            dojo.require("dojox.data.QueryReadStore");
+	    
+	    dojo.require("dijit.layout.AccordionContainer");
+	    dojo.require("dijit.layout.SplitContainer");
+	    
+	    dojo.require("dojo.dnd.Container");
+	    dojo.require("dojo.dnd.Manager");
+	    dojo.require("dojo.dnd.Source");
+        </script>
+	
+        <script type="text/javascript">
+	    <?php echo "var host = '".$host."'; \n" ; ?>
+	</script>
+    
+    </head>
+    <body class="tundra">
+        <div id="oc_logo">
+	    <a href="<?php echo $host; ?>"><img alt="Open Context Logo" src="/public/images/general/oc_logo.jpg" border="0" ></img></a>
+	</div>
+	<div id="oc_tagline">
+	    <img alt="Open Context Tagline" src="/public/images/general/oc_tagline.jpg" ></img>
+	</div>
+	<div id="oc_beta">
+	    <img alt="Beta Stamp" src="/public/images/general/oc_betastamp.jpg" ></img>
+	</div>
+	<div class="bodyText">
+	    <br/>
+	    <br/>
+	    <br/>
+	    <br/>
+	    <br/>
+	    <br/>
+	    <div style="margin:10px;">
+		<h2>Update Linked Data in Open Context</h2>
+		<p>Base URI: <input type="text" size="40" name="baseURI" id="inputBaseURI" /></p>
+		<p><a href="javascript:start()">START!</a></p>
+		<p><a href="javascript:remainder()">Do REMAINDER!</a></p>
+		<br/>
+		<br/>
+		<h3>Results and Progress: Property <span id="propIndex"></span> of <span id="propCount"></span></h3>
+		<div id="resultDiv">
+		    <p>Property: <span id="propID"></span> (Var: <span id="varID"></span>)</p>
+		    <p>Variable Linked Data: <span id="varLabel"></span> (Vocabulary: <span id="varVocab"></span>)</p>
+		    <p>Value Linked Data: <span id="valLabel"></span> (Vocabulary: <span id="valVocab"></span>)
+			<br/>
+			Total Number of Items to Update: <strong><span id="numItems"></span></strong>
+			<br/>
+			Number Done: <strong><span id="numDone"></span></strong> (<strong><span id="donePercent"></span></strong>) 
+		    </p>
+		    <div id="propBar">
+		    </div>
+		</div>
+	    </div>
+	    
+	</div>
+    </body>  
+</html>

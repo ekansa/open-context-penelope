@@ -1,0 +1,85 @@
+<html>
+  <head>
+    <title>Dojo: Hello World!</title>
+
+    <!-- SECTION 1 -->
+    <style type="text/css">
+        @import "/public/scripts/dojoroot/dijit/themes/tundra/tundra.css";
+        @import "/public/scripts/dojoroot/dojo/resources/dojo.css"
+    </style>
+    <script type="text/javascript" src="/public/scripts/json2.js"></script>
+        <script type="text/javascript" src="/public/scripts/utils.js"></script>
+        <script type="text/javascript" src="/public/scripts/dojoroot/dojo/dojo.js" djConfig="parseOnLoad: true"></script>
+        <script type="text/javascript" src="/public/scripts/dojoroot/dojox/grid/Grid.js"></script>
+        <script type="text/javascript" src="/public/scripts/prototype-1.6.0.2.js"></script>
+        <script type="text/javascript">        
+            dojo.require("dojo.parser");
+            dojo.require("dijit.layout.ContentPane");
+	    dojo.require("dijit.layout.TabContainer");
+            
+            //for the dialog box:
+            dojo.require("dijit.Dialog");
+            dojo.require("dijit.form.TextBox");
+            dojo.require("dijit.form.TimeTextBox");
+            dojo.require("dijit.form.Button");
+            dojo.require("dijit.form.DateTextBox");
+       // Load Dojo's code relating to io
+       dojo.require("dojo.io.*");
+       
+       function login(srcElement) {
+	alert(dojo.byId('login').value);
+        // send an ajax request to the server
+        dojo.io.bind({
+                method : 'POST',
+                content : {
+                        login : dojo.byId('login').value,
+                        password : dojo.byId('password').value
+                },
+                url: '/Login/DoLogin/',
+                load: function(type, data, evt) {
+                        if ('url:' == data.substr(0, 4)) {
+                                location.href = data.substr(4);
+                        } else {
+                                alert(data);
+                        }
+                },
+                mimetype: "text/plain"
+        });
+	alert(data);
+
+	// cancel event
+	return false;
+}
+    </script>
+  </head>
+
+  <body class="tundra">
+    <form action="/auth/login" method="post">
+	<div>
+	    <label for="username">Username</label>
+	    <input type="text" name="username" value=""/>
+	</div>
+	<div>
+	    <label for="password">Password</label>
+	    <input type="password" name="password" value=""/>
+	</div>
+	<div id="formbutton">
+	<input type="submit" name="login" value="Login" />
+	</div>
+    </form>
+	<!-- button dojoType="dijit.form.Button" id="helloButton">
+                Hello World!
+                <script type="dojo/method" event="onClick">
+                   alert('You pressed the button');
+                </script>
+        </button>
+        
+        <h1>Login</h1>
+        <table>
+                <tr><td>Login:</td><td><input id="login" /></td></tr>
+                <tr><td>Password:</td><td><input id="password" /></td></tr>
+        </table>
+        <button dojoType="dijit.form.Button" onclick="login(this);">Login</button -->
+  </body>
+</html>
+

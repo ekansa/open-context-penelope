@@ -1,0 +1,646 @@
+/* Taken from import_start.php */
+#filesum {
+
+	position:absolute;
+
+	width:330px;
+
+	height:60px;
+
+	z-index:4;
+
+	left: 460px;
+
+	top: 155px;
+
+	overflow: auto;
+
+	border-top-width: thin;
+
+	border-right-width: thin;
+
+	border-bottom-width: thin;
+
+	border-left-width: thin;
+
+	border-top-style: none;
+
+	border-right-style: solid;
+
+	border-bottom-style: solid;
+
+	border-left-style: solid;
+
+	border-top-color: #D7D7D7;
+
+	border-right-color: #D7D7D7;
+
+	border-bottom-color: #D7D7D7;
+
+	border-left-color: #D7D7D7;
+
+}
+
+#Layer3 {
+
+	position:absolute;
+
+	width:333px;
+
+	height:29px;
+
+	z-index:6;
+
+	left: 400px;
+
+	top: 492px;
+
+}
+
+#projlist {
+
+	position:absolute;
+
+	width:310px;
+
+	height:190px;
+
+	z-index:7;
+
+	left: 24px;
+
+	top: 264px;
+
+	overflow: auto;
+
+	border-top-width: thin;
+
+	border-right-width: thin;
+
+	border-bottom-width: thin;
+
+	border-left-width: thin;
+
+	border-top-style: none;
+
+	border-right-style: solid;
+
+	border-bottom-style: solid;
+
+	border-left-style: solid;
+
+	border-top-color: #D7D7D7;
+
+	border-right-color: #D7D7D7;
+
+	border-bottom-color: #D7D7D7;
+
+	border-left-color: #D7D7D7;
+
+}
+
+#step1ttl {
+
+	position:absolute;
+
+	width:310px;
+
+	height:18px;
+
+	z-index:8;
+
+	left: 24px;
+
+	top: 245px;
+
+	border-top-width: thin;
+
+	border-right-width: thin;
+
+	border-bottom-width: thin;
+
+	border-left-width: thin;
+
+	border-top-style: solid;
+
+	border-right-style: solid;
+
+	border-bottom-style: none;
+
+	border-left-style: solid;
+
+	border-top-color: #D7D7D7;
+
+	border-right-color: #D7D7D7;
+
+	border-bottom-color: #D7D7D7;
+
+	border-left-color: #D7D7D7;
+
+	background-image: url(../database/ui_images/oc_navtree.jpg);
+
+}
+
+#Layer4 {
+
+	position:absolute;
+
+	width:195px;
+
+	height:69px;
+
+	z-index:9;
+
+	left: 479px;
+
+	top: 446px;
+
+}
+
+#upformarea {
+
+	position:absolute;
+
+	width:330px;
+
+	height:190px;
+
+	z-index:9;
+
+	left: 3px;
+
+	top: 1px;
+
+	overflow: auto;
+
+	border-top-width: thin;
+
+	border-right-width: thin;
+
+	border-bottom-width: thin;
+
+	border-left-width: thin;
+
+	border-top-style: none;
+
+	border-right-style: solid;
+
+	border-bottom-style: solid;
+
+	border-left-style: solid;
+
+	border-top-color: #D7D7D7;
+
+	border-right-color: #D7D7D7;
+
+	border-bottom-color: #D7D7D7;
+
+	border-left-color: #D7D7D7;
+
+}
+
+#treemenutitle {
+
+	position:absolute;
+
+	width:330px;
+
+	height:26px;
+
+	z-index:2;
+
+	left: 460px;
+
+	top: 130px;
+
+	border-top-width: thin;
+
+	border-right-width: thin;
+
+	border-bottom-width: thin;
+
+	border-left-width: thin;
+
+	border-top-style: solid;
+
+	border-right-style: solid;
+
+	border-bottom-style: none;
+
+	border-left-style: solid;
+
+	border-top-color: #D7D7D7;
+
+	border-right-color: #D7D7D7;
+
+	border-bottom-color: #D7D7D7;
+
+	border-left-color: #D7D7D7;
+
+	background-image: url(../database/ui_images/oc_navtree.jpg);
+
+}
+
+#numrem {
+
+	position: absolute;
+
+	width:330px;
+
+	height:54px;
+
+	z-index:10;
+
+	left: 3px;
+
+	top: 196px;
+
+	padding: 2px;
+
+}
+
+.style2 {
+
+	color: #990000;
+
+	font-size: 36px;
+
+}
+
+.style3 {
+
+	color: #999999;
+
+	font-size: 36px;
+
+}
+
+#Tabs {
+
+	position:absolute;
+
+	width:792px;
+
+	height:29px;
+
+	z-index:1;
+
+	left: 2px;
+
+	top: 94px;
+
+}
+
+#Banner {
+
+	position:absolute;
+
+	width:792px;
+
+	height:94px;
+
+	z-index:2;
+
+	left: 2px;
+
+	top: 0px;
+
+}
+
+#namelayer {
+
+	position:absolute;
+
+	width:516px;
+
+	height:22px;
+
+	z-index:3;
+
+	left: 277px;
+
+	top: 75px;
+
+}
+
+
+
+#itemtop {
+
+	position:absolute;
+
+	width:792px;
+
+	height:55px;
+
+	z-index:4;
+
+	top: 123px;
+
+	left: 2px;
+
+	background-image: url(../database/ui_images/oc_button_bar5.jpg);
+
+	visibility: visible;
+
+}
+
+#itemname {
+
+	position:absolute;
+
+	width:278px;
+
+	height:50px;
+
+	z-index:5;
+
+	left: 3px;
+
+	top: 127px;
+
+}
+
+#footer {
+
+	position:absolute;
+
+	width:792px;
+
+	height:50px;
+
+	z-index:2;
+
+	left: 0px;
+
+	top: 528px;
+
+}
+
+#Layer2 {
+
+	position:absolute;
+
+	width:342px;
+
+	height:44px;
+
+	z-index:6;
+
+	left: 99px;
+
+	top: 532px;
+
+}
+
+		table.prop {
+
+			font-family:Lucida Grande, Verdana;
+
+			font-size:0.8em;
+
+			width:100%;
+
+			border:1px solid #ccc;
+
+			border-collapse:collapse;
+
+			cursor:default;
+
+		}
+
+		table.prop td,
+
+		table.prop th{
+
+			padding:2px;
+
+			font-weight:normal;
+
+		}
+
+		table.prop thead td, table thead th {
+
+			background-image:url(images/ft-head.gif);
+
+			background-repeat:no-repeat;
+
+			background-position:top right;
+
+		}
+
+		table.prop thead td.selectedUp, table thead th.selectedUp {
+
+			background-image:url(images/ft-headup.gif);
+
+		}
+
+		table.prop thead td.selectedDown, table thead th.selectedDown {
+
+			background-image:url(images/ft-headdown.gif);
+
+		}
+
+			
+
+		table.prop tbody tr td{
+
+			border-bottom:1px solid #ddd;
+
+		}
+
+		table.prop tbody tr.alt td{
+
+			background: #E9E9E9;
+
+		}
+
+		table.prop tbody tr.selected td{
+
+			background: yellow;
+
+		}
+
+		table.prop tbody tr:hover td{
+
+			background: #a6c2e7;
+
+		}
+
+		table.prop tbody tr.selected:hover td{
+
+			background:#ff9;
+
+		}
+
+#controls {
+
+	position:absolute;
+
+	width:184px;
+
+	height:160px;
+
+	z-index:11;
+
+	left: 248px;
+
+	top: 265px;
+
+	border-top-width: thin;
+
+	border-right-width: thin;
+
+	border-bottom-width: thin;
+
+	border-left-width: thin;
+
+	border-top-style: none;
+
+	border-right-style: solid;
+
+	border-bottom-style: solid;
+
+	border-left-style: solid;
+
+	border-top-color: #D7D7D7;
+
+	border-right-color: #D7D7D7;
+
+	border-bottom-color: #D7D7D7;
+
+	border-left-color: #D7D7D7;
+
+}
+
+#settitle {
+
+	position:absolute;
+
+	width:330px;
+
+	height:18px;
+
+	z-index:12;
+
+	left: 460px;
+
+	top: 245px;
+
+	border-top-width: thin;
+
+	border-right-width: thin;
+
+	border-bottom-width: thin;
+
+	border-left-width: thin;
+
+	border-top-style: solid;
+
+	border-right-style: solid;
+
+	border-bottom-style: none;
+
+	border-left-style: solid;
+
+	border-top-color: #D7D7D7;
+
+	border-right-color: #D7D7D7;
+
+	border-bottom-color: #D7D7D7;
+
+	border-left-color: #D7D7D7;
+
+	background-image: url(../database/ui_images/oc_navtree.jpg);
+
+}
+
+#instruct {
+
+	position:absolute;
+
+	width:332px;
+
+	height:65px;
+
+	z-index:13;
+
+	left: 6px;
+
+	top: 133px;
+
+}
+
+#step2ttl {
+
+	position:absolute;
+
+	width:184px;
+
+	height:18px;
+
+	z-index:14;
+
+	left: 248px;
+
+	top: 245px;
+
+	border-top-width: thin;
+
+	border-right-width: thin;
+
+	border-bottom-width: thin;
+
+	border-left-width: thin;
+
+	border-top-style: solid;
+
+	border-right-style: solid;
+
+	border-bottom-style: none;
+
+	border-left-style: solid;
+
+	border-top-color: #D7D7D7;
+
+	border-right-color: #D7D7D7;
+
+	border-bottom-color: #D7D7D7;
+
+	border-left-color: #D7D7D7;
+
+	background-image: url(../database/ui_images/oc_navtree.jpg);
+
+}
+
+#dynarea {
+
+	position:absolute;
+
+	width:340px;
+
+	height:266px;
+
+	z-index:0;
+
+	left: 457px;
+
+	top: 263px;
+
+}
+
+#proj_ctrls {
+
+	position:absolute;
+
+	width:313px;
+
+	height:47px;
+
+	z-index:14;
+
+	left: 7px;
+
+	top: 472px;
+
+}

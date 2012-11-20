@@ -1,0 +1,35 @@
+<html>
+    <head>
+        <SCRIPT type=text/javascript>  
+          
+        var customColumn = function(inRowIndex) {  
+           // This is standard for many grid handlers  
+           if (! dijit.byId('grid').model.data[inRowIndex]) {  
+            return;  
+           }  
+            
+          return "<a href=\"/blogmanager/edit?id=" +  
+                  model.getRow(inRowIndex).post_id + "\">edit</a>";   
+              
+        }  
+          
+        var view = {  
+          cells:  [[  
+            { name: "Post id", field: "post_id" },  
+            { name: 'Link', get: customColumn }  
+            ],  
+        ]};  
+          
+        var layout = [ view ];  
+          
+        </SCRIPT>
+    </head>
+    <body>
+  
+        <DIV query="{ post_id: '*' }" store="pStore" dojoType="dojox.grid.data.DojoData" clientSort="true" jsId="model"></DIV>   
+        <DIV id=grid dojoType="dojox.Grid" structure="layout" model="model"></DIV>   
+          
+          
+        
+    </body>
+</html>

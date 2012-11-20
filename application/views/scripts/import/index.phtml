@@ -1,0 +1,777 @@
+<html>
+    <head>
+        <title><?php echo $this->title; ?></title>
+        <link id="themeStyles" rel="stylesheet" href="/public/scripts/dojoroot/dijit/themes/tundra/tundra.css">
+        <style type="text/css">
+            @import "/public/scripts/dojoroot/dojo/resources/dojo.css";
+            @import "/public/scripts/dojoroot/dojox/grid/resources/tundraGrid.css";
+            @import "/public/scripts/dojoroot/dojox/layout/resources/FloatingPane.css";
+            @import "/public/scripts/dojoroot/dijit/themes/tundra/ProgressBar.css";
+            @import "/public/styles/importer.css";            
+        </style>        
+        <script type="text/javascript" src="/public/scripts/json2.js"></script>
+        <script type="text/javascript" src="/public/scripts/utils.js"></script>
+        <script type="text/javascript" src="/public/scripts/dojoroot/dojo/dojo.js" djConfig="parseOnLoad: true"></script>
+        <script type="text/javascript" src="/public/scripts/prototype-1.6.0.2.js"></script>
+        
+        <!-- custom application-level script files -->
+        <script type="text/javascript" src="/public/scripts/application/importer/wizard.js"></script>
+        <script type="text/javascript" src="/public/scripts/application/browserDetect.js"></script>
+        <script type="text/javascript" src="/public/scripts/application/importer/utils.js"></script>
+        <script type="text/javascript" src="/public/scripts/application/importer/updateProject.js"></script>
+        <script type="text/javascript" src="/public/scripts/application/importer/dataTables.js"></script>
+        <script type="text/javascript" src="/public/scripts/application/importer/license.js"></script>
+        <script type="text/javascript" src="/public/scripts/application/importer/user.js"></script>
+        <script type="text/javascript" src="/public/scripts/application/importer/classify.js"></script>
+        <script type="text/javascript" src="/public/scripts/application/importer/annotate.js"></script>
+        <script type="text/javascript" src="/public/scripts/application/importer/relationships.js"></script>
+        <script type="text/javascript" src="/public/scripts/application/importer/properties.js"></script>
+        <script type="text/javascript" src="/public/scripts/application/importer/transformData.js"></script>
+        <script type="text/javascript" src="/public/scripts/application/importer/editData.js"></script>        
+        
+        <script type="text/javascript">        
+            dojo.require("dojo.parser");
+
+            dojo.require("dijit.form.CheckBox");
+            dojo.require("dijit.form.ComboBox");
+            dojo.require("dijit.form.FilteringSelect");
+            dojo.require("dojox.form.DropDownSelect");
+
+            dojo.require("dijit.layout.ContentPane");
+	    dojo.require("dijit.layout.TabContainer");
+            dojo.require("dojo.data.ItemFileWriteStore");
+            dojo.require("dojox.grid.DataGrid");
+            dojo.require("dojox.grid.cells");
+            //for the dialog box:
+            dojo.require("dijit.Dialog");
+            dojo.require("dijit.form.TextBox");
+            dojo.require("dijit.form.TimeTextBox");
+            dojo.require("dijit.form.Button");
+            dojo.require("dijit.form.DateTextBox");
+            dojo.require("dijit.form.Textarea");
+
+            dojo.require("dojox.grid.cells.dijit");
+            dojo.require("dojox.layout.FloatingPane");
+            dojo.require("dijit.Tooltip");
+            dojo.require("dijit.TitlePane");
+            
+            dojo.require("dijit.Tree");
+            dojo.require("dijit.ProgressBar");
+  
+            dojo.require("dojo.io.iframe");
+            dojo.require("dojox.data.QueryReadStore");
+	    
+	    dojo.require("dijit.layout.AccordionContainer");
+	    dojo.require("dijit.layout.SplitContainer");
+	    
+	    dojo.require("dojo.dnd.Container");
+	    dojo.require("dojo.dnd.Manager");
+	    dojo.require("dojo.dnd.Source");
+
+	    
+            //dojo.event.connect(window, "onload", initImporter);
+            //global variables to manage state:
+            //-------------------------------------------------------------------------------------------
+            var importer                            = new Object();
+            importer.userName                       = "<?php echo $this->user->getFullName(); ?>";
+            importer.currentProject                 = new Object();
+            importer.currentProject.id              = -1;
+	    importer.currentProject.uuID            = -1;
+            importer.currentProject.name            = "None Selected";
+            importer.currentProject.hasDataRecords  = false;
+            importer.currentProject.dataTableName   = null;
+            importer.currentProject.fileName        = null;
+            importer.currentProject.numRows         = 0;
+            importer.currentProject.numCols         = 0;
+            importer.currentProject.licenseID       = null;
+            importer.currentTabID                   = "step1Pane";
+	    importer.dataTableProcessed		    = false;
+            
+            //pre-load datagrid at startup:
+            //-------------------------------------------------------------------------------------------
+            var theDataString   = '<?php echo $this->projectsDataStore ?>';
+            var theData         = dojo.fromJson(theDataString);
+            var theDataStore    = new dojo.data.ItemFileWriteStore({data: theData, clearOnClose: true});            
+            
+            var theDataLayout = [
+                { width: "50px", name: "&nbsp;", formatter: deleteRecordButton },
+                { field: "hasDataRecords", width: "150px", name: "&nbsp;", formatter: editRecordButton },
+                { field: "name", width: "200px", name: "Project Name" },
+                { field: "timestamp", width: "100px", name: "Date Created" },
+                { field: "id", width: "50px", name: "Project ID" },
+		//{ field: "processingMessage", width: "100px", name: "Status" },
+		{ field: "numTables", width: "60px", name: "# Tables" },		
+		{ field: "numTablesProcessed", width: "60px", name: "# Tables Processed" }
+		//{ field: "uuID", width: "100px", name: "UUID" }
+            ];
+            var view = { rows: [ theDataLayout ] };
+            var structure = [ view ];
+            
+            //include all of the functions that need to be called on startup:
+            dojo.addOnLoad(function()
+            {
+                //alert("initImporter();");
+                //initProjectsGrid();
+                initLicense();      //initialize the license selector
+                displayState();     //initialize the active project window
+                //setActiveProject(); //initialize the active project window
+                
+                //hide initialization HTML until importer has completely loaded:
+                dojo.byId('loaderInner').innerHTML += " done.";
+                setTimeout(function hideLoader(){
+                        var loader = dojo.byId('loader'); 
+                        dojo.fadeOut({ node: loader, duration:500,
+                                onEnd: function(){ 
+                                        loader.style.display = "none"; 
+                                }
+                        }).play();
+                }, 250);
+            });
+        </script>
+    
+    </head>
+    <body class="tundra">
+        <div id="loader"><div id="loaderInner">Loading Importer ... </div></div>
+        <br />  
+        
+        <div>
+            Name: <strong><span id="spanUserName"></span></strong><br />
+            Project Selected: <strong><span id="spanProjectSelected"></span></strong> 
+        </div>
+        <!-- div style="text-align:center;margin-left: auto; margin-right:auto;width: 810px;" -->
+        <div align="center">
+            <div jsId="mainTabContainer" id="mainTabContainer" dojoType="dijit.layout.TabContainer" 
+                    style="width:820px;height:500px;text-align:left;" onClick="tabContainerChanged" refreshOnShow="true">
+<!-------------------------------------------------------------------------------------------------------------------------->                   
+<!-------------------------------------------------- PANEL #1 -------------------------------------------------------------->
+<!--------------------------------------------------------------------------------------------------------------------------> 
+                    <div jsId="step1Pane" id="step1Pane" style="text-align: center;" dojoType="dijit.layout.ContentPane" title="1. Project"  selected="true">              
+                        <br />
+                        <div style="text-align:left;">Penelope's main unit of publication is a 'project'.
+                        Each project can have data from one or more uploaded tables.
+                        To start publishing you need to create a new project.</div>
+                        <br />
+                        <!-- div id="divProjectGridContainer" style="height:300px;"></div -->
+                        <table dojoType="dojox.grid.DataGrid"
+                                jsId="gridProjectList"
+                                id="gridProjectList"
+                                store="theDataStore"
+                                class="tundra"
+                                clientSort="true"
+                                structure="structure"                                
+                                rowSelector="20px"
+                                onclick="setActiveProject"
+                                style="height:300px;width:738px;text-align:left;">        
+                        </table>
+                        
+                        <div class="buttonPane" style="width: 738px;">
+                            <button dojoType="dijit.form.Button" onclick="dijit.byId('dialog1').show()">Add New Project</button>
+                        </div>
+                        <!-- Add New Project Dialog Box-->                        
+                        <div dojoType="dijit.Dialog" id="dialog1" title="Create a New Project"
+                            execute="addNewProject();">
+                            <table>
+                                <caption>
+                                    You have chosen to import data into a new project.
+                                    Please create a title for your project before you
+                                    choose a file to upload.
+                                </caption>
+                                <tr>
+                                    <td><label for="name">Project Name: </label></td>
+                                    <td><input dojoType="dijit.form.TextBox" type="text" name="projectName" id="projectName"></td>
+                                </tr>
+                                <tr>
+                                    <td colspan="2">
+                                        <button dojoType="dijit.form.Button" type="submit">Add</button>
+                                        <button dojoType="dijit.form.Button" onclick="dijit.byId('dialog1').hide()">Cancel</button> 
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>                        
+                                                
+                        <!-- Remove Project Dialog Box -->
+                        <div dojoType="dijit.Dialog" id="dialogDelete" title="Remove Project From System"
+                            execute="removeProject();">
+                            <div></div>
+                            <table>
+                                <caption id="removalText">
+                                    Are you sure you want to remove this project and it's corresponding data from
+                                    the system?
+                                </caption>            
+                                <tr>
+                                    <td colspan="2">
+                                        <button dojoType="dijit.form.Button" type="submit">Remove</button>
+                                        <button dojoType="dijit.form.Button" onclick="dijit.byId('dialogDelete').hide()">Cancel</button> 
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                        
+                    </div><!-- End Panel #1 -->
+                    
+<!-------------------------------------------------------------------------------------------------------------------------->                   
+<!-------------------------------------------------- PANEL #2 -------------------------------------------------------------->
+<!--------------------------------------------------------------------------------------------------------------------------> 
+                    <div jsId="step2Pane" id="step2Pane" dojoType="dijit.layout.ContentPane" 
+                           title="2. Data" style="text-align: center;" >
+                        <!-- Header Section -->
+                        <table width="100%" cellpadding="0" cellspacing="5">
+                            <tr>
+                                <td id="step2Pane_headerText" style="vertical-align:middle;" class="headerText"></td>
+                                <td id="step2Pane_project" style="width:400px;"></td>
+                                <td id="step2Pane_help" style="width:50px;text-align: right;"></td>
+                            </tr>
+                        </table>                       
+                        
+                        <div style="height: 90%;text-align: left;" id="editProjectContainer">
+                            
+                            <table>
+                                <tr>
+                                    <td><label for="ddDataTable"><em>Select data table to process: </em></label></td>                      
+                                    <td><input id="ddDataTable"></input></td>
+                                    <td><a href="javascript:showUploadForm()">add new table</a></td>
+                                </tr>
+                            </table>
+                            <div style="height: 325px;text-align: left;" id="editDataGridContainer"></div>
+                        </div>
+                        <iframe id="ifrPhoto" onload="" scrolling="no" frameborder="0"
+                                style="text-align:center;vertical-align:middle;border-style:none;margin:0px;width:90%;height:200px"></iframe>
+                          
+                    </div><!-- End Panel #2 -->
+ 
+<!-------------------------------------------------------------------------------------------------------------------------->                   
+<!-------------------------------------------------- PANEL #3 -------------------------------------------------------------->
+<!-------------------------------------------------------------------------------------------------------------------------->                     
+                    <div jsId="step3Pane" id="step3Pane" dojoType="dijit.layout.ContentPane" 
+                         title="3. Licence">    
+                        <!-- Header Section -->
+                        <table width="100%" cellpadding="0" cellspacing="5">
+                            <tr>
+                                <td id="step3Pane_headerText" style="vertical-align:middle;" class="headerText"></td>
+                                <td id="step3Pane_project" style="width:400px;"></td>
+                                <td id="step3Pane_help" style="width:50px;text-align: right;"></td>
+                            </tr>
+                        </table>
+                        <!-- End Header Section -->
+                                    
+                        <table width="100%" align="center" cellspacing="5" class="selectLicense">                            
+                            <tr>
+                                <td style="width:50%;" class="frame">
+                                    <table border="0">
+                                        <caption>1.  Answer Creative Commons Questions</caption>
+                                        <tr>
+                                            <td colspan="2">Do you want to permit commercial uses?</td>
+                                        </tr>
+                                        <tr>
+                                            <td><input id="cc_com_y" name="cccom" type="radio" value="yes" dojoType="dijit.form.RadioButton" onclick="getLicense();" /></td>
+                                            <td><strong>Yes</strong> (<em>Recommended</em>)<br/>
+                                                <span class="tinyText">
+                                                    <em>This choice reduces barriers to future publication, making
+                                                    wider citation more likely, and increasing the impact of your contribution</em>
+                                                </span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td><input id="cc_com_n" name="cccom" type="radio" value="no" dojoType="dijit.form.RadioButton" onclick="getLicense();" /></td>
+                                            <td><strong>No</strong></td>
+                                        </tr>
+                                        <tr>
+                                            <td colspan="2">&nbsp;</td>
+                                        </tr>
+                                        <tr>
+                                            <td colspan="2">
+                                                Do you want to allow others to create and share modified/adapted versions of your content?
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td><input id="cc_dr_y" name="ccderivs" type="radio" value="yes" dojoType="dijit.form.RadioButton" checked onclick="getLicense();" /></td>
+                                            <td><strong>Yes</strong> (<em>Recommended</em>)</td>
+                                        </tr>
+                                        <tr>
+                                            <td width="30"><input id="cc_dr_sa" name="ccderivs" type="radio" value="sa" dojoType="dijit.form.RadioButton" onclick="getLicense();" /></td>
+                                            <td>
+                                                <strong>Yes, but only if people share-alike</strong><br />
+                                                <span class="tinyText"><em>Future works must also carry this same license</em></span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td width="30"><input id="cc_dr_n" name="ccderivs" type="radio" value="no" dojoType="dijit.form.RadioButton" onclick="getLicense();" /></td>
+                                            <td>
+                                                <strong>No</strong><br/>
+                                                <span class="tinyText"><em>Allow only exact copies of my work to be shared</em></span>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </td>
+                                <td id="selectedLicense" class="frame">                                    
+                                    <div class="frameHeader">2. Select Available License (Based on Selection Criteria)</div>
+                                    <div>
+                                        <div id="license" style="visibility: visible;height:1px;">
+                                            <img id="ccImg" align="bottom" /><strong>
+                                            <span id="name" style="font-size:1.3em;"></span></strong><br />
+                                            <a id="details" href="" target="_blank" style="margin-bottom: 3px;">License Deed</a> |
+                                            <a id="legal" href="" target="_blank" style="margin-bottom: 3px;">Legal Code</a><br /> 
+                                            <span id="description"></span>
+                                            <div style="text-align: center;">
+                                                <button id="buttonSelectLicense" dojoType="dijit.form.Button" type="submit" onclick="saveLicense();">Select This License</button>
+                                                <button id="buttonRevertLicense" dojoType="dijit.form.Button" type="submit" onclick="initLicense();">Cancel</button>
+                                            </div>
+                                        </div>                                            
+                                        <div id="noLicense" style="text-align: center; vertical-align: middle;">
+                                            No license has been selected.   
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td colspan="2" style="height: 75px;"
+                                    class="greenFrame">
+                                    <div class="licenseHeader" style="font-weight:bold;font-size:1.3em;">Selected License</div>
+                                    <div id="licenseSelectionMessage" style="padding: 15px; text-align: center;"></div>
+                                </td>
+                        </table>
+                    </div><!-- End Panel #3 -->
+<!-------------------------------------------------------------------------------------------------------------------------->                   
+<!-------------------------------------------------- PANEL #4 -------------------------------------------------------------->
+<!-------------------------------------------------------------------------------------------------------------------------->  
+                    <div jsId="step4Pane" id="step4Pane" dojoType="dijit.layout.ContentPane" 
+                         title="4. Author">
+                        <!-- Header Section -->
+                        <table width="100%" cellpadding="0" cellspacing="5">
+                            <tr>
+                                <td id="step4Pane_headerText" style="vertical-align:middle;" class="headerText"></td>
+                                <td id="step4Pane_project" style="width:400px;"></td>
+                                <td id="step4Pane_help" style="width:50px;text-align: right;"></td>
+                            </tr>
+                        </table>                        
+                        <!-- End Header Section -->
+                        <table style="width: 100%;" align="center">
+                            <tr>
+                                <td>
+                                    <table class="tblGeneric" cellpadding="0" cellspacing="0" align="center" style="height:350px;width:400px;">
+                                        <tr class="tblGenericRowOdd">
+                                            <td style="height:22px;"><strong><label for="ddUsers">Select the User</label></strong></td>
+                                            <td style="height:22px;"><strong><label for="ddRoles">Select the Role</label></strong></td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                <input id="ddUsers"><br /><br />
+                                                <div style="text-align: center;">
+                                                    <a href="javascript:dijit.byId('dialogAddUser').show();">Add New User</a>
+                                                </div>
+                                            </td>
+                                            <td><input id="ddRoles">
+                                                <br />
+                                                <input type="checkbox" id="linkAll" name="linkAll" /> Link to all<br />
+                                                <em>
+                                                (Unchecking will link this person to descriptions only if no other
+                                                author / observer is indicated)
+                                                </em>
+                                            </td>
+
+                                        </tr>
+                                        <tr class="tblGenericRowOdd" style="height:30px;">
+                                            <td colspan="2" align="center">
+                                                <button dojoType="dijit.form.Button" onclick="attachUser();">Update Table Responsibility</button>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </td>
+                                <td>                       
+                                    <div class="frame" style="height:350px;width:360px;">
+                                        <div class="frameHeader" style="height:22px;">Person responsible for this table(s)</div>
+                                        <div  style="height:250px;width:350px;" id="gridUserRoleTableCell" ></div>   
+                                    </div>
+                                </td>
+                            </tr>
+                        </table>
+                        
+                        <!-- Add New User -->
+                        <div dojoType="dijit.Dialog" id="dialogAddUser" title="Add a New User">
+                            <table border="0" cellspacing="0" cellpadding="2" class="tblGeneric">
+                                <tr>
+                                    <td width="149">Given Name:</td>
+                                    <td><input id="f_f_name" name="f_name" type="text" value="First" size="50" maxlength="98" onchange="comp_names()"/></td>
+                                </tr>
+                                <tr>
+                                    <td>Middle Initial:</td>
+                                    <td><input id="f_m_initial" name="m_inital" type="text" value="" size="2" maxlength="2" onchange="comp_names()"/></td>
+                                </tr>
+                                <tr>
+                                    <td>Family Name (surname):</td>
+                                    <td><input id="f_l_name" name="l_name" type="text" value="Surname" size="50" maxlength="100" onchange="comp_names()"/></td>
+                                </tr>
+                                <tr>
+                                    <td>Initials</td>
+                                    <td><input id="f_initals" name="initals" type="text" value="" size="5" maxlength="5" /></td>
+                                </tr>
+                                <tr>
+                                    <td>Full Name </td>
+                                    <td><input id="f_combined_name" name="combined_name" type="text" value="First MI. Surname" size="50" maxlength="100" /></td>
+                                </tr>
+                                <tr>
+                                    <td>Email: </td>
+                                    <td><input id="f_email" name="email" type="text" value="you@anywhere.edu" size="50" maxlength="200" /></td>
+                                </tr>
+                                <tr>
+                                    <td>Affiliation:</td>
+                                    <td>
+                                        <input id="ddAffiliations" />
+                                        <!-- input id="f_affil" name="affil" type="text" value="Your organization" size="50" maxlength="200" / -->
+                                    </td>
+                                </tr>
+                                <tr class="tblGenericRowOdd">
+                                    <td colspan="2" align="center">
+                                        <button dojoType="dijit.form.Button" onclick="addUser();">Add</button> 
+                                        <button dojoType="dijit.form.Button" onclick="dijit.byId('dialogAddUser').hide();">Cancel</button>
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                        
+                    </div><!-- End Panel #4 -->
+                    
+<!-------------------------------------------------------------------------------------------------------------------------->                   
+<!-------------------------------------------------- PANEL #5 -------------------------------------------------------------->
+<!-------------------------------------------------------------------------------------------------------------------------->  
+                    <div jsId="step5Pane" id="step5Pane" dojoType="dijit.layout.ContentPane" 
+                         title="5. Classify">
+                        <!-- Header Section -->
+                        <table width="100%" cellpadding="0" cellspacing="5">
+                            <tr>
+                                <td id="step5Pane_headerText" style="vertical-align:middle;" class="headerText"></td>
+                                <td id="step5Pane_project" style="width:400px;"></td>
+                                <td id="step5Pane_help" style="width:50px;text-align: right;"></td>
+                            </tr>
+                        </table>
+                        
+                        <table cellpadding="0" cellspacing="5" width="100%">
+                            <tr>
+                                <td id="fieldSummaryGridContainer" style="width: 602px; height: 330px; border-right: dotted 1px #CCC; border-bottom: dotted 1px #CCC;"></td>
+                                <td>
+                                    <div jsId="fieldOptions"
+                                        dojoType="dijit.TitlePane"
+                                        title="Field Type Options"
+                                        style="height: 330px;">                                        
+                                            <div id="fieldOptionsContent" style="text-align: left;height: 285px;"></div>
+                                    </div>                                    
+                                </td>
+                            </tr>
+                        </table>
+                        
+                        <button dojoType="dijit.form.Button" id="saveFieldDataButton" onclick="saveClassifyData();">
+                            Save  
+                        </button>
+                        
+                        <!-- button dojoType="dijit.form.Button" onclick="setDataTypes();">Set Data Types</button -->
+                        
+                    </div><!-- End Panel #5 -->
+<!-------------------------------------------------------------------------------------------------------------------------->                   
+<!-------------------------------------------------- PANEL #6 -------------------------------------------------------------->
+<!-------------------------------------------------------------------------------------------------------------------------->  
+                    <div jsId="step6Pane" id="step6Pane" dojoType="dijit.layout.ContentPane" 
+                         title="6. Annotate">
+                        <!-- Header Section -->
+                        <table width="100%" cellpadding="0" cellspacing="5">
+                            <tr>
+                                <td id="step6Pane_headerText" style="vertical-align:middle;" class="headerText"></td>
+                                <td id="step6Pane_project" style="width:400px;"></td>
+                                <td id="step6Pane_help" style="width:50px;text-align: right;"></td>
+                            </tr>
+                        </table>
+                        
+                        <table cellpadding="0" cellspacing="5" width="100%" align="center">
+                            <tr>
+                                <td id="fieldSummaryObjectGridContainer" style="width: 800px; height: 330px; border-right: dotted 1px #CCC; border-bottom: dotted 1px #CCC;"></td>
+                            </tr>
+                        </table>
+                        <button dojoType="dijit.form.Button" id="saveClassDataButton" onclick="saveClassData();">
+                            Save Field Data   
+                        </button>
+
+                    </div>
+<!-------------------------------------------------------------------------------------------------------------------------->                   
+<!-------------------------------------------------- PANEL #7 -------------------------------------------------------------->
+<!-------------------------------------------------------------------------------------------------------------------------->
+                    <div jsId="step7Pane" id="step7Pane" dojoType="dijit.layout.ContentPane" 
+                         title="7. Link">
+                        <!-- Header Section -->
+                        <table width="100%" cellpadding="0" cellspacing="5">
+                            <tr>
+                                <td id="step7Pane_headerText" style="vertical-align:middle;" class="headerText"></td>
+                                <td id="step7Pane_project" style="width:400px;"></td>
+                                <td id="step7Pane_help" style="width:50px;text-align: right;"></td>
+                            </tr>
+                        </table>
+                        
+                        <div id="testTreeDiv"></div>
+                        <table cellpadding="0" cellspacing="5" width="100%" align="center">
+			    <tr>
+				<td style="width: 385px;" class="borderDotted">
+				    <strong>Relationships</strong>
+				</td>
+				<td class="borderDotted">
+				    <strong>Sample Data</strong>
+				</td>
+			    </tr>
+                            <tr>
+                                <!-- td id="gridLinkObjectsContainer" style="width: 102px; height: 330px; border-right: dotted 1px #CCC; border-bottom: dotted 1px #CCC;">
+                                </td -->
+                                <td style="width: 385px;"  class="borderDotted">
+                                    <div id="relationshipsCell" style="width: 385px;height:300px;"></div>
+                                    <div class="buttonPane" style="width: 385px;">
+                                        <button dojoType="dijit.form.Button"
+                                                onclick="initAddRelationshipDialog('containment')">
+                                            Add Containment Link
+                                        </button>
+                                        <button dojoType="dijit.form.Button"
+                                                onclick="initAddRelationshipDialog('link')">
+                                            Add Custom Link
+                                        </button>
+                                        <button jsID="fieldLinksButton" dojoType="dijit.form.Button"
+                                                onclick="initAddRelationshipDialog('db')">
+                                            Add Field Link
+                                        </button>
+                                    </div>
+                                </td>
+                                <td class="borderDotted">
+                                    <div id="treeContainerCell"></div>
+                                    <div id="otherRelationshipsContainerCell" style="height: 300px;"></div>                                    
+                                </td>
+                            </tr>
+                        </table>
+                        
+                        <!-- Add New Project Dialog Box-->                        
+                        <div dojoType="dijit.Dialog" id="dialogAddRelationship" title="Add a Relationship">
+                            <table style="width: 600px;">
+                                <tr>
+                                    <th><label for="ddOrigin">1. Select the Origin</label></th>
+                                    <th><label for="ddRelationship">2. Select the Relationship</label></th>
+                                    <th><label for="ddTarget">3. Select the Target</label></th>
+                                </tr>
+                                <tr>
+                                    <td><input id="ddOrigin"></td>
+                                    <td><input id="ddRelationship"></td>
+                                    <td id="ddTargetCell"><input id="ddTarget"></td>
+                                </tr>
+                                <tr>
+                                    <td colspan="3">
+                                        <button dojoType="dijit.form.Button" onclick="addRelationship();">Add</button>
+                                        <button dojoType="dijit.form.Button" onclick="dijit.byId('dialogAddRelationship').hide()">Cancel</button> 
+                                    </td>
+                                </tr>
+                            </table>                            
+                        </div>
+
+                        <!-- Remove Relationship Dialog Box -->
+                        <div dojoType="dijit.Dialog" id="dialogRemoveRelationship" title="Remove Relationship From Dataset"
+                            execute="removeRelationship();">
+                            <div></div>
+                            <table>
+                                <caption id="removeRelationshipText">
+                                    Are you sure you want to remove this project and it's corresponding data from
+                                    the system?
+                                </caption>            
+                                <tr>
+                                    <td colspan="2">
+                                        <button dojoType="dijit.form.Button" type="submit">Remove</button>
+                                        <button dojoType="dijit.form.Button" onclick="dijit.byId('dialogRemoveRelationship').hide()">Cancel</button> 
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+<!-------------------------------------------------------------------------------------------------------------------------->                   
+<!-------------------------------------------------- PANEL #8 -------------------------------------------------------------->
+<!-------------------------------------------------------------------------------------------------------------------------->                       
+
+                    <div jsId="step8Pane" id="step8Pane" dojoType="dijit.layout.ContentPane" 
+                         title="8. Assign Properties">
+                    <!-- Header Section -->
+                        <table width="100%" cellpadding="0" cellspacing="5">
+                            <tr>
+                                <td id="step8Pane_headerText" style="vertical-align:middle;" class="headerText"></td>
+                                <td id="step8Pane_project" style="width:400px;"></td>
+                                <td id="step8Pane_help" style="width:50px;text-align: right;"></td>
+                            </tr>
+                        </table>
+                        
+                        Assign "property" fields to the correct location / object.
+                        
+                        <table cellpadding="0" cellspacing="5" width="100%">
+			    <tr>
+				<td class="borderDotted" style="width: 230px;"><strong>1. Select Properties</strong></td>
+				<td class="borderDotted" style="width: 230px;"><strong>2. Select Object</strong></td>
+				<td class="borderDotted"><strong>3. View Sample Results</strong></td>
+			    </tr>
+                            <tr>
+				<td class="borderDotted">
+				    <div id="gridPropertiesContainer" style="width: 225px; height: 330px;"></div>
+				</td>
+                                <td class="borderDotted">
+				    <div id="gridNonpropertiesContainer" style="width: 225px; height: 330px;"></div>
+				</td>
+                                <td>
+                                    <div id="propSampleRecordsContainer" style="text-align: left;height: 385px;"></div>
+                                </td>
+                            </tr>
+                        </table>
+
+                    </div>
+<!-------------------------------------------------------------------------------------------------------------------------->                   
+<!-------------------------------------------------- PANEL #9 -------------------------------------------------------------->
+<!-------------------------------------------------------------------------------------------------------------------------->  
+                    <div jsId="step9Pane" id="step9Pane" dojoType="dijit.layout.ContentPane" 
+                         title="9. Finalize">
+                        <!-- Header Section -->
+                        <table width="100%" cellpadding="0" cellspacing="5">
+                            <tr>
+                                <td id="step9Pane_headerText" style="vertical-align:middle;" class="headerText"></td>
+                                <td id="step9Pane_project" style="width:400px;"></td>
+                                <td id="step9Pane_help" style="width:50px;text-align: right;"></td>
+                            </tr>
+                        </table>
+			
+			<table cellpadding="0" cellspacing="5" width="100%" align="center">
+			    <tr>
+				<td style="width: 385px;" class="borderDotted">
+				    <strong>Transform Selected Table</strong>
+				</td>
+				<td class="borderDotted">
+				    <strong>Transformed Tables</strong>
+				</td>
+			    </tr>
+                            <tr>
+				<td style="width: 385px;" class="borderDotted">
+				    <div id="transformConfirm" style="height: 300px; overflow-y: auto;"></div>
+				    <div style="text-align: center;">
+					<button dojoType="dijit.form.Button" id="transformDataButton" onclick="transformData();">
+					    Transform Data
+					</button>
+                                        <button dojoType="dijit.form.Button" id="convertToXML" onclick="convertToXML();">
+					    Convert To XML
+					</button>
+                                        <div id="writeOutput"></div>
+				    </div>
+				</td>
+				<td class="borderDotted">
+				    <div id="transformedTablesDiv" style="width: 385px;height:300px;"></div>
+				</td>
+			    </tr>
+			    <tr>
+				<td colspan="2" class="borderDotted">
+				    <div dojoType="dijit.ProgressBar" style="width: 325px; margin-left: 250px"
+					 jsId="dataTransformProgress"
+					 id="dataTransformProgress"
+					 class="tundra">				    
+				    </div>
+				    <div style="text-align: center;" jsID="progressMessage" id="progressMessage"></div>
+				</td>
+			    </tr>
+			</table>
+                    
+                    </div><!-- END PANEL #9 -->
+<!-------------------------------------------------------------------------------------------------------------------------->                   
+<!-------------------------------------------------- PANEL #10 -------------------------------------------------------------->
+<!-------------------------------------------------------------------------------------------------------------------------->  
+		    <div jsId="step10Pane" id="step10Pane" dojoType="dijit.layout.ContentPane" 
+                         title="10. Review">
+
+                    <!-- Header Section -->
+                        <table width="100%" cellpadding="0" cellspacing="5">
+                            <tr>
+                                <td id="step10Pane_headerText" style="vertical-align:middle;" class="headerText"></td>
+                                <td id="step10Pane_project" style="width:400px;"></td>
+                                <td id="step10Pane_help" style="width:50px;text-align: right;"></td>
+                            </tr>
+                        </table>
+			
+			
+			<table width="98%" cellpadding="0" cellspacing="0">
+			    <tr>
+				<td style="width: 250px">
+				    <div id="treeContainerCellNew" style="height:380px;overflow:auto;width: 240px;border: solid 1px #CCC;">tree goes here!!!</div>    
+				</td>
+				<td id="editPane"></td>
+			    </tr>
+			</table>
+			
+			<div dojoType="dijit.Dialog" id="dialogEditContext" title="Edit a Descriptive Property">
+			    <style>
+				.fieldsetClass { border: solid 1px #999; width: 400px; padding:5px; }
+				.fieldsetClass legend { font-weight: bold; }
+			    </style>
+			    <div id="variableSpace">
+				<fieldset class="fieldsetClass">
+				    <legend>Update Variable</legend>
+				    <input type="text" id="varText" style="width:300px;" />
+				</fieldset>
+				<br />
+			    </div>
+			    <fieldset class="fieldsetClass">
+				<legend>Update Value</legend>
+				<textarea id="valText" style="width:400px;"></textarea>
+				<span id="allValuesSpace">
+				    <br />
+				    <input type="radio" name="updateAll" id="updateAllNo" checked />Update just this value<br />
+				    <input type="radio" name="updateAll" id="updateAllYes"  />Update all values				    
+				</span>
+				<span id="valCount"></span>
+			    </fieldset>
+			    <input type="hidden" id="propertyUUID" />
+			    <input type="hidden" id="objectUUID" />
+			    <input type="hidden" id="objectType" />
+			    <input type="hidden" id="updateType" />
+			    <input type="hidden" id="fieldName" />
+			    <input type="hidden" id="oldValText" />
+			    <br />
+			    <button dojoType="dijit.form.Button" onclick="updateContextItem()">Update</button>
+                            <button dojoType="dijit.form.Button" onclick="dijit.byId('dialogEditContext').hide()">Cancel</button> 
+			</div>
+			
+			
+		    </div><!-- END PANEL #10 -->
+                </div> <!-- end tabContainer div -->
+                <div class="buttonPane" style="width: 820px;">
+                    <button dojoType="dijit.form.Button" onclick="previous();"><< Previous</button>
+                    <button dojoType="dijit.form.Button" onclick="next();">Next >></button> 
+                </div>
+            </div> <!-- end alignment div -->
+            
+            
+        <div id="outputText"></div>
+	
+	<!-- div dojoType="dijit.layout.SplitContainer"
+		orientation="horizontal"
+		sizerWidth="7"
+		activeSizing="false"
+		style="border: 1px solid #bfbfbf; float: left; width: 400px; height: 300px;">
+	    <div dojoType="dijit.layout.ContentPane" sizeMin="20" sizeShare="20">
+	      this box has two horizontal panes
+	    </div>
+	    <div dojoType="dijit.layout.ContentPane" sizeMin="50" sizeShare="50">
+	      without active resizing, a smaller sizer, different starting sizes and minimum sizes
+	    </div>
+	  </div>
+	
+	<div dojoType="dijit.layout.AccordionContainer" duration="200"
+	    style="width: 300px; height: 300px;">
+	    <div dojoType="dijit.layout.AccordionPane" selected="true" title="Pane 1" style="overflow:auto;" onhide="hidePane();" onshow="showPane();">
+		<p >Nunc consequat nisi vitae quam. Suspendisse sed nunc. Proin ...</p >
+	    </div>
+	    <div dojoType="dijit.layout.AccordionPane" title="Pane 2" style="overflow:auto;" onhide="hidePane();" onshow="showPane();">
+		blah blah!
+	    </div>
+   
+	    <div dojoType="dijit.layout.AccordionPane" title="Pane 3" style="overflow:auto;" onhide="hidePane();" onshow="showPane();">
+		More content
+		<ul>
+		    <li>One</li>
+		    <li>Two</li>
+		    <li>Three</li>
+		</ul>
+	    </div>
+	</div -->
+
+    </body>    
+</html>

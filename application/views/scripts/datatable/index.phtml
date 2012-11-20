@@ -1,0 +1,113 @@
+<html>
+    <head>
+        <title><?php echo $this->title; ?></title>
+        <link id="themeStyles" rel="stylesheet" href="/public/scripts/dojoroot/dijit/themes/tundra/tundra.css">
+        <style type="text/css">
+            @import "/public/scripts/dojoroot/dojo/resources/dojo.css";
+            @import "/public/scripts/dojoroot/dojox/grid/resources/tundraGrid.css";
+            @import "/public/scripts/dojoroot/dojox/layout/resources/FloatingPane.css";
+            @import "/public/styles/importer.css";         
+            @import "/public/styles/navigation.css";               
+        </style>        
+        <script type="text/javascript" src="/public/scripts/json2.js"></script>
+        <script type="text/javascript" src="/public/scripts/utils.js"></script>
+        <script type="text/javascript" src="/public/scripts/dojoroot/dojo/dojo.js" djConfig="parseOnLoad: true"></script>
+        <script type="text/javascript" src="/public/scripts/prototype-1.6.0.2.js"></script>
+        
+        <!-- custom application-level script files -->
+        <script type="text/javascript" src="/public/scripts/application/importer/wizard.js"></script>
+        <script type="text/javascript" src="/public/scripts/application/browserDetect.js"></script>
+        <script type="text/javascript" src="/public/scripts/application/importer/utils.js"></script>
+        <script type="text/javascript" src="/public/scripts/application/importer/navigation.js"></script>
+        <script type="text/javascript" src="/public/scripts/application/importer/dataTables.js"></script>  
+        
+        <script type="text/javascript">        
+            dojo.require("dojo.parser");
+            dojo.require("dojo.data.ItemFileWriteStore");
+            dojo.require("dojox.grid.DataGrid");
+            dojo.require("dojox.grid.cells");
+            dojo.require("dijit.Dialog");
+            dojo.require("dijit.form.TextBox");
+            dojo.require("dijit.form.Button");
+            dojo.require("dojox.layout.FloatingPane");
+            
+            //added to make the dropdown list work:
+            dojo.require("dijit.form.FilteringSelect");
+            dojo.require("dojox.form.DropDownSelect");
+            
+            <?php echo $this->state; ?>
+                       
+            //include all of the functions that need to be called on startup:
+            dojo.addOnLoad(function()
+            {
+                displayState();     //initialize the active project window
+                //displayWizardHeader("SELECT / UPDATE LICENSE");
+                //wizardInitData();
+                initDataUploadTab();
+                //hide initialization HTML until importer has completely loaded:
+                dojo.byId('loaderInner').innerHTML += " done.";
+                setTimeout(function hideLoader(){
+                        var loader = dojo.byId('loader'); 
+                        dojo.fadeOut({ node: loader, duration:500,
+                                onEnd: function(){ 
+                                        loader.style.display = "none"; 
+                                }
+                        }).play();
+                }, 250);
+            });
+        </script>
+    
+    </head>
+    <body class="tundra">
+        <div id="loader"><div id="loaderInner">Loading Importer ... </div></div>
+        <br />  
+        
+        <div>
+            Name: <strong><span id="spanUserName"></span></strong><br />
+            Project Selected: <strong><span id="spanProjectSelected"></span></strong> 
+        </div>
+        <table class="mainTable" align="center">
+        <tr>
+            <td colspan="2" class="headerCell">
+                <?php echo $this->header; ?>
+                <div id="errorMessage"></div>
+            </td>
+        </tr>
+        <tr>
+            <td class="navCell">
+                <?php echo $this->sidebar; ?>
+            </td>
+            <td class="contentCell" id="contentCell">
+                <?php echo $this->partial("wizardHeader.phtml") ?>
+                
+                <div style="overflow: auto; height: 90%;text-align: left;" id="editProjectContainer">
+                    <table>
+                        <tr>
+                            <td>
+                                <span class="circleNumber">1</span>
+                                <span class="instructionsShort"><label for="ddDataTable">Select unprocesed table:</label></span>
+                            </td>                      
+                            <td><input id="ddDataTable"></input></td>
+                            <td style="padding-left: 10px;">
+                                <span class="instructionsShort"> or </span>
+                                <span class="circleNumber">2</span>
+                                <a href="javascript:showUploadForm()">import new table</a>
+                            </td>
+                        </tr>
+                    </table>
+                    <div style="height: 300px;text-align: left;" id="editDataGridContainer"></div>
+                </div>
+                <iframe id="ifrPhoto" onload="" scrolling="no" frameborder="0"
+                        style="text-align:center;vertical-align:middle;border-style:none;margin:0px;width:90%;height:200px"></iframe>
+                          
+                
+            </td>
+        </tr>
+        <tr>
+            <td colspan="2" class="footerCell">
+                <?php echo $this->footer; ?>
+            </td>
+        </tr>
+    </table>
+    </body>    
+</html>

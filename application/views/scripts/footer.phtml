@@ -1,0 +1,10 @@
+<div align="center">
+    <?php if(isset($this->navigation)) { ?>
+        <?php if($this->navigation->currentPageID > 0) { ?>
+            <button dojoType="dijit.form.Button" onclick="previous(<?php echo $this->navigation->currentPageID; ?>);"><< Previous</button>
+        <?php } ?>
+        <?php if($this->navigation->currentPageID < 11) { ?>
+            <button dojoType="dijit.form.Button" onclick="advance(<?php echo $this->navigation->currentPageID; ?>);">Next >></button>
+        <?php } ?>
+    <?php } else { echo '&nbsp;'; } ?>
+</div>

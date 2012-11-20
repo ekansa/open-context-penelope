@@ -1,0 +1,180 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN">
+    <html lang="en">
+    <head>
+        <title><?php echo $this->title; ?></title>
+        <link id="themeStyles" rel="stylesheet" href="/public/scripts/dojoroot/dijit/themes/tundra/tundra.css">
+            <link id="themeStyles1" rel="stylesheet" href="/public/scripts/dojoroot/dijit/themes/tundra/tundra.css">
+        <style type="text/css">
+            @import "/public/scripts/dojoroot/dojo/resources/dojo.css";
+            @import "/public/scripts/dojoroot/dojox/grid/_grid/tundraGrid.css";
+            
+            table td { vertical-align: top; }
+            table caption { font-weight: bold; text-align: center; border-bottom: solid 1px #999; background-color: #CCC; }
+            
+            .frame { background-color: #EEE; border: solid 1px #999; height: 100%; }
+            .greenFrame { background-color: #87ea7a; border: solid 1px #127505; height: 100%; }
+            .licenseHeader { font-weight: bold; text-align: center; border-bottom: solid 1px #127505; padding: 3px; margin-bottom:3px; }
+            .licenseBody { padding: 3px; }
+        </style> 
+        <script type="text/javascript" src="/public/scripts/json2.js"></script>
+        <script type="text/javascript" src="/public/scripts/dojoroot/dojo/dojo.js" djConfig="parseOnLoad: true"></script>
+        <script type="text/javascript" src="/public/scripts/dojoroot/dojox/grid/Grid.js"></script>        
+        <!--  "Prototype" script is for AJAX requests -->
+        <script type="text/javascript" src="/public/scripts/prototype-1.6.0.2.js"></script>
+        <script type="text/javascript">
+            // scan page for widgets and instantiate them
+	    dojo.require("dojo.parser");
+            dojo.require("dijit.form.Button");
+            dojo.require("dijit.form.RadioButton");
+            dojo.require("dijit.Tooltip");
+            
+            function initLicense()
+            {
+                queryForLicense(1, 'Y');
+                $('license').style.visibility = "visible";
+                $('license').style.height = "auto";
+            }
+            
+            function getLicense()
+            {
+                //determine whether or not commercial:
+                var isCommercial = dijit.byId('cc_com_y').checked ? 1 : 0;
+
+                //determine level of reproduction:
+                var reproductionLevel = 'Y';
+                if(dijit.byId('cc_dr_sa').checked)
+                    reproductionLevel = 'S';
+                else if(dijit.byId('cc_dr_n').checked)
+                    reproductionLevel = 'N';   
+                
+                queryForLicense(isCommercial, reproductionLevel);
+            }
+            
+            function queryForLicense(isCommercial, reproductionLevel)
+            {
+                //send query to server to get licence:
+                var myAjax = new Ajax.Request('licensing/get-license',
+                    { method: 'get',
+                      parameters: {isCommercial: isCommercial, reproductionLevel: reproductionLevel },
+                      onComplete: displayLicense}
+                );  
+            }
+            
+            function getLicense()
+            {
+                //determine whether or not commercial:
+                var isCommercial = dijit.byId('cc_com_y').checked ? 1 : 0;
+
+                //determine level of reproduction:
+                var reproductionLevel = 'Y';
+                if(dijit.byId('cc_dr_sa').checked)
+                    reproductionLevel = 'S';
+                else if(dijit.byId('cc_dr_n').checked)
+                    reproductionLevel = 'N';   
+                
+                //send query to server to get licence:
+                var myAjax = new Ajax.Request('licensing/get-license',
+                    { method: 'get',
+                      parameters: {isCommercial: isCommercial, reproductionLevel: reproductionLevel },
+                      onComplete: displayLicense}
+                );
+            }
+            
+            function displayLicense(response)
+            {
+                //$('selectedLicense').innerHTML = response.responseText;
+                var license = dojo.fromJson(response.responseText);
+                /*$('license').style.visibility = "visible";
+                $('license').style.height = "auto";
+                $('initText').style.visibility = "hidden";
+                $('initText').style.height = "1px"; */
+                $('ccImg').src = "/public/images/creativeCommons/" + license.imageFileName;
+                $('name').innerHTML = license.name;
+                $('description').innerHTML = license.description;
+                $('details').href = license.licenseURL;
+                $('legal').href = license.legalURL;
+            }
+            
+        </script>
+    </head>
+    <body class="tundra" onload="initLicense();">
+
+        <h2>Instructions</h2>
+        Open Context requires all content it contains to carry a <a href="http://creativecommons.org/" target="_blank">
+        Creative Commons</a> license. These copyright licenses allow legal sharing and
+        re-use of content in Open Context and beyond. All Creative Commons licenses
+        require attribution. Future copies and works based on your content must
+        clearly attribute and cite you for your contribution. Please select a license
+        for your uploaded file. (The license will also apply to media identified in this table.)
+                    
+        <table width="80%" align="center" cellspacing="5">
+            
+            <tr>
+                <td style="width:50%;" class="frame">
+                    <table border="0">
+                        <caption>Select a Creative Commons License</caption>
+                        <tr>
+                            <td colspan="2">Do you want to permit commercial uses?</td>
+                        </tr>
+                        <tr>
+                            <td><input id="cc_com_y" name="cccom" type="radio" value="yes" dojoType="dijit.form.RadioButton" checked onclick="getLicense();" /></td>
+                            <td><strong>Yes</strong> (<em>Recommended</em>)<br/>
+                                <span class="tinyText">
+                                    <em>This choice reduces barriers to future publication, making
+                                    wider citation more likely, and increasing the impact of your contribution</em>
+                                </span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><input id="cc_com_n" name="cccom" type="radio" value="no" dojoType="dijit.form.RadioButton" onclick="getLicense();" /></td>
+                            <td><strong>No</strong></td>
+                        </tr>
+                        <tr>
+                            <td colspan="2">&nbsp;</td>
+                        </tr>
+                        <tr>
+                            <td colspan="2">
+                                Do you want to allow others to create and share modified/adapted versions of your content?
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><input id="cc_dr_y" name="ccderivs" type="radio" value="yes" dojoType="dijit.form.RadioButton" checked onclick="getLicense();" /></td>
+                            <td><strong>Yes</strong> (<em>Recommended</em>)</td>
+                        </tr>
+                        <tr>
+                            <td width="30"><input id="cc_dr_sa" name="ccderivs" type="radio" value="sa" dojoType="dijit.form.RadioButton" onclick="getLicense();" /></td>
+                            <td>
+                                <strong>Yes, but only if people share-alike</strong><br />
+                                <span class="tinyText"><em>Future works must also carry this same license</em></span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td width="30"><input id="cc_dr_n" name="ccderivs" type="radio" value="no" dojoType="dijit.form.RadioButton" onclick="getLicense();" /></td>
+                            <td>
+                                <strong>No</strong><br/>
+                                <span class="tinyText"><em>Allow only exact copies of my work to be shared</em></span>
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+                <td id="selectedLicense" class="greenFrame">
+                    <div id="license" style="visibility: hidden;height:1px;">
+                        <div class="licenseHeader">Selected License</div>
+                        <div class="licenseBody">
+                            You chose to license your work with a:<br />
+                            <img id="ccImg" align="bottom" /><strong>
+                            <span id="name" style="font-size:1.3em;"></span></strong><br />
+                            <a id="details" href="" target="_blank" style="margin-bottom: 3px;">License Deed</a> |
+                            <a id="legal" href="" target="_blank" style="margin-bottom: 3px;">Legal Code</a><br /> 
+                            <span id="description"></span>
+                            <span dojoType="dijit.Tooltip" connectId="details" style="display:none;">View the description of this license on the Creative Commons website</span>
+                            <span dojoType="dijit.Tooltip" connectId="legal"" style="display:none;">View the legal explanation of this license on the Creative Commons website</span>
+                        </div>
+                    </div>
+                    <!-- div id="initText" style="text-align: center;"><br />Select Your License</div -->
+                </td>
+            </tr>
+        </table>
+
+    </body>
+</html>

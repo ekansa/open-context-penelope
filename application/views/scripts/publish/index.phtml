@@ -1,0 +1,173 @@
+<?php
+
+$host = $this->host;
+$publishURI = $this->publishURI;
+
+
+//$host = "http://penelope.opencontext.org/";
+
+$personUUID = "AE915DED-1050-4D3B-7FA0-42C7409E1F08";
+$propUUID = "895CFE13-0587-4816-FF30-9A21AD9CE256";
+$rootSpace = "5D6B6454-017A-43C1-9F15-6DFE36C3558F";
+$itemSpace = "57589F77-5785-458A-401E-40CDBEE28422";
+
+$tabRows = $this->tableRows;
+$tabRows[] = array("source_id"=>'manual', "description" =>'Items manually created');
+
+
+$tabOut = "<table>";
+$i=0;
+$jsOut = "";
+foreach($tabRows as $actRow){
+    $tabOut .= '<tr>
+                    <td style="padding:10px;"><a href="javascript:addTab(\''.$actRow["source_id"].'\')">Add</a></td>
+                    <td style="padding:10px;"><a href="javascript:removeTab(\''.$actRow["source_id"].'\')">Remove</a></td>
+                    <td style="padding:10px;">'.$actRow["source_id"].'</td>
+                    <td style="padding:10px;">'.$actRow["description"].'</td></tr>';
+    if($i>0){
+        $jsOut .= ", ";
+    }
+    $jsOut .= "'".$actRow["source_id"]."'";
+    $i++;
+}
+$tabOut .= "</table>";
+
+?>
+
+<html>
+    <head>
+        <title>Publish <?php echo $this->projectName; ?> Data</title>
+        <link href="/public/styles/default_banner.css" rel="stylesheet" type="text/css" />
+        <link id="themeStyles" rel="stylesheet" href="/public/scripts/dojoroot/dijit/themes/tundra/tundra.css">
+        <style type="text/css">
+            @import "/public/scripts/dojoroot/dojo/resources/dojo.css";
+            @import "/public/scripts/dojoroot/dojox/grid/resources/tundraGrid.css";
+            @import "/public/scripts/dojoroot/dojox/layout/resources/FloatingPane.css";
+            @import "/public/scripts/dojoroot/dijit/themes/tundra/ProgressBar.css";
+            @import "/public/styles/importer.css";
+            @import "/public/styles/opencontext_style.css"; 
+        </style>
+        <script type="text/javascript" src="/public/scripts/json2.js"></script>
+        <script type="text/javascript" src="/public/scripts/utils.js"></script>
+        <script type="text/javascript" src="/public/scripts/dojoroot/dojo/dojo.js" djConfig="parseOnLoad: true"></script>
+        <script type="text/javascript" src="/public/scripts/prototype-1.6.0.2.js"></script>
+        
+        <!-- custom application-level script files -->
+        <script type="text/javascript" src="/public/scripts/application/publish/publishProject.js"></script>
+           
+        
+        <script type="text/javascript">        
+            dojo.require("dojo.parser");
+
+            dojo.require("dijit.form.CheckBox");
+            dojo.require("dijit.form.ComboBox");
+            dojo.require("dijit.form.FilteringSelect");
+            dojo.require("dojox.form.DropDownSelect");
+
+            dojo.require("dijit.layout.ContentPane");
+	    dojo.require("dijit.layout.TabContainer");
+            dojo.require("dojo.data.ItemFileWriteStore");
+            dojo.require("dojox.grid.DataGrid");
+            dojo.require("dojox.grid.cells");
+            //for the dialog box:
+            dojo.require("dijit.Dialog");
+            dojo.require("dijit.form.TextBox");
+            dojo.require("dijit.form.TimeTextBox");
+            dojo.require("dijit.form.Button");
+            dojo.require("dijit.form.DateTextBox");
+            dojo.require("dijit.form.Textarea");
+
+            dojo.require("dojox.grid.cells.dijit");
+            dojo.require("dojox.layout.FloatingPane");
+            dojo.require("dijit.Tooltip");
+            dojo.require("dijit.TitlePane");
+            
+            dojo.require("dijit.Tree");
+            dojo.require("dijit.ProgressBar");
+  
+            dojo.require("dojo.io.iframe");
+            dojo.require("dojox.data.QueryReadStore");
+	    
+	    dojo.require("dijit.layout.AccordionContainer");
+	    dojo.require("dijit.layout.SplitContainer");
+	    
+	    dojo.require("dojo.dnd.Container");
+	    dojo.require("dojo.dnd.Manager");
+	    dojo.require("dojo.dnd.Source");
+        </script>
+	
+        
+    
+    </head>
+    <body class="tundra">
+        <div id="oc_logo">
+	    <a href="<?php echo $host; ?>"><img alt="Open Context Logo" src="/public/images/general/oc_logo.jpg" border="0" ></img></a>
+	</div>
+	<div id="oc_tagline">
+	    <img alt="Open Context Tagline" src="/public/images/general/oc_tagline.jpg" ></img>
+	</div>
+	<div id="oc_beta">
+	    <img alt="Beta Stamp" src="/public/images/general/oc_betastamp.jpg" ></img>
+	</div>
+	<div class="bodyText">
+        <input id='projID' type='hidden' value='<?php echo $this->projectUUID; ?>' />
+        <input id='projName' type='hidden' value='<?php echo $this->projectName; ?>' />
+        <input id='host' type='hidden' value='<?php echo $host; ?>' />
+	<br/>
+	<br/>
+	<br/>
+	<br/>
+	<br/>
+	<br/>
+	<div style="margin:10px;">
+	<h2>Publish <?php echo $this->projectName; ?> Data</h2>
+	<p class="bodyText">Destination URI: <input id='pubURI' size='100' type='text' value='<?php echo $publishURI; ?>' /></p>
+        <br/>
+	<p>XML doc URI prefix: <input id='prefixURI' size='100' type='text' value='' /></p>
+        <br/>
+	<p>XML doc URI suffix: <input id='suffixURI' size='10' type='text' value='' /></p>
+        <br/>
+	<table>
+	<tr><td style="vertical-align:middle; padding:5px;">Do an Update?</td>
+	<td style="vertical-align:middle; padding:5px;">NO<input id='upDateF' type="radio" checked="checked" name="upDate" value="false" /> YES <input id='upDateT' type="radio" name="upDate" value="true" /></td>
+	</tr>
+	<tr><td style="vertical-align:middle; padding:5px;">Use the Limit Table to limit publication?</td>
+	<td style="vertical-align:middle; padding:5px;">Check if yes: <input id='limitList' type="checkbox"  name="limitList" value="limit" /></td>
+	</tr>
+	</table>
+	<br/>
+		<?php echo $tabOut; ?>
+	<br/>
+        <p class='bodyText'>Start project publishing <a href='javascript:publishProj()'>GO!</a></p>
+        <br/>
+        <br/>
+	<p class='bodyText'><a href='<?php echo $host."/publish/publishdoc?projectUUID=".$this->projectUUID."&itemUUID=".$this->projectUUID."&itemType=proj"; ?>'>Publish Project Description</a></p>
+	<p class='bodyText'><a href='<?php echo $host."/publish/publishdoc?projectUUID=".$this->projectUUID."&itemUUID=".$this->projectUUID."&itemType=proj&pubURI=".urlencode("http://opencontext.org/publish/itempublish"); ?>'>Publish Project Description on Open Context</a></p>
+	<br/>
+	</div>
+        <div id='actArea' style="width:650px;">
+            <div id='contUpdate'></div>
+            <div id='getListURL'></div>
+            <div id='getPubItemURL'></div>
+            <div id='nextItem'></div>
+            <div id='lastItem'></div>
+            <table>
+            <tr><td>Persons<br/><div id='persTotal'></div></td><td style="width:550px;"><div id='persZone' style="width:1px; margin-left:5px; height: 26px; text-align:center; padding-top:12px; background-color: #DCDCDC; ">0%</div></td></tr>
+            <tr><td>Locations / Objects<br/><div id='spaceTotal'></div></td><td style="width:550px;"><div id='spaceZone' style="width:1px; margin-left:5px; height: 26px; text-align:center; padding-top:12px; background-color: #DCDCDC; ">0%</div></td></tr>
+            <tr><td>Properties<br/><div id='propTotal'></div></td><td style="width:550px;"><div id='propZone' style="width:1px; margin-left:5px; height: 26px; text-align:center; padding-top:12px; background-color: #DCDCDC; ">0%</div></td></tr>
+            <tr><td>Media<br/><div id='mediaTotal'></div></td><td style="width:550px;"><div id='mediaZone' style="width:1px; margin-left:5px; height: 26px; text-align:center; padding-top:12px; background-color: #DCDCDC; ">0%</div></td></tr>
+	    <tr><td>Documents<br/><div id='docTotal'></div></td><td style="width:550px;"><div id='docZone' style="width:1px; margin-left:5px; height: 26px; text-align:center; padding-top:12px; background-color: #DCDCDC; ">0%</div></td></tr>
+	    <tr><td>Updated Spatial<br/><div id='upSpaceTotal'></div></td><td style="width:550px;"><div id='upSpaceZone' style="width:1px; margin-left:5px; height: 26px; text-align:center; padding-top:12px; background-color: #DCDCDC; ">0%</div></td></tr>
+            <tr><td>Total<br/><div id='allTotal'></div></td><td style="width:550px;"><div id='totalZone' style="width:1px; margin-left:5px; height: 26px; text-align:center; padding-top:12px; background-color: #DCDCDC; ">0%</div></td></tr>
+            </table>
+        </div>
+        <!--
+	<p>Publish this project. <a href='publishdoc?projectUUID=<?php echo $this->projectUUID; ?>&itemUUID=<?php echo $this->projectUUID; ?>&type=proj'>CLICK HERE</a></p>
+	<p>Publish this person. <a href='publishdoc?projectUUID=<?php echo $this->projectUUID; ?>&itemUUID=<?php echo $personUUID; ?>&type=person'>CLICK HERE</a></p>
+	<p>Publish this property. <a href='publishdoc?projectUUID=<?php echo $this->projectUUID; ?>&itemUUID=<?php echo $propUUID; ?>&type=prop'>CLICK HERE</a></p>
+	<p>Publish this root item. <a href='publishdoc?projectUUID=<?php echo $this->projectUUID; ?>&itemUUID=<?php echo $rootSpace; ?>&type=space'>CLICK HERE</a></p>
+	<p>Publish this spatial item. <a href='publishdoc?projectUUID=<?php echo $this->projectUUID; ?>&itemUUID=<?php echo $itemSpace; ?>&type=space'>CLICK HERE</a></p>
+        -->
+    </div>
+    </body>  
+</html>
