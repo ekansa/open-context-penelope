@@ -27,6 +27,7 @@ class LinkedDataController extends Zend_Controller_Action
         Zend_Loader::loadClass('Table_Resource');
         Zend_Loader::loadClass('Table_LinkRelationship');
         Zend_Loader::loadClass('Table_User');
+		  Zend_Loader::loadClass('LinkedData_LinkVar');
     }
     
      //make sure all connections are UTF-8 OK
@@ -52,47 +53,19 @@ class LinkedDataController extends Zend_Controller_Action
         //$this->_helper->viewRenderer->setNoRender();
         $db = Zend_Registry::get('db');
         $this->setUTFconnection($db);
-	
-		  $id = $_REQUEST['varUUID'];
+		  
+		  $linkVarObj = new LinkedData_LinkVar;
+		  $varUUID = $_REQUEST['varUUID'];
 		  if(isset($_REQUEST['sort'])){
-				$sort = " val_tab.val_text, count(observe.subject_uuid) DESC ;";
+				$linkVarObj->alphaSort = $_REQUEST['sort'];
 		  }
-		  else{
-				$sort = " count(observe.subject_uuid) DESC, val_tab.val_text DESC ;";
+		  if(isset($_REQUEST['showPropCounts'])){
+				$linkVarObj->showPropCounts = $_REQUEST['showPropCounts'];
 		  }
 		  
-		  $this->view->varUUID = $id;
-		  
-		  $sql = "SELECT var_tab.project_id, var_tab.var_label, linked_data.linkedLabel, linked_data.linkedURI
-		  FROM var_tab
-		  LEFT JOIN linked_data ON var_tab.variable_uuid = linked_data.itemUUID
-		  WHERE var_tab.variable_uuid = '$id'
-		  ";
-		  
-		  $resultA =  $db->fetchAll($sql);
-		  $this->view->varURI = $resultA[0]["linkedURI"];
-		  $this->view->projUUID = $resultA[0]["project_id"];
-		  $this->view->varLinkLabel = $resultA[0]["linkedLabel"];
-		  
-				 $sql = "SELECT var_tab.var_label,
-				  val_tab.val_text,
-				  properties.property_uuid,
-				  count(observe.subject_uuid) as subCount,
-				  properties.project_id,
-				  linked_data.linkedLabel,
-				  linked_data.linkedURI
-		  FROM properties
-		  JOIN val_tab ON val_tab.value_uuid = properties.value_uuid
-		  JOIN var_tab ON var_tab.variable_uuid = properties.variable_uuid
-		  JOIN observe ON properties.property_uuid = observe.property_uuid
-		  LEFT JOIN linked_data ON properties.property_uuid = linked_data.itemUUID
-		  WHERE properties.variable_uuid = '$id'
-		  GROUP BY observe.property_uuid
-		  ORDER BY $sort
-				 ";
-		  
-		  $results =  $db->fetchAll($sql);
-		  $this->view->data = $results ;
+		  $this->view->varUUID = $varUUID;
+		  $linkVarObj->getProperties($varUUID);
+		  $this->view->linkVarObj = $linkVarObj;
     }
     
     function varLinkAction(){
@@ -139,8 +112,8 @@ class LinkedDataController extends Zend_Controller_Action
 		  $unit = false;
 		  //get standard measurement units
 		  if($linkedType != "type" && $linkedAbrev != false){
-			  Zend_Loader::loadClass('linkedData_units');
-			  $unitsObj = new linkedData_units;
+			  Zend_Loader::loadClass('LinkedData_Units');
+			  $unitsObj = new LinkedData_Units;
 			  $unit = $unitsObj->get_unit_from_abrev($linkedAbrev);
 			  if($unit != false){
 				  $linkedType = "unit";
@@ -151,8 +124,8 @@ class LinkedDataController extends Zend_Controller_Action
 		  
 		  if(!$unit){
 			  //search based on label (user can enter 'mm' and assign to millimeters)
-			  Zend_Loader::loadClass('linkedData_units');
-			  $unitsObj = new linkedData_units;
+			  Zend_Loader::loadClass('LinkedData_Units');
+			  $unitsObj = new LinkedData_Units;
 			  $unit = $unitsObj->get_unit_from_abrev($linkedLabel);
 			  if($unit != false){
 				  $linkedType = "unit";
@@ -186,7 +159,7 @@ class LinkedDataController extends Zend_Controller_Action
 		  }
 		  
 		  if($dir){
-			  $headerLink = "var?varUUID=".$varUUID;
+			  $headerLink = "var?varUUID=".$varUUID."&showPropCounts=".$_REQUEST['showPropCounts'];
 			  header("Location: $headerLink");
 		  }
 		  else{
@@ -227,7 +200,7 @@ class LinkedDataController extends Zend_Controller_Action
 		  $db->insert("linked_data", $data);
 		  $this->link_label_Update($linkedLabel, $linkURI, $projectUUID, $db);
 		  
-		  $headerLink = "var?varUUID=".$varUUID;
+		  $headerLink = "var?varUUID=".$varUUID."&showPropCounts=".$_REQUEST['showPropCounts'];
 		  header("Location: $headerLink");
     }
     
@@ -326,23 +299,31 @@ class LinkedDataController extends Zend_Controller_Action
 	
     }
 	 
-	 
+	 //get british museum classification / typology term URIs
 	 function bmAction(){
 		  $this->_helper->viewRenderer->setNoRender();
 		  
 		  if(isset($_REQUEST["q"])){
-				$keyword = $_REQUEST["q"];
+				$rawMatch = $_REQUEST["q"];
 		  }
 		  else{
-				$keyword = "spindle whorl";
+				$rawMatch = "spindle whorl";
 		  }
 		  
-		  Zend_Loader::loadClass('linkedData_BritishMuseum');
-		  Zend_Loader::loadClass('linkedData_ApproximateSearch');
+		  if(strstr($rawMatch, "::")){
+				$matchEx = explode("::", $rawMatch);
+				$keyword = $matchEx[count($matchEx) - 1];
+		  }
+		  else{
+				$keyword = $rawMatch;
+		  }
+		  
+		  Zend_Loader::loadClass('LinkedData_BritishMuseum');
+		  Zend_Loader::loadClass('LinkedData_ApproximateSearch');
 		  Zend_Loader::loadClass('Zend_Cache');
 		  Zend_Loader::loadClass('Zend_Json');
 		  
-		  $BMobj = new linkedData_BritishMuseum;
+		  $BMobj = new LinkedData_BritishMuseum;
 		  $BMobj->getItemIDsByKeyword($keyword);
 		  $BMobj->getTypologyThesaurusLD();
 		  
@@ -358,6 +339,81 @@ class LinkedDataController extends Zend_Controller_Action
 		  
 	 }
 	 
+	 
+	 //get british museum material term URIs
+	 function bmMaterialAction(){
+		  $this->_helper->viewRenderer->setNoRender();
+		  
+		  if(isset($_REQUEST["q"])){
+				$rawMatch = $_REQUEST["q"];
+		  }
+		  else{
+				$rawMatch = "silver";
+		  }
+		  
+		  if(strstr($rawMatch, "::")){
+				$matchEx = explode("::", $rawMatch);
+				$keyword = $matchEx[count($matchEx) - 1];
+		  }
+		  else{
+				$keyword = $rawMatch;
+		  }
+		  
+		  Zend_Loader::loadClass('LinkedData_BritishMuseum');
+		  Zend_Loader::loadClass('LinkedData_ApproximateSearch');
+		  Zend_Loader::loadClass('Zend_Cache');
+		  Zend_Loader::loadClass('Zend_Json');
+		  
+		  $BMobj = new LinkedData_BritishMuseum;
+		  $BMobj->getItemIDsByKeyword($keyword);
+		  $BMobj->getMaterialsThesaurusLD();
+		  
+		  $output = array("colExampleURI" => $BMobj->colExampleURI,
+								"LDcolExampleURI" => $BMobj->LDcolExampleURI,
+								"LDthesaurusURI" => $BMobj->LDthesaurusURI,
+								"LDthesaurusLabel" => $BMobj->LDthesaurusLabel,
+								"results" => $BMobj->jsonObj,
+								"sparql" => $BMobj->sparql
+								);
+		  header('Content-Type: application/json; charset=utf8');
+		  echo Zend_Json::encode($output);
+		  
+	 }
+	 
+	 
+	 
+	 function bmLinkTypesAction(){
+		  $this->_helper->viewRenderer->setNoRender();
+		  
+		  Zend_Loader::loadClass('LinkedData_BritishMuseum');
+		  Zend_Loader::loadClass('LinkedData_ApproximateSearch');
+		  Zend_Loader::loadClass('Zend_Cache');
+		  Zend_Loader::loadClass('Zend_Json');
+		  
+		  $linkVarObj = new LinkedData_LinkVar;
+		  $varUUID = $_REQUEST['varUUID'];
+		  $linkVarObj->showPropCounts = false;
+		  $linkVarObj->getProperties($varUUID);
+		  $linkVarObj->BM_link_types();
+		  echo "Done, view results <a href='var?varUUID=".$varUUID."'>[HERE]</a>";
+	 }
+	 
+	 
+	 function bmLinkMaterialsAction(){
+		  $this->_helper->viewRenderer->setNoRender();
+		  
+		  Zend_Loader::loadClass('LinkedData_BritishMuseum');
+		  Zend_Loader::loadClass('LinkedData_ApproximateSearch');
+		  Zend_Loader::loadClass('Zend_Cache');
+		  Zend_Loader::loadClass('Zend_Json');
+		  
+		  $linkVarObj = new LinkedData_LinkVar;
+		  $varUUID = $_REQUEST['varUUID'];
+		  $linkVarObj->showPropCounts = false;
+		  $linkVarObj->getProperties($varUUID);
+		  $linkVarObj->BM_link_materials();
+		  echo "Done, view results <a href='var?varUUID=".$varUUID."'>[HERE]</a>";
+	 }
 	 
     
     

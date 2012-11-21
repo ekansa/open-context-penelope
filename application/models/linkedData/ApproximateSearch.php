@@ -36,7 +36,7 @@
 // candidates and then applies a slower character-by-character
 // search (search_short()) against them.
 
-class linkedData_ApproximateSearch
+class LinkedData_ApproximateSearch
 {
     // Searches for $patt, allowing at most $k errors from $text.
     //

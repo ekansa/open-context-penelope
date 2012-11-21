@@ -1,7 +1,8 @@
 <?php
-        
-    $data = $this->data;
-    $varLabel = $data[0]["var_label"];
+    
+    $linkVarObj = $this->linkVarObj;    
+    $data = $linkVarObj->propData;
+    $varLabel = $linkVarObj->varLabel;
     
 ?>
 
@@ -17,14 +18,15 @@
         
         <h2>Add Linked Data</h2>
         <form action="var-link" method="post" >
-            <input type="hidden" name="varUUID" value="<?php echo $this->varUUID; ?>" />
-            <input type="hidden" name="projectUUID" value="<?php echo $this->projUUID; ?>" />
+            <input type="hidden" name="varUUID" value="<?php echo $linkVarObj->varUUID; ?>" />
+            <input type="hidden" name="projectUUID" value="<?php echo $linkVarObj->projUUID; ?>" />
             <p>Add URI to Variable (for classification vocabularies):
-                <input size="60" name="uri" type="text" value="<?php echo $this->varURI; ?>" />, Label:
-                <input size="20" name="linkedLabel" type="text" value="<?php echo $this->varLinkLabel; ?>" />
+                <input size="60" name="uri" type="text" value="<?php echo $linkVarObj->varLinkURI; ?>" />, Label:
+                <input size="20" name="linkedLabel" type="text" value="<?php echo $linkVarObj->varLinkLabel; ?>" />
                 <input name="submit" type="submit" />
             </p>
         </form>
+        
         
         <table>
             <tr>
@@ -41,6 +43,9 @@
         ?>
             <tr>
                 <form action="prop-link" method="post" >
+                    
+                    <input type="hidden" name="showPropCounts" value="<?php echo $linkVarObj->showPropCounts; ?>" />
+                    <input type="hidden" name="sort" value="<?php echo $linkVarObj->alphaSort; ?>" />
                     <input type="hidden" name="propertyUUID" value="<?php echo $row["property_uuid"]; ?>" />
                     <input type="hidden" name="projectUUID" value="<?php echo $row["project_id"]; ?>" />
                     <input type="hidden" name="varUUID" value="<?php echo $this->varUUID; ?>" />
@@ -49,6 +54,19 @@
                     <td><?php echo $row["val_text"]; ?>
                     <br/>
                     <span style="font-size:xx-small;"><?php echo $row["property_uuid"]; ?></span>
+                    <br/>
+                    <?php
+                    if(stristr($linkVarObj->varLinkURI, "P45F.consists_of")){
+                    ?>
+                    <span style="font-size:xx-small;"><a href="bm-material?q=<?php echo urlencode($row["val_text"]); ?>">[BM-equiv.]</a></span>
+                    <?php
+                    }//end case of linking to a material
+                    else{
+                    ?>
+                    <span style="font-size:xx-small;"><a href="bm?q=<?php echo urlencode($row["val_text"]); ?>">[BM-equiv.]</a></span>
+                    <?php
+                    }//end more typical case of linking to typologies
+                    ?>
                     </td>
                     <td><input size="60" name="uri" type="text" value="<?php echo $row["linkedURI"]; ?>" /></td>
                     <td><input size="20" name="linkedLabel" type="text" value="<?php echo $row["linkedLabel"]; ?>" /></td>
@@ -63,5 +81,22 @@
         
         ?>
         </table>
+        
+        
+        <br/>
+        <h2>Link Properties of this Variable to British Museum Types</h2>
+        <form action="bm-link-types" method="post" >
+            <input type="hidden" name="varUUID" value="<?php echo $linkVarObj->varUUID; ?>" />
+            <input name="submit" type="submit" />
+        </form>
+        
+        <br/>
+        <h2>Link Properties of this Variable to British Museum Materials</h2>
+        <form action="bm-link-materials" method="post" >
+            <input type="hidden" name="varUUID" value="<?php echo $linkVarObj->varUUID; ?>" />
+            <input name="submit" type="submit" />
+        </form>
+        
+        
     </body>
 </html>

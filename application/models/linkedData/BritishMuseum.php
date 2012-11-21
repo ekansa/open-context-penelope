@@ -12,17 +12,17 @@
  
 */
 
-class linkedData_BritishMuseum {
+class LinkedData_BritishMuseum {
  
 public $matchTerm; //term to match to the British Museum thesaurus
 public $objectIDs; //array of objects returned from a keyword search
 public $sparql; //sparql query, available for debugging
 public $jsonObj; //json result from British museum sparql
 
-public $colExampleURI; //uri of the human readable item with example data
-public $LDcolExampleURI; //uri of item described with related data
-public $LDthesaurusURI; //uri of the thesaurus concept found with related data
-public $LDthesaurusLabel; //label of the theasurus concept
+public $colExampleURI = false; //uri of the human readable item with example data
+public $LDcolExampleURI = false; //uri of item described with related data
+public $LDthesaurusURI = false; //uri of the thesaurus concept found with related data
+public $LDthesaurusLabel = false; //label of the theasurus concept
 
 const baseTextSearchURL = "http://www.britishmuseum.org/research/search_the_collection_database/search_results.aspx"; //base URL for HTML text searches
 const baseHumanObjectURL = "http://www.britishmuseum.org/research/search_the_collection_database/search_object_details.aspx"; //base URL for HTML representation of objects
@@ -139,44 +139,137 @@ function getTypologyThesaurusLD(){
                 $json = $cache_result;
             }
             
-            $LDresult = Zend_Json::decode($json);
-            $this->jsonObj = $LDresult["results"]["bindings"];
             $this->colExampleURI = self::baseHumanObjectURL."?objectid=".$objectID."&partid=1";
-            
-            if(count($LDresult["results"]["bindings"]) < 2){
-                $this->LDcolExampleURI =  $LDresult["results"]["bindings"][0]["s"]["value"];
-                $this->LDthesaurusURI =  $LDresult["results"]["bindings"][0]["oThes"]["value"];
-                $this->LDthesaurusLabel =  $LDresult["results"]["bindings"][0]["oLab"]["value"];
-            }
-            else{
-                $max_err = 3; //1 error allowed in matches
-                
-                foreach($LDresult["results"]["bindings"] as $res){
-                    $search = new linkedData_ApproximateSearch;
-                    $vocabTerm = $res["oLab"]["value"];
-                    $search->prepSearch($vocabTerm, $max_err );
-                    $matches = $search->search($this->matchTerm);
-                    if(count($matches)>0){
-                        $this->LDcolExampleURI = $res["s"]["value"];
-                        $this->LDthesaurusURI =  $res["oThes"]["value"];
-                        $this->LDthesaurusLabel = $vocabTerm;
-                    }
-                    unset($search);
-                }
-                
-                if(!$this->LDthesaurusURI){
-                    //matches not found by this method of matching the keyword / matchterm with BM thesaurus results, so select the first choice
-                    $this->LDcolExampleURI =  $LDresult["results"]["bindings"][0]["s"]["value"];
-                    $this->LDthesaurusURI =  $LDresult["results"]["bindings"][0]["oThes"]["value"];
-                    $this->LDthesaurusLabel =  $LDresult["results"]["bindings"][0]["oLab"]["value"];
-                }
-            
-            }
+            @$LDresult = Zend_Json::decode($json);
+				if(is_array($LDresult)){
+					 if(is_array($LDresult["results"]["bindings"])){
+						  $this->jsonObj = $LDresult["results"]["bindings"];
+						  if(count($LDresult["results"]["bindings"]) == 1){
+								$this->LDcolExampleURI =  $LDresult["results"]["bindings"][0]["s"]["value"];
+								$this->LDthesaurusURI =  $LDresult["results"]["bindings"][0]["oThes"]["value"];
+								$this->LDthesaurusLabel =  $LDresult["results"]["bindings"][0]["oLab"]["value"];
+						  }
+						  elseif(count($LDresult["results"]["bindings"]) > 1){
+								$max_err = 3; //1 error allowed in matches
+								
+								foreach($LDresult["results"]["bindings"] as $res){
+									 $search = new LinkedData_ApproximateSearch;
+									 $vocabTerm = $res["oLab"]["value"];
+									 $search->prepSearch($vocabTerm, $max_err );
+									 $matches = $search->search($this->matchTerm);
+									 if(count($matches)>0){
+										  $this->LDcolExampleURI = $res["s"]["value"];
+										  $this->LDthesaurusURI =  $res["oThes"]["value"];
+										  $this->LDthesaurusLabel = $vocabTerm;
+									 }
+									 unset($search);
+								}
+								
+								if(!$this->LDthesaurusURI){
+									 //matches not found by this method of matching the keyword / matchterm with BM thesaurus results, so select the first choice
+									 $this->LDcolExampleURI =  $LDresult["results"]["bindings"][0]["s"]["value"];
+									 $this->LDthesaurusURI =  $LDresult["results"]["bindings"][0]["oThes"]["value"];
+									 $this->LDthesaurusLabel =  $LDresult["results"]["bindings"][0]["oLab"]["value"];
+								}
+						  }
+					 }//end case with binding array
+				}//end case where linked data is an array
         }
     }
     
     
-}
+}//end function
+
+
+
+
+
+function getMaterialsThesaurusLD(){
+    
+    $this->colExampleURI = false;
+    $this->LDcolExampleURI =  false;
+    $this->LDthesaurusURI =  false;
+    $this->LDthesaurusLabel =  false;
+    $this->sparql = false;
+    
+    if(is_array($this->objectIDs)){
+        if(count($this->objectIDs)>0){
+            $json = false;
+            $objectIDs = $this->objectIDs;
+            $objectID = $objectIDs[0];
+            $sparql = "
+            SELECT ?s ?oPart ?oThes ?oLab
+				WHERE
+				{
+				  ?s <http://collection.britishmuseum.org/id/crm/bm-extensions/codex_id> '$objectID';
+					  <http://collection.britishmuseum.org/id/crm/P46F.is_composed_of> ?oPart.
+					  ?oPart <http://collection.britishmuseum.org/id/crm/P45F.consists_of> ?oThes.
+					  ?oThes <http://www.w3.org/2004/02/skos/core#prefLabel> ?oLab.
+				} LIMIT 10             
+            ";
+            $this->sparql = $sparql;
+            $url = self::SPARQLendpoint."?Syntax=SparqlResults%2FJson&Query=".urlencode($sparql);
+            $cache = Zend_Cache::factory('Core',
+                             'File',
+                             $this->frontendOptions,
+                             $this->backendOptions);
+		  
+            $cacheID = "bmLD_m_".md5($url);
+            if(!$cache_result = $cache->load($cacheID)) {
+                sleep(self::sparqlSleep);
+                @$json = file_get_contents($url);
+                if($json){
+                    $cache->save($json, $cacheID ); //save result to the cache, only if valid JSON
+                }
+            }
+            else{
+                $json = $cache_result;
+            }
+            
+				$this->colExampleURI = self::baseHumanObjectURL."?objectid=".$objectID."&partid=1";
+            @$LDresult = Zend_Json::decode($json);
+				if(is_array($LDresult)){
+					 if(is_array($LDresult["results"]["bindings"])){
+						  $this->jsonObj = $LDresult["results"]["bindings"];
+						  if(count($LDresult["results"]["bindings"]) == 1){
+								$this->LDcolExampleURI =  $LDresult["results"]["bindings"][0]["s"]["value"];
+								$this->LDthesaurusURI =  $LDresult["results"]["bindings"][0]["oThes"]["value"];
+								$this->LDthesaurusLabel =  $LDresult["results"]["bindings"][0]["oLab"]["value"];
+						  }
+						  elseif(count($LDresult["results"]["bindings"]) > 1){
+								$max_err = 3; //1 error allowed in matches
+								
+								foreach($LDresult["results"]["bindings"] as $res){
+									 $search = new LinkedData_ApproximateSearch;
+									 $vocabTerm = $res["oLab"]["value"];
+									 $search->prepSearch($vocabTerm, $max_err );
+									 $matches = $search->search($this->matchTerm);
+									 if(count($matches)>0){
+										  $this->LDcolExampleURI = $res["s"]["value"];
+										  $this->LDthesaurusURI =  $res["oThes"]["value"];
+										  $this->LDthesaurusLabel = $vocabTerm;
+									 }
+									 unset($search);
+								}
+								
+								if(!$this->LDthesaurusURI){
+									 //matches not found by this method of matching the keyword / matchterm with BM thesaurus results, so select the first choice
+									 $this->LDcolExampleURI =  $LDresult["results"]["bindings"][0]["s"]["value"];
+									 $this->LDthesaurusURI =  $LDresult["results"]["bindings"][0]["oThes"]["value"];
+									 $this->LDthesaurusLabel =  $LDresult["results"]["bindings"][0]["oLab"]["value"];
+								}
+						  }
+					 }//end case with binding array
+				}//end case where linked data is an array
+        }
+    }
+    
+}//end function
+
+
+
+
+
 
 
 
