@@ -1,6 +1,6 @@
 <?php
 
-class linkedData_units  {
+class LinkedData_Units  {
              
     public $allUnits = array("version" => 1,
                        "standards" => array(
