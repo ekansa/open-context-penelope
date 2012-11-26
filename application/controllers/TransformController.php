@@ -448,6 +448,30 @@ class TransformController extends App_Controller_PenelopeController
         echo Zend_json::encode($fieldArray);
     }
     
+	 
+	 //checks to see if a date is valid
+	 private function dateValidate($value){
+		  $cal_test_string = str_replace("/", "-", $value);
+		  if (($timestamp = strtotime($cal_test_string)) === false) {
+				return false;
+		  }
+		  else{
+				return date("Y-m-d H:i:s", strtotime($cal_test_string)); //mysql formatted date
+		  }
+	 }
+	 
+	 private function isCalendarVar($variableUUID, $db){
+		 $output = false;
+		 $sql = "SELECT var_type FROM var_tab WHERE variable_uuid = '$variableUUID' LIMIT 1";
+		 $result = $db->fetchAll($sql, 2);
+		 if($result){
+				if(stristr($result[0]["var_type"], "calend")){
+					 $output = true;
+				}
+		 }
+		 return $output;
+	 }
+	 
     
     function transformValuesAction()
     {
@@ -518,7 +542,7 @@ class TransformController extends App_Controller_PenelopeController
             
             //check for missing variableUUIDs
             $variableUUID = $this->checkVarID($variableUUID, $fieldLabel, $projectUUID, $db);
-            
+            $calendVar = $this->isCalendarVar($variableUUID, $db);
             
             //querying the records associated with the "fieldName" property (one query per property):
             $select = $db->select()
@@ -551,7 +575,11 @@ class TransformController extends App_Controller_PenelopeController
                     //$whereClause =    $db->quoteInto('project_id = ?', $projectUUID)
                     //                . $db->quoteInto('AND val_text = ?', $theText);
 
-                    
+                    $valDate = false;
+						  if($calendVar){
+								$valDate = $this->dateValidate($theText);
+						  }
+						  
                     $valScram   = md5($theText . $projectUUID);
                         
                     $whereClause = "text_scram = '" . $valScram . "'";
@@ -640,6 +668,7 @@ class TransformController extends App_Controller_PenelopeController
                         $propHash   = md5($projectUUID . $variableUUID . $valueUUID);
                         $propUUID   = GenericFunctions::generateUUID();
                         //insert the property into the properties table:
+					 
                         $data = array(
                             'project_id'   => $projectUUID,
                             'source_id'          => $dataTableName,
@@ -647,7 +676,8 @@ class TransformController extends App_Controller_PenelopeController
                             'property_uuid'     => $propUUID,
                             'variable_uuid'     => $variableUUID,
                             'value_uuid'        => $valueUUID,
-                            'val_num'           => $numval
+                            'val_num'           => $numval,
+									 'val_date'				=> $valDate
                          );
                         $property->insert($data);                       
                     }

@@ -1,0 +1,77 @@
+<?php
+    
+    $VarPropObj = $this->VarPropObj;    
+    $data = $VarPropObj->propData;
+    $varLabel = $VarPropObj->varLabel;
+    
+?>
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"> 
+    <head> 
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    </head>
+    <body>
+        <h1>Variable: <?php echo $varLabel; ?></h1>
+        <p>Add Linked Data <a href="../linked-data/var?varUUID=<?php echo $this->varUUID; ?>">[Click Here]</a></p>
+        
+        
+        <table>
+            <tr>
+                <th>Variable</th>
+                <th>Property Count</th>
+                <th>Value</th>
+                <th>Note</th>
+                <th>Linked URI</th>
+                <th>Label</th>
+            </tr>
+        
+        <?php
+        
+        foreach($data as $row){
+        ?>
+            <tr>
+                <form action="prop-note" method="post" >
+                    
+                    <input type="hidden" name="showPropCounts" value="<?php echo $VarPropObj->showPropCounts; ?>" />
+                    <input type="hidden" name="sort" value="<?php echo $VarPropObj->alphaSort; ?>" />
+                    <input type="hidden" name="propertyUUID" value="<?php echo $row["property_uuid"]; ?>" />
+                    <input type="hidden" name="projectUUID" value="<?php echo $row["project_id"]; ?>" />
+                    <input type="hidden" name="varUUID" value="<?php echo $this->varUUID; ?>" />
+                    <td><?php echo $row["var_label"]; ?></td>
+                    <td><?php echo $row["subCount"]; ?></td>
+                    <td><?php echo $row["val_text"]; ?>
+                    </td>
+                    <td><input type="text" name="note" size="60" value="<?php echo $row["note"]; ?>"/></td>
+                    <td><span style="font-size:xx-small;"><?php echo $row["linkedURI"]; ?></span></td>
+                    <td><span style="font-size:xx-small;"><?php echo $row["linkedLabel"]; ?></span></td>
+                    <td><input name="submit" type="submit" /></td>
+                </form>
+            </tr>
+        
+        <?php
+        
+        };
+        
+        
+        ?>
+        </table>
+        
+        
+        <br/>
+        <h2>Link Properties of this Variable to British Museum Types</h2>
+        <form action="bm-link-types" method="post" >
+            <input type="hidden" name="varUUID" value="<?php echo $VarPropObj->varUUID; ?>" />
+            <input name="submit" type="submit" />
+        </form>
+        
+        <br/>
+        <h2>Link Properties of this Variable to British Museum Materials</h2>
+        <form action="bm-link-materials" method="post" >
+            <input type="hidden" name="varUUID" value="<?php echo $VarPropObj->varUUID; ?>" />
+            <input name="submit" type="submit" />
+        </form>
+        
+        
+    </body>
+</html>

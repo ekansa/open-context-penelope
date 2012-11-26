@@ -9,8 +9,10 @@ class EditDatasetController extends Zend_Controller_Action
 {
     
     //public $host = "http://penelope.opencontext.org";
-    public $host = "http://penelope2.oc";
-    public $counter = 0;
+    public $host = "http://penelope.oc";
+    //public $host = "http://".$_SERVER["SERVER_NAME"];
+	 
+	 public $counter = 0;
     function init()
     {  
         $this->view->baseUrl = $this->_request->getBaseUrl();
