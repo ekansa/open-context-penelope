@@ -285,7 +285,7 @@ class TransformController extends App_Controller_PenelopeController
                     //determine which variable *type* overrides
                     $oldFileSummary     = new Table_FileSummary();
                     $oldFileSummaryRow  = $oldFileSummary->fetchRow("source_id = '" . $varRecord->source_id . "'");
-                    $recordCountNew     = $oldFileSummaryRow->numrows;
+                    @$recordCountNew     = $oldFileSummaryRow->numrows;
                     $recordCountCurrent = $fileSummaryRow->numrows;
                     
                     //if the new record has at least twice as many records as the original,
