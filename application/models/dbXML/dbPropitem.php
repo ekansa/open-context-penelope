@@ -15,10 +15,13 @@ class dbXML_dbPropitem  {
     
     public $propDescription;
     public $propDesXMLok;
+	 
+	 
     public $propLinkLabel; //label for the related concept linked by URI for the property
     public $propLinkURI; //URI to related concept for the property
     public $propLinkVocab; //name of the vocabulary for the linked concept
     public $propLinkVocabURI; //URI to the vocabulary for the linked concept
+  
     
     public $varUUID;
     public $varLabel;
@@ -26,14 +29,18 @@ class dbXML_dbPropitem  {
     public $varType;
     public $varDescription;
     public $varDesXMLok;
+
     public $varLinkLabel; //label for the related concept linked by URI for the variable
     public $varLinkURI; //URI to related concept for the variable
     public $varLinkVocab; //name of the vocabulary for the linked concept
     public $varLinkVocabURI; //URI to the vocabulary for the linked concept
-    
-	public $varUnitURI; //uri for the measurement unit
-	public $varUnitName; //name of the measurement unit
-	public $varUnitAbrv; //abreviation for the measurement unit
+ 
+	 
+	 public $linkedData; //array of linked data
+	 
+	 public $varUnitURI; //uri for the measurement unit
+	 public $varUnitName; //name of the measurement unit
+	 public $varUnitAbrv; //abreviation for the measurement unit
 	
     public $valUUID;
     public $value;
@@ -116,10 +123,9 @@ class dbXML_dbPropitem  {
         
         if($this->dbPenelope){
             $found = $this->pen_itemGet();
-	    if($found){
-		$this->pen_getVarDescription();
-		$this->pen_getPropDescription();
-	    }
+				if($found){
+					 $this->pen_getVarDescription();
+				}
         }
         else{
             $found = $this->oc_itemGet();
@@ -134,57 +140,63 @@ class dbXML_dbPropitem  {
         
         $sql = "SELECT *
         FROM properties
-	JOIN val_tab ON properties.value_uuid = val_tab.value_uuid
-	JOIN var_tab ON properties.variable_uuid = var_tab.variable_uuid
-        WHERE properties.property_uuid = '".$this->itemUUID."' ";
+		  JOIN val_tab ON properties.value_uuid = val_tab.value_uuid
+		  JOIN var_tab ON properties.variable_uuid = var_tab.variable_uuid
+				 WHERE properties.property_uuid = '".$this->itemUUID."' ";
         
         $result = $db->fetchAll($sql, 2);
         if($result){
-	    $found = true;
-            $this->projectUUID = $result[0]["project_id"];
-            $this->sourceID = $result[0]["source_id"];
-	    $this->value =  html_entity_decode($result[0]["val_text"], ENT_QUOTES, 'UTF-8');
-	    $this->varLabel =  html_entity_decode($result[0]["var_label"], ENT_QUOTES, 'UTF-8');
+				$found = true;
+				$this->projectUUID = $result[0]["project_id"];
+				$this->sourceID = $result[0]["source_id"];
+				$this->value =  html_entity_decode($result[0]["val_text"], ENT_QUOTES, 'UTF-8');
+				$this->varLabel =  html_entity_decode($result[0]["var_label"], ENT_QUOTES, 'UTF-8');
+				
+				$this->label = ($this->varLabel.": ".$this->value);
+				
+				$this->varType = strtolower($result[0]["var_type"]);
+				$this->varUUID = $result[0]["variable_uuid"];
+				$this->valUUID = $result[0]["value_uuid"];
+				if($result[0]["val_num"]){
+					 $this->valNumeric = $result[0]["val_num"] + 0;
+				}
+				$this->calendarValueValidate();
+				
+				if(strlen($result[0]["var_sum"])>10){
+					 $this->varSummary = Zend_Json::decode($result[0]["var_sum"]);
+				}
+				
+				$this->propDescription = $result[0]["note"];
+				$xmlNote = "<div>".chr(13);
+				$xmlNote .= $this->propDescription.chr(13);
+				$xmlNote .= "</div>".chr(13);
 	    
-	    $this->label = ($this->varLabel.": ".$this->value);
-	    
-	    $this->varType = strtolower($result[0]["var_type"]);
-	    $this->varUUID = $result[0]["variable_uuid"];
-	    $this->valUUID = $result[0]["value_uuid"];
-	    if($result[0]["val_num"]){
-		$this->valNumeric = $result[0]["val_num"] + 0;
-	    }
-	    $this->calendarValueValidate();
-	    
-	    if(strlen($result[0]["var_sum"])>10){
-		$this->varSummary = Zend_Json::decode($result[0]["var_sum"]);
-	    }
-	    
-		$unitData = $this->pen_getUnitData($this->varUUID);
-		if(is_array($unitData)){
-			
-			$this->varUnitURI = $unitData["linkedURI"];
-			$this->varUnitName = $unitData["linkedLabel"];
-			$this->varUnitAbrv = $unitData["linkedAbrv"];
-		}
+				$unitData = $this->pen_getUnitData($this->varUUID);
+				if(is_array($unitData)){
+					
+					$this->varUnitURI = $unitData["linkedURI"];
+					$this->varUnitName = $unitData["linkedLabel"];
+					$this->varUnitAbrv = $unitData["linkedAbrv"];
+				}
 		
-		
-	    $linkedData = $this->pen_getLinkedData($this->varUUID);
-	    if(is_array($linkedData)){
-		$this->varLinkLabel = $linkedData["linkedLabel"];
-		$this->varLinkURI = $linkedData["linkedURI"];
-		$this->varLinkVocab = $linkedData["vocabulary"];
-		$this->varLinkVocabURI = $linkedData["vocabURI"];
-	    }
+				$linkedData = $this->pen_getLinkedData($this->varUUID);
+				if(is_array($linkedData)){
+					 $this->varLinkLabel = $linkedData["linkedLabel"];
+					 $this->varLinkURI = $linkedData["linkedURI"];
+					 $this->varLinkVocab = $linkedData["vocabulary"];
+					 $this->varLinkVocabURI = $linkedData["vocabURI"];
+				}
 	    
-	    $linkedData = $this->pen_getLinkedData($this->itemUUID);
-	    if(is_array($linkedData)){
-		$this->propLinkLabel = $linkedData["linkedLabel"];
-		$this->propLinkURI = $linkedData["linkedURI"];
-		$this->propLinkVocab = $linkedData["vocabulary"];
-		$this->propLinkVocabURI = $linkedData["vocabURI"];
-	    }
-	    
+				$linkedData = $this->pen_getLinkedData($this->itemUUID);
+				if(is_array($linkedData)){
+					 $this->propLinkLabel = $linkedData["linkedLabel"];
+					 $this->propLinkURI = $linkedData["linkedURI"];
+					 $this->propLinkVocab = $linkedData["vocabulary"];
+					 $this->propLinkVocabURI = $linkedData["vocabURI"];
+				}
+				
+				$this->linkedData = $this->pen_getLinkedData($this->itemUUID, true);
+				
         }
         
         return $found;
@@ -200,60 +212,44 @@ class dbXML_dbPropitem  {
     }
     
     public function calendarValueValidate(){
-	if(stristr($this->varType, "calend")){
-	    $this->varType = "calendric";
-	    $cal_test_string = str_replace("/", "-", $this->value);
-	    if (($timestamp = strtotime($cal_test_string)) === false) {
-		$this->valCalendric = false;
-	    }
-	    else{
-		$this->valCalendric = date("Y-m-d\TH:i:s\-07:00", strtotime($cal_test_string));
-	    }
-	}
-	else{
-	    $this->valCalendric = false;
-	}
+		  if(stristr($this->varType, "calend")){
+				$this->varType = "calendric";
+				$cal_test_string = str_replace("/", "-", $this->value);
+				if (($timestamp = strtotime($cal_test_string)) === false) {
+					 $this->valCalendric = false;
+				}
+				else{
+					 $this->valCalendric = date("Y-m-d\TH:i:s\-07:00", strtotime($cal_test_string));
+				}
+		  }
+		  else{
+				$this->valCalendric = false;
+		  }
     }//end function
     
-    public function pen_getPropDescription(){
-	$db = $this->db;
-	
-	$sql = "SELECT *
-	FROM w_prop_notes
-	WHERE property_uuid = '".$this->itemUUID."'";
-	
-	$result = $db->fetchAll($sql, 2);
-        if($result){
-	    $this->propDescription = $result[0]["pnote_text"];
-	    
-	    $xmlNote = "<div>".chr(13);
-	    $xmlNote .= $this->propDescription.chr(13);
-	    $xmlNote .= "</div>".chr(13);
-	    
-	    @$xml = simplexml_load_string($xmlNote);
-	    if($xml){
-		$this->propDesXMLok = true;
-	    }
-	}
-	
-    }//end function
+   
     
     
-    public function pen_getLinkedData($itemUUID){
-	$db = $this->db;
-	
-	$output = false;
-	$sql = "SELECT linked_data.linkedLabel, linked_data.linkedURI, linked_data.vocabulary, 	linked_data.vocabURI
-	FROM linked_data
-	WHERE linked_data.itemUUID = '$itemUUID' AND linked_data.linkedType = 'type' ";
-	
-	$result = $db->fetchAll($sql, 2);
-        if($result){
-	    $output = array();
-	    $output = $result[0];
-	}
-	
-	return $output;
+    public function pen_getLinkedData($itemUUID, $allLinks = false){
+		  $db = $this->db;
+		  
+		  $output = false;
+		  $sql = "SELECT linked_data.linkedLabel, linked_data.linkedURI, linked_data.vocabulary, 	linked_data.vocabURI
+		  FROM linked_data
+		  WHERE linked_data.itemUUID = '$itemUUID' AND linked_data.linkedType = 'type' ";
+		  
+		  $result = $db->fetchAll($sql, 2);
+		  if($result){
+				$output = array();
+				if(!$allLinks){
+					 $output = $result[0];
+				}
+				else{
+					 $output = $result;
+				}
+		  }
+		  
+		  return $output;
     }
     
 	
@@ -278,23 +274,23 @@ class dbXML_dbPropitem  {
 	
     
     public function pen_getVarDescription(){
-	$db = $this->db;
-	
-	$sql = "SELECT * FROM var_notes WHERE variable_uuid = '".$this->varUUID."'";
-	
-	$result = $db->fetchAll($sql, 2);
-        if($result){
-	    $this->varDescription = $result[0]["note_text"];
-	    
-	    $xmlNote = "<div>".chr(13);
-	    $xmlNote .= $this->varDescription.chr(13);
-	    $xmlNote .= "</div>".chr(13);
-	    
-	    @$xml = simplexml_load_string($xmlNote);
-	    if($xml){
-		$this->varDesXMLok = true;
-	    }
-	}
+		  $db = $this->db;
+		  
+		  $sql = "SELECT * FROM var_notes WHERE variable_uuid = '".$this->varUUID."'";
+		  
+		  $result = $db->fetchAll($sql, 2);
+		  if($result){
+				$this->varDescription = $result[0]["note_text"];
+				
+				$xmlNote = "<div>".chr(13);
+				$xmlNote .= $this->varDescription.chr(13);
+				$xmlNote .= "</div>".chr(13);
+				
+				@$xml = simplexml_load_string($xmlNote);
+				if($xml){
+					 $this->varDesXMLok = true;
+				}
+		  }
 	
     }//end function
     
@@ -302,80 +298,80 @@ class dbXML_dbPropitem  {
     
     public function propertySummary(){
 	
-	if($this->dbPenelope){
-	    $subjectTypeArray = $this->pen_obsItemTypes;  
-	}
-	else{
-	    $subjectTypeArray = $this->oc_obsItemTypes;
-	}
-	$varType = $this->varType;
-	
-	if($varType == "integer" || $varType == "decimal" || stristr($varType, "calend")){
-	    foreach($subjectTypeArray as $subjectType => $value){
-		$this->getNumericSummary($subjectType);
-	    }
-	}
-	elseif($varType == "boolean" || $varType == "ordinal" || stristr($varType, "nominal")){
-	    
-	    if(!is_array($this->varSummary)){
-		//no var summary data, create it.
-		
-		//do this for each type of item
-		foreach($subjectTypeArray as $subjectType => $value){
-		    $this->getNomimalSummary($subjectType);
-		}
-		
-		//once var summary data is created, save it for use next time
-		$db = $this->db;
-		$where = array();
-		$where[] = "variable_uuid = '".$this->varUUID."' ";
-		$varSummaryJSON = Zend_Json::encode($this->varSummary);
-		$data = array("var_sum" => $varSummaryJSON);
-		if($this->dbPenelope){
-		    $db->update("var_tab", $data, $where);
-		}
-		else{
-		    $db->update("var_tab", $data, $where);
-		}
-	    }//end case without var_summary data created earlier
-	    else{
-		
-		$varSummary = $this->varSummary;
-		$frequencyRanks = array();
-		foreach($subjectTypeArray as $subjectType => $value){
-		    if(array_key_exists($subjectType, $varSummary)){
-			if(array_key_exists("props", $varSummary[$subjectType])){
-			    $propArray = $varSummary[$subjectType]["props"];
-			    if(array_key_exists($this->itemUUID, $propArray)){
-				$frequencyRanks[$subjectType] = $propArray[$this->itemUUID];
-			    }
-			}
-		    }
-		}//end loop through subject types
-		$this->frequencyRanks = $frequencyRanks;
-		
-	    }//end case with var_summary data created earlier
-	    
-	}//end case for nomimal, boolean, ordinal
+		  if($this->dbPenelope){
+				$subjectTypeArray = $this->pen_obsItemTypes;  
+		  }
+		  else{
+				$subjectTypeArray = $this->oc_obsItemTypes;
+		  }
+		  $varType = $this->varType;
+		  
+		  if($varType == "integer" || $varType == "decimal" || stristr($varType, "calend")){
+				foreach($subjectTypeArray as $subjectType => $value){
+			  $this->getNumericSummary($subjectType);
+				}
+		  }
+		  elseif($varType == "boolean" || $varType == "ordinal" || stristr($varType, "nominal")){
+				
+				if(!is_array($this->varSummary)){
+			  //no var summary data, create it.
+			  
+			  //do this for each type of item
+			  foreach($subjectTypeArray as $subjectType => $value){
+					$this->getNomimalSummary($subjectType);
+			  }
+			  
+			  //once var summary data is created, save it for use next time
+			  $db = $this->db;
+			  $where = array();
+			  $where[] = "variable_uuid = '".$this->varUUID."' ";
+			  $varSummaryJSON = Zend_Json::encode($this->varSummary);
+			  $data = array("var_sum" => $varSummaryJSON);
+			  if($this->dbPenelope){
+					$db->update("var_tab", $data, $where);
+			  }
+			  else{
+					$db->update("var_tab", $data, $where);
+			  }
+				}//end case without var_summary data created earlier
+				else{
+			  
+			  $varSummary = $this->varSummary;
+			  $frequencyRanks = array();
+			  foreach($subjectTypeArray as $subjectType => $value){
+					if(array_key_exists($subjectType, $varSummary)){
+				  if(array_key_exists("props", $varSummary[$subjectType])){
+						$propArray = $varSummary[$subjectType]["props"];
+						if(array_key_exists($this->itemUUID, $propArray)){
+					  $frequencyRanks[$subjectType] = $propArray[$this->itemUUID];
+						}
+				  }
+					}
+			  }//end loop through subject types
+			  $this->frequencyRanks = $frequencyRanks;
+			  
+				}//end case with var_summary data created earlier
+				
+		  }//end case for nomimal, boolean, ordinal
 	
     }//end function
     
     
     //gets the appropriate subject type for queries of observations
     public function getQuerySubjectType($subjectType, $forceOC = false){
-	if($this->dbPenelope && !$forceOC){
-	    $subjectTypeArray = $this->pen_obsItemTypes;  
-	}
-	else{
-	    $subjectTypeArray = $this->oc_obsItemTypes;
-	}
-	
-	if(array_key_exists($subjectType, $subjectTypeArray)){
-	    return $subjectTypeArray[$subjectType];
-	}
-	else{
-	    return $subjectTypeArray["space"]; //default to space
-	}
+		  if($this->dbPenelope && !$forceOC){
+				$subjectTypeArray = $this->pen_obsItemTypes;  
+		  }
+		  else{
+				$subjectTypeArray = $this->oc_obsItemTypes;
+		  }
+		  
+		  if(array_key_exists($subjectType, $subjectTypeArray)){
+				return $subjectTypeArray[$subjectType];
+		  }
+		  else{
+				return $subjectTypeArray["space"]; //default to space
+		  }
     }//end funciton
     
     

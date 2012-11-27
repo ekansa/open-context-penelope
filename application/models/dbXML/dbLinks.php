@@ -368,140 +368,140 @@ class dbXML_dbLinks  {
         $db = $this->db;
         
 	
-	if($this->dbPenelope){
-	    
-	    if(!$obs){
-		$obsTerm = "";
-	    }
-	    else{
-		$obsTerm = " AND links.origin_obs = $obs ";
-	    }
-	    
-	    $sql = "SELECT links.targ_uuid, links.link_type, links.targ_obs,
-		resource.res_label, resource.res_archml_type, resource.res_format,
-		resource.ia_thumb, resource.ia_preview, resource.ia_fullfile, labeling_options.labelVarUUID
-	    FROM links 
-	    JOIN resource ON resource.uuid = links.targ_uuid
-	    LEFT JOIN labeling_options ON (resource.source_id = labeling_options.source_id
-					AND resource.project_id = labeling_options.project_id
-					AND labeling_options.doc_type LIKE '%media%'
-					AND labeling_options.relType = 'link')
-	    
-	    WHERE links.origin_uuid = '".$id."'
-	    AND (links.targ_type LIKE '%media%' OR links.targ_type LIKE '%resource%' )
-	    $obsTerm
-	    ORDER BY resource.res_number, resource.res_label	
-	    ";
-	    
-	    
-	}
-	else{
-	    
-	    if(!$obs){
-		$obsTerm = "";
-	    }
-	    else{
-		$obsTerm = " AND links.origin_obs = $obs ";
-	    }
-	    
-	    $sql = "SELECT links.targ_uuid, links.link_type, links.targ_obs,
-		resource.res_label, resource.res_type AS res_archml_type, resource.res_format,
-		resource.ia_thumb, resource.ia_preview, resource.ia_fullfile, 0 AS labelVarUUID
-	    FROM links 
-	    JOIN resource ON resource.uuid = links.targ_uuid
-	    WHERE links.origin_uuid = '".$id."'
-	    AND (links.targ_type LIKE '%media%' OR links.targ_type LIKE '%resource%' )
-	    $obsTerm
-	    ORDER BY resource.res_label";
-	    
-	}
-	
-	//echo $sql;
-	
-        $result = $db->fetchAll($sql, 2);
-        if($result){
-	    
-	    if(!$obs){
-		$obsNum = 1;
-	    }
-	    else{
-		$obsNum = $obs;
-	    }
-	    
-	    $oldLinks = $this->links;
-	    if(!is_array($oldLinks)){
-		$oldLinks = array();
-		$oldLinks[$obsNum] = array();
-	    }
-	    else{
-		if(!array_key_exists($obsNum, $oldLinks)){
-		    $oldLinks[$obsNum] = array();
-		}
-	    }
-	    
-	    $mediaLinks = $this->mediaLinks;
-	    if(!is_array($mediaLinks)){
-		$mediaLinks = array();
-		$mediaLinks[$obsNum] = array();
-	    }
-	    else{
-		if(!array_key_exists($obsNum, $mediaLinks)){
-		    $mediaLinks[$obsNum] = array();
-		}
-	    }
-	    
-	    foreach($result as $row){
-		
-		$linkedUUID = $row["targ_uuid"];
-		$linkType = $row["link_type"];
-		$linkedName = $row["res_label"];
-		$archaeoMLtype = $row["res_archml_type"];
-		$thumbURI = $row["ia_thumb"];
-		$labelVarUUID = $row["labelVarUUID"];
-		
-		$actMediaLinkArray = array("linkedName" => $linkedName,
-				      "linkType" => $linkType,
-				      "linkedUUID" => $linkedUUID,
-				      "archaeoMLtype" => $archaeoMLtype,
-				      "thumbURI" => $thumbURI);
-		
-		if(strlen($labelVarUUID)>1){
-		    $sql = "SELECT val_tab.val_text
-		    FROM observe
-		    JOIN properties ON observe.property_uuid = properties.property_uuid
-		    JOIN val_tab ON properties.value_uuid = val_tab.value_uuid
-		    WHERE observe.subject_uuid = '$linkedUUID'
-		    AND properties.variable_uuid = '$labelVarUUID'
-		    LIMIT 1;
-		    ";
-		    
-		    $resultB = $db->fetchAll($sql, 2);
-		    if($resultB){
-			$actMediaLinkArray["descriptor"] = $resultB[0]["val_text"];
-		    }
-		   
-		}
-		
-		
-		
-		
-		$obsHash = sha1($obsNum.$linkedUUID.$linkType);
-		if(!array_key_exists($obsHash, $oldLinks[$obsNum])){
-		    $oldLinks[$obsNum][$obsHash] = array("type" => "resource",
-				      "linkType" => $linkType,
-				      "linkedUUID" => $linkedUUID);
-		}
-		if(!array_key_exists($obsHash, $mediaLinks[$obsNum])){
-		    $mediaLinks[$obsNum][$obsHash] = $actMediaLinkArray;
-		}
-		
-	    }//end loop
-	    
-	    $this->links = $oldLinks;
-	    $this->mediaLinks = $mediaLinks;
-        }
-        
-        return $found;
+		  if($this->dbPenelope){
+				
+				if(!$obs){
+					 $obsTerm = "";
+				}
+				else{
+					 $obsTerm = " AND links.origin_obs = $obs ";
+				}
+				
+				$sql = "SELECT links.targ_uuid, links.link_type, links.targ_obs,
+			  resource.res_label, resource.res_archml_type, resource.mime_type,
+			  resource.ia_thumb, resource.ia_preview, resource.ia_fullfile, labeling_options.labelVarUUID
+				FROM links 
+				JOIN resource ON resource.uuid = links.targ_uuid
+				LEFT JOIN labeling_options ON (resource.source_id = labeling_options.source_id
+						  AND resource.project_id = labeling_options.project_id
+						  AND labeling_options.doc_type LIKE '%media%'
+						  AND labeling_options.relType = 'link')
+				
+				WHERE links.origin_uuid = '".$id."'
+				AND (links.targ_type LIKE '%media%' OR links.targ_type LIKE '%resource%' )
+				$obsTerm
+				ORDER BY resource.res_number, resource.res_label	
+				";
+				
+				
+		  }
+		  else{
+				
+				if(!$obs){
+			  $obsTerm = "";
+				}
+				else{
+			  $obsTerm = " AND links.origin_obs = $obs ";
+				}
+				
+				$sql = "SELECT links.targ_uuid, links.link_type, links.targ_obs,
+			  resource.res_label, resource.res_type AS res_archml_type, resource.res_format,
+			  resource.ia_thumb, resource.ia_preview, resource.ia_fullfile, 0 AS labelVarUUID
+				FROM links 
+				JOIN resource ON resource.uuid = links.targ_uuid
+				WHERE links.origin_uuid = '".$id."'
+				AND (links.targ_type LIKE '%media%' OR links.targ_type LIKE '%resource%' )
+				$obsTerm
+				ORDER BY resource.res_label";
+				
+		  }
+		  
+		  //echo $sql;
+		  
+		  $result = $db->fetchAll($sql, 2);
+		  if($result){
+				
+				if(!$obs){
+					 $obsNum = 1;
+				}
+				else{
+					 $obsNum = $obs;
+				}
+				
+				$oldLinks = $this->links;
+				if(!is_array($oldLinks)){
+					 $oldLinks = array();
+					 $oldLinks[$obsNum] = array();
+				}
+				else{
+					 if(!array_key_exists($obsNum, $oldLinks)){
+						  $oldLinks[$obsNum] = array();
+					 }
+				}
+				
+				$mediaLinks = $this->mediaLinks;
+				if(!is_array($mediaLinks)){
+					 $mediaLinks = array();
+					 $mediaLinks[$obsNum] = array();
+				}
+				else{
+					 if(!array_key_exists($obsNum, $mediaLinks)){
+						  $mediaLinks[$obsNum] = array();
+					 }
+				}
+				
+				foreach($result as $row){
+			  
+					 $linkedUUID = $row["targ_uuid"];
+					 $linkType = $row["link_type"];
+					 $linkedName = $row["res_label"];
+					 $archaeoMLtype = $row["res_archml_type"];
+					 $thumbURI = $row["ia_thumb"];
+					 $labelVarUUID = $row["labelVarUUID"];
+					 
+					 $actMediaLinkArray = array("linkedName" => $linkedName,
+									 "linkType" => $linkType,
+									 "linkedUUID" => $linkedUUID,
+									 "archaeoMLtype" => $archaeoMLtype,
+									 "thumbURI" => $thumbURI);
+					 
+					 if(strlen($labelVarUUID)>1){
+						  $sql = "SELECT val_tab.val_text
+						  FROM observe
+						  JOIN properties ON observe.property_uuid = properties.property_uuid
+						  JOIN val_tab ON properties.value_uuid = val_tab.value_uuid
+						  WHERE observe.subject_uuid = '$linkedUUID'
+						  AND properties.variable_uuid = '$labelVarUUID'
+						  LIMIT 1;
+						  ";
+						  
+						  $resultB = $db->fetchAll($sql, 2);
+						  if($resultB){
+								$actMediaLinkArray["descriptor"] = $resultB[0]["val_text"];
+						  }
+						 
+					 }
+					 
+					 
+					 
+					 
+					 $obsHash = sha1($obsNum.$linkedUUID.$linkType);
+					 if(!array_key_exists($obsHash, $oldLinks[$obsNum])){
+						  $oldLinks[$obsNum][$obsHash] = array("type" => "resource",
+									 "linkType" => $linkType,
+									 "linkedUUID" => $linkedUUID);
+					 }
+					 if(!array_key_exists($obsHash, $mediaLinks[$obsNum])){
+						  $mediaLinks[$obsNum][$obsHash] = $actMediaLinkArray;
+					 }
+					 
+					  }//end loop
+					  
+					  $this->links = $oldLinks;
+					  $this->mediaLinks = $mediaLinks;
+				}
+				 
+				 return $found;
     } //end function
     
     

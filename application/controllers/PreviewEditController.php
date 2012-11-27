@@ -54,8 +54,8 @@ class PreviewEditController extends Zend_Controller_Action
         $dbName = $config->db->config->dbname;
       
         $xslFile = "edit_preview_defaultSpatial_rdfa.xsl";
-        $spaceURI = $this->baseURL. "/xml/space?xml=1&id=".$itemUUID;
-        $xslString = file_get_contents($this->baseURL."/xsl/".$xslFile );
+        $spaceURI = "http://".$_SERVER["SERVER_NAME"]."/xml/space?xml=1&id=".$itemUUID;
+        $xslString = file_get_contents("http://".$_SERVER["SERVER_NAME"]."/xsl/".$xslFile );
         $spaceString = file_get_contents($spaceURI);
         
         //$this->_helper->viewRenderer->setNoRender();
