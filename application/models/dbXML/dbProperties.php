@@ -175,6 +175,7 @@ class dbXML_dbProperties  {
 					 $showVal = $row["allprop"];
 					 
 					 $showVal = html_entity_decode($showVal, ENT_QUOTES, 'UTF-8');
+					
 					 //$showVal = str_replace("\r\n", "<br/>", $showVal);
 					 if(strlen($showVal)>140){
 						 $varType = "alphanumeric";
@@ -208,6 +209,14 @@ class dbXML_dbProperties  {
 						 $validForXML = true;
 					 }
 					 else{
+						   $showVal = tidy_repair_string($xmlNote,
+								array( 
+									 'doctype' => "omit",
+									 'input-xml' => true,
+									 'output-xml' => true 
+								));
+						  
+						  
 						 $validForXML = false;
 					 }
 					 unset($xml);
