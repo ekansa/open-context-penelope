@@ -99,7 +99,7 @@ class dataEdit_editMedia  {
 			$this->label = $result[0]["res_label"];
 			$this->fileName = $result[0]["res_filename"];
 			$this->archaeoMLtype = strtolower($result[0]["res_archml_type"]);
-			$this->MIMEtype = strtolower($result[0]["res_format"]);
+			$this->MIMEtype = strtolower($result[0]["mine_type"]);
 			$this->imageSize = $result[0]["size"]+0;
 			$this->fileSize = $result[0]["filesize"]+0;
 			$this->thumbURI = str_replace(" ", "%20", $result[0]["ia_thumb"]);

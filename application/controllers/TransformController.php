@@ -1668,7 +1668,7 @@ class TransformController extends App_Controller_PenelopeController
                                 'res_label'             => $resFilename,
                                 'res_path_source'       => $filenameAndPath,
                                 'res_filename'          => $resFilename,
-                                'res_format'            => $resFormat
+                                'mime_type'            => $resFormat
                             );
                             
                             $file_types = array("jpg" => "image",

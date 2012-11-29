@@ -607,7 +607,7 @@ class Importer_TransformDataController extends Zend_Controller_Action
                                 'uuid'              => $resUUID,
                                 'res_path_source'       => $filenameAndPath,
                                 'res_filename'          => $resFilename,
-                                'res_format'            => $resFormat
+                                'mine_type'            => $resFormat
                             );
                             //Zend_Debug::dump($data);
                             $resource->insert($data);
