@@ -29,7 +29,7 @@ class Resource extends Item implements App_Xml_XmlGenerator
         $this->label            = $resourceRow->res_label;
         $this->pathSource       = $resourceRow->res_path_source;
         $this->pathDestination  = $resourceRow->res_path_destination;  
-        $this->format           = $resourceRow->mine_type;
+        $this->format           = $resourceRow->mime_type;
         /*
         project_id
         source_id	  	  	 
@@ -40,7 +40,7 @@ class Resource extends Item implements App_Xml_XmlGenerator
         res_filename
         res_path_destination 
         res_archml_type  	 
-        mine_type	 
+        mime_type	 
         res_thumb	  	  	 
         res_preview	  	  	 
         res_fullfile	  	  	 

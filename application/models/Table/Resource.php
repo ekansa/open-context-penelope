@@ -15,7 +15,7 @@ class Table_Resource extends Zend_Db_Table_Abstract
         res_filename
         res_path_destination 
         res_archml_type  	 
-        mine_type	 
+        mime_type	 
         res_thumb	  	  	 
         res_preview	  	  	 
         res_fullfile	  	  	 

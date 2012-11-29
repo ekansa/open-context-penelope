@@ -582,7 +582,7 @@ class PreviewController extends Zend_Controller_Action
                 }
                 elseif(stristr($itemType, "media")){
                     $url .= "media?UUID=".$itemUUID;
-                    $sql = "SELECT res_label AS label, mine_type AS note FROM resource WHERE uuid = '$itemUUID' LIMIT 1; ";
+                    $sql = "SELECT res_label AS label, mime_type AS note FROM resource WHERE uuid = '$itemUUID' LIMIT 1; ";
                 }
                 elseif(stristr($itemType, "diary")){
                     $url .= "document?UUID=".$itemUUID;

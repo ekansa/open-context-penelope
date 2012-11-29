@@ -405,7 +405,7 @@ class dbXML_dbLinks  {
 				}
 				
 				$sql = "SELECT links.targ_uuid, links.link_type, links.targ_obs,
-			  resource.res_label, resource.res_type AS res_archml_type, resource.mine_type,
+			  resource.res_label, resource.res_type AS res_archml_type, resource.mime_type,
 			  resource.ia_thumb, resource.ia_preview, resource.ia_fullfile, 0 AS labelVarUUID
 				FROM links 
 				JOIN resource ON resource.uuid = links.targ_uuid
