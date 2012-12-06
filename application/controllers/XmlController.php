@@ -167,64 +167,64 @@ class xmlController extends Zend_Controller_Action {
     
     
     public function projectAction(){
-	$this->_helper->viewRenderer->setNoRender();
-	Zend_Loader::loadClass('dbXML_dbProject');
-	Zend_Loader::loadClass('dbXML_dbSpace');
-	Zend_Loader::loadClass('dbXML_dbLinks');
-	Zend_Loader::loadClass('dbXML_dbProperties');
-	Zend_Loader::loadClass('dbXML_dbMetadata');
-	Zend_Loader::loadClass('dbXML_xmlProject');
-	Zend_Loader::loadClass('dbXML_xmlProperties');
-	Zend_Loader::loadClass('dbXML_xmlLinks');
-	Zend_Loader::loadClass('dbXML_xmlNotes');
-	Zend_Loader::loadClass('dbXML_xmlContext');
-	Zend_Loader::loadClass('dbXML_xmlMetadata');
-	
-	$db = Zend_Registry::get('db');
-	$this->setUTFconnection($db);
-	
-	$itemObj = new dbXML_dbProject;
-	$itemObj->initialize($db);
-	$itemObj->dbPenelope = true;
-	$itemObj->getByID($_GET['id']);
-	
-	$propsObj = new dbXML_dbProperties;
-	$propsObj->initialize($db);
-	$propsObj->dbPenelope = true;
-	$propsObj->getProperties($itemObj->itemUUID);
-	$itemObj->propertiesObj = $propsObj;
-	
-	$linksObj = new dbXML_dbLinks;
-	$linksObj->initialize($db);
-	$linksObj->dbPenelope = true;
-	$linksObj->makeProjRootLinks($itemObj->projRootItems); //make links for root spatial items
-	$linksObj->makeProjPersonLinks($itemObj->itemUUID); //make links for all people
-	$linksObj->getLinks($itemObj->itemUUID);
-	$itemObj->linksObj = $linksObj;
-	
-	$metadataObj = new dbXML_dbMetadata;
-	$metadataObj->initialize($db);
-	$metadataObj->dbPenelope = true;
-	$metadataObj->getMetadata($itemObj->projectUUID);
-	$itemObj->metadataObj = $metadataObj;
-	
-	if(!isset($_GET['xml'])){
-		header('Content-Type: application/json; charset=utf8');
-		echo Zend_Json::encode($itemObj);
-	}
-	else{
-		$xmlItem = new dbXML_xmlProject;
-		$xmlItem->itemObj = $itemObj;
-		$xmlItem->initialize();
-		$xmlItem->addName();
-		$xmlItem->addProjectInfo();
-		$xmlItem->addPropsLinks();
-		$xmlItem->addMetadata();
-		
-		$doc = $xmlItem->doc;
-		header('Content-Type: application/xml; charset=utf8');
-		echo $doc->saveXML();
-	}
+			$this->_helper->viewRenderer->setNoRender();
+			Zend_Loader::loadClass('dbXML_dbProject');
+			Zend_Loader::loadClass('dbXML_dbSpace');
+			Zend_Loader::loadClass('dbXML_dbLinks');
+			Zend_Loader::loadClass('dbXML_dbProperties');
+			Zend_Loader::loadClass('dbXML_dbMetadata');
+			Zend_Loader::loadClass('dbXML_xmlProject');
+			Zend_Loader::loadClass('dbXML_xmlProperties');
+			Zend_Loader::loadClass('dbXML_xmlLinks');
+			Zend_Loader::loadClass('dbXML_xmlNotes');
+			Zend_Loader::loadClass('dbXML_xmlContext');
+			Zend_Loader::loadClass('dbXML_xmlMetadata');
+			
+			$db = Zend_Registry::get('db');
+			$this->setUTFconnection($db);
+			
+			$itemObj = new dbXML_dbProject;
+			$itemObj->initialize($db);
+			$itemObj->dbPenelope = true;
+			$itemObj->getByID($_GET['id']);
+			
+			$propsObj = new dbXML_dbProperties;
+			$propsObj->initialize($db);
+			$propsObj->dbPenelope = true;
+			$propsObj->getProperties($itemObj->itemUUID);
+			$itemObj->propertiesObj = $propsObj;
+			
+			$linksObj = new dbXML_dbLinks;
+			$linksObj->initialize($db);
+			$linksObj->dbPenelope = true;
+			$linksObj->makeProjRootLinks($itemObj->projRootItems); //make links for root spatial items
+			$linksObj->makeProjPersonLinks($itemObj->itemUUID); //make links for all people
+			$linksObj->getLinks($itemObj->itemUUID);
+			$itemObj->linksObj = $linksObj;
+			
+			$metadataObj = new dbXML_dbMetadata;
+			$metadataObj->initialize($db);
+			$metadataObj->dbPenelope = true;
+			$metadataObj->getMetadata($itemObj->projectUUID);
+			$itemObj->metadataObj = $metadataObj;
+			
+			if(!isset($_GET['xml'])){
+				header('Content-Type: application/json; charset=utf8');
+				echo Zend_Json::encode($itemObj);
+			}
+			else{
+				$xmlItem = new dbXML_xmlProject;
+				$xmlItem->itemObj = $itemObj;
+				$xmlItem->initialize();
+				$xmlItem->addName();
+				$xmlItem->addProjectInfo();
+				$xmlItem->addPropsLinks();
+				$xmlItem->addMetadata();
+				
+				$doc = $xmlItem->doc;
+				header('Content-Type: application/xml; charset=utf8');
+				echo $doc->saveXML();
+			}
     }
     
     
