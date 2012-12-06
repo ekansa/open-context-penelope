@@ -9,7 +9,7 @@ class DescribeController extends Zend_Controller_Action
 {
     
     //public $host = "http://penelope.opencontext.org";
-    public $host = "http://penelope2.oc";
+    public $host = "http://penelope.oc";
     public $counter = 0;
     
 	
@@ -76,9 +76,319 @@ class DescribeController extends Zend_Controller_Action
 		  header("Location: $headerLink");
     }
     
-     
     
-
+	 function poggioLinkAction(){
+		  
+		  $this->_helper->viewRenderer->setNoRender();
+		  $db = Zend_Registry::get('db');
+		  $this->setUTFconnection($db);
+		  
+		  $sql = "SELECT * FROM space
+		  WHERE (class_uuid = '8299f420-62af-11de-8a39-0800200c9a66'
+		  OR class_uuid = '8d962170-4579-11df-9879-0800200c9a66'
+		  OR class_uuid = 'A2017643-0086-4D98-4932-E4AD3884E99D'
+		  OR class_uuid = 'D9AE02E5-C3F2-41D0-EB3A-39798F63F6C4')
+		  AND sample_des = ''
+		  ORDER BY space_label
+		  ";
+		  
+		  $itemType = urlencode("Locations or Objects");
+		  $results =  $db->fetchAll($sql);
+		  $i = 1;
+		  $poggioURLbase = "http://poggiocivitate.classics.umass.edu/catalog/viewartifactcatalog.asp?fid=";
+		  foreach($results as $row){
+				
+				
+				$projectUUID = $row["project_id"];
+				$itemUUID = $row["uuid"];
+				$penURL = "http://penelope.oc/preview/space?UUID=".$itemUUID;
+				$itemLabel = $row["space_label"];
+				$itemLabel = str_replace(" ", "", $itemLabel);
+				
+				if(strlen($itemLabel) < 12){
+					 $labLen = strlen($itemLabel);
+					 while($labLen < 12){
+						  $itemLabel .= "0";
+						  $labLen = strlen($itemLabel);
+					 }
+				}
+				
+				$url = $poggioURLbase.$itemLabel;
+				@$html = file_get_contents($url);
+				if($html){
+					 if(stristr($html, "A record with this ID does not exist or is not viewable at this time.")){
+						  echo "<h4>No record for <a href=\"".$url."\">$itemLabel</a>, see <a href=\"".$penURL."\">Penelope</a></h4>";
+						  $linkNote = "none";
+					 }
+					 else{
+						  echo "<p>A record for <a href=\"".$url."\">$itemLabel</a> exists, see <a href=\"".$penURL."\">Penelope</a></p>";
+						  $linkNote = $url;
+						  
+						  $noteText = "<p id=\"link-".$itemLabel."\">The Poggio Civitate Excavation Project website originally included this object at this address: <br/>".chr(13);
+						  $noteText .= "<a href=\"".$url."\">$url</a>".chr(13);
+						  $noteText .= "</p>".chr(13);
+						  
+						  $noteURL = "http://penelope.oc/edit-dataset/add-note?";
+						  $noteURL .= "projectUUID=".$projectUUID;
+						  $noteURL .= "&itemType=".$itemType;
+						  $noteURL .= "&source=pc-http-check";
+						  $noteURL .= "&itemUUID=".$itemUUID;
+						  $noteURL .= "&newText=".urlencode($noteText);
+						  @$noteOK = file_get_contents($noteURL);
+					 }
+				}
+				else{
+					 echo "<h3>HTTP error for <a href=\"".$url."\">$itemLabel</a>, see <a href=\"".$penURL."\">Penelope</a></h3>";
+					 $linkNote = "none";
+				}
+				
+				$where = "uuid = '$itemUUID' ";
+				$data = array("sample_des" => $linkNote);
+				$db->update("space", $data, $where);
+				
+				$i++;
+				if($i > 50){
+					 //break;
+				}
+				sleep(1);
+				
+		  }
+		  
+		  
+		  
+	 }
+	 
+	 
+    function objectRefsAction(){
+		  
+		  $this->_helper->viewRenderer->setNoRender();
+		  $db = Zend_Registry::get('db');
+		  $this->setUTFconnection($db);
+		  
+		  $sql = "SELECT ArtifactID, field_15 as ref
+		  FROM  z_artifacts
+		  WHERE field_15 IS NOT NULL
+		  AND ArtifactID = '19690166'
+		  LIMIT 1000
+		  ";
+		  
+		  $sql = "SELECT ArtifactID, field_15 as ref
+		  FROM  z_artifacts
+		  WHERE field_15 IS NOT NULL
+		  ";
+		  
+		  $itemType = urlencode("Locations or Objects");
+		  $results =  $db->fetchAll($sql);
+		  foreach($results as $row){
+				$originName = trim($row["ArtifactID"]);
+				$rawRef = $row["ref"];
+				
+				$rawRef = strtolower($rawRef);
+				$rawRef = str_replace("absorbed into", "absorbed-into", $rawRef);
+				$rawRef = str_replace("absorbed by", "absorbed-by", $rawRef);
+				$rawRef = str_replace("<p>", " ", $rawRef);
+				$rawRef = str_replace("</p>", " ", $rawRef);
+				
+				if(strstr($rawRef, " ")){
+					 $refArray = explode(" ", $rawRef);
+				}
+				else{
+					 $refArray = array(0 =>$rawRef);
+				}
+				echo "<h2>$originName</h2>";
+				echo "<p>Raw ref: $rawRef</p>";
+				
+				$allRefs = array();
+				$nextAbsorbInto = false;
+				$nextAbsorbBy = false;
+				$nextAbsorbs = false;
+				$nextJoins = false;
+				$i = 0;
+				
+				$wordIndex = 0;
+				foreach($refArray as $seg){
+					 if(stristr($seg, "absorbed-into")){
+						  $nextAbsorbInto = true;
+						  $nextAbsorbBy = false;
+						  $nextAbsorbs = false;
+						  $nextJoins = false;
+					 }
+					 elseif(stristr($seg, "absorbed-by")){
+						  $nextAbsorbBy = true;
+						  $nextAbsorbInto = false;
+						  $nextAbsorbs = false;
+						  $nextJoins = false;
+					 }
+					 elseif(stristr($seg, "absorbs") || $seg == "absorb"){
+						  $nextAbsorbs = true;
+						  $nextAbsorbInto = false;
+						  $nextAbsorbBy = false;
+						  $nextJoins = false;
+					 }
+					 elseif($seg == "joins"){
+						  $nextJoins = true;
+						  $nextAbsorbInto = false;
+						  $nextAbsorbBy = false;
+						  $nextAbsorbs = false;
+					 }
+					 
+					 /*
+					 echo "<h5>$seg</h5>";
+					 echo "<br/>nextAbsorbInto: ".$nextAbsorbInto;
+					 echo "<br/>nextAbsorbBy: ".$nextAbsorbBy;
+					 echo "<br/>nextAbsorbs: ".$nextAbsorbs;
+					 echo "<br/>nextJoins: ".$nextJoins;
+					 */
+					 
+					 $numSeg = preg_replace('/[^0-9]/s', '', $seg);
+					 $lenSeg = strlen($numSeg);
+					 if($lenSeg >= 8){
+						  
+						  if($nextAbsorbInto){
+								$nextAbsorbInto = $this->toggleToFalse($refArray, $wordIndex);
+								$priorAbsorb = false;
+								if($i>0){
+									 
+									 $priorAbsorb = $allRefs[$i-1]["label"];
+									 
+									 if($numSeg == $originName){
+										  unset($allRefs[$i-1]);
+									 }
+									 elseif($priorAbsorb == $numSeg){
+										  $priorAbsorb = false;
+									 }
+									 
+								}
+								$type = "absorbs";
+								if(!$priorAbsorb){
+									 $priorAbsorb = $originName;
+									 $type = "absorbed by";
+								}
+								if($priorAbsorb != $numSeg){
+									 if($numSeg != $originName){
+										  $allRefs[$i] = array("label" => $numSeg, "type" => $type , "prior" => $priorAbsorb);
+									 }
+									 else{
+										  $allRefs[$i] = array("prior" => $numSeg, "type" => $type , "label" => $priorAbsorb);
+									 }
+									 $i++;
+								}
+						  }
+						  else{
+								if($numSeg !=  $originName){
+									 if($nextAbsorbBy){
+										  $allRefs[$i] = array("label" => $numSeg, "type" => "absorbed by", "prior" => false);
+										  $nextAbsorbBy = $this->toggleToFalse($refArray, $wordIndex);
+									 }
+									 elseif($nextAbsorbs){
+										  $allRefs[$i] = array("label" => $numSeg, "type" => "absorbs", "prior" => $originName);
+										  $nextAbsorbs = $this->toggleToFalse($refArray, $wordIndex);
+									 }
+									 elseif($nextJoins){
+										  $allRefs[$i] = array("label" => $numSeg, "type" => "joins", "prior" => $originName);
+										  $nextJoins = $this->toggleToFalse($refArray, $wordIndex);
+									 }
+									 else{
+										  $allRefs[$i] = array("label" => $numSeg, "type" => "reference", "prior" => false);
+									 }
+									 $i++;
+								}
+						  }
+					 }
+					 $wordIndex++;
+				}
+				
+				$processedRefs = array();
+				foreach($allRefs as $actRef){
+					 $actProcessed = array();
+					 if($actRef["type"] == "absorbs"){
+						  //echo "<br/>Origin: ".$actRef["prior"]." => absorbs => ".$actRef["label"];
+						  if($actRef["prior"] == $originName){
+								$actProcessed["originLabel"] = $actRef["prior"];
+								$actProcessed["originUUID"] = $this->getPCuuid($actRef["prior"], $db);
+								$actProcessed["linkType"] = "absorbs";
+								$actProcessed["targLabel"] = $actRef["label"];
+								$actProcessed["targUUID"] = $this->getPCuuid($actRef["label"], $db);
+						  }
+						  else{
+								$actProcessed["originLabel"] = $originName;
+								$actProcessed["originUUID"] = $this->getPCuuid($originName, $db);
+								$actProcessed["linkType"] = "absorbed by";
+								$actProcessed["targLabel"] = $actRef["label"];
+								$actProcessed["targUUID"] = $this->getPCuuid($actRef["label"], $db);
+						  }
+						  
+					 }
+					 else{
+						  //echo "<br/>Origin: ".$originName." => refs => ".$actRef["label"];
+						  $actProcessed["originLabel"] = $originName;
+						  $actProcessed["originUUID"] = $this->getPCuuid($originName, $db);
+						  $actProcessed["linkType"] = $actRef["type"];
+						  $actProcessed["targLabel"] = $actRef["label"];
+						  $actProcessed["targUUID"] = $this->getPCuuid($actRef["label"], $db);
+					 }
+					 if($actProcessed["originUUID"] != false && $actProcessed["targUUID"] != false && $actProcessed["originUUID"] != $actProcessed["targUUID"] ){
+						  $processedRefs[] = $actProcessed;
+					 }
+				}
+				
+				$projectUUID = "DF043419-F23B-41DA-7E4D-EE52AF22F92F";
+				
+				foreach($processedRefs as $actRef){
+					 echo "<br/>Origin ".$actRef["originLabel"]." (".$actRef["originUUID"].") => ".$actRef["linkType"]." => ";
+					 echo "Target ".$actRef["targLabel"]." (".$actRef["targUUID"].")";
+					 $linkURL = "http://penelope.oc/edit-dataset/link-item?";
+					 $linkURL .= "projectUUID=".$projectUUID;
+					 $linkURL .= "&source=ref-scrape";
+					 $linkURL .= "&originUUID=".$actRef["originUUID"];
+					 $linkURL .= "&originType=".$itemType;
+					 $linkURL .= "&targUUID=".$actRef["targUUID"];
+					 $linkURL .= "&targType=".$itemType;
+					 $linkURL .= "&originRel=".urlencode($actRef["linkType"]);
+					 @$linkOK = file_get_contents($linkURL);
+				}
+				
+				
+				unset($absorbedArray);
+				unset($refsArray);
+				unset($allRefs);
+		  }
+	 
+		  //field_15 is "References"
+		  //field_16 is "Published"
+	 
+	 }
+	 
+	 private function toggleToFalse($refArray, $wordIndex){
+		  $output = false;
+		  $wordIndex = $wordIndex + 1;
+		  if(isset($refArray[$wordIndex])){
+				$seg = $refArray[$wordIndex];
+				if($seg == "and"){
+					 $output = true;
+				}
+				$numSeg = preg_replace('/[^0-9]/s', '', $seg);
+				$lenSeg = strlen($numSeg);
+				if($lenSeg >= 8){
+					 $output = true;
+				}
+		  }
+		  return $output;
+	 }
+	 
+	 
+	 private function getPCuuid($numericLabel, $db){
+		  $output = false;
+		  $label = "PC ".$numericLabel;
+		  $sql = "SELECT uuid FROM space WHERE space_label = '$label' LIMIT 1;";
+		  $result =  $db->fetchAll($sql);
+		  if($result){
+				$output = $result[0]["uuid"];
+		  }
+		  return $output;
+	 }
+	 
+	 
 
 	 function geoJsonAction(){
 		  $this->_helper->viewRenderer->setNoRender();

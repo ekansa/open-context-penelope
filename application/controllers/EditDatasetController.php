@@ -1451,13 +1451,20 @@ class EditDatasetController extends Zend_Controller_Action
         $originRel = $_REQUEST["originRel"];
         $targUUID = $_REQUEST["targUUID"];
         
-		$nextprev = false;
-		if(isset($_REQUEST["nextprev"])){
-			if($_REQUEST["nextprev"] == "np"){
-				$nextprev = true;
-				$originRel = "Next";
-			}
-		}
+		  $nextprev = false;
+		  if(isset($_REQUEST["nextprev"])){
+			  if($_REQUEST["nextprev"] == "np"){
+				  $nextprev = true;
+				  $originRel = "Next";
+			  }
+		  }
+		
+		  if(isset($_REQUEST['source'])){
+            $source = $_REQUEST['source'];
+        }
+        else{
+            $source = "manual";
+        }
 		
 		
         //default is location and object
@@ -1476,13 +1483,13 @@ class EditDatasetController extends Zend_Controller_Action
             $targType = 'Media (various)';
         }
         
-        $newLinkID = $this->addLinkingRel($originUUID, $originType, $targUUID, $targType, $originRel, $projectUUID);
-		$output = array("linkID" => $newLinkID);
+        $newLinkID = $this->addLinkingRel($originUUID, $originType, $targUUID, $targType, $originRel, $projectUUID, $source);
+		  $output = array("linkID" => $newLinkID);
 		
         if($nextprev){
 			//add the reciprocal "Previous" link
-			$newLinkID = $this->addLinkingRel($targUUID, $targType, $originUUID, $originType, "Previous", $projectUUID);
-		}
+			$newLinkID = $this->addLinkingRel($targUUID, $targType, $originUUID, $originType, "Previous", $projectUUID, $source);
+		  }
 		
         echo  Zend_JSON::encode($output);
         
@@ -2834,7 +2841,13 @@ class EditDatasetController extends Zend_Controller_Action
         $newText =  $_REQUEST['newText'];
         $itemUUID = $_REQUEST['itemUUID'];
         $projectUUID = $_REQUEST['projectUUID'];
-        if(isset($_REQUEST['itemType'])){
+        if(isset($_REQUEST['source'])){
+            $source = $_REQUEST['source'];
+        }
+        else{
+            $source = "manual";
+        }
+		  if(isset($_REQUEST['itemType'])){
             $itemType = $_REQUEST['itemType'];
         }
         else{
@@ -2849,12 +2862,12 @@ class EditDatasetController extends Zend_Controller_Action
     
         if(!$itemType == false){
             $db = Zend_Registry::get('db');
-            $valueUUID = $this->get_make_ValID($newText, $projectUUID);
-            $propUUID = $this->get_make_PropID("NOTES", $valueUUID, $projectUUID);
+            $valueUUID = $this->get_make_ValID($newText, $projectUUID, $source);
+            $propUUID = $this->get_make_PropID("NOTES", $valueUUID, $projectUUID, $source);
             $obsHashText = md5($projectUUID . "_" . $itemUUID . "_" . "1" . "_" . $propUUID);
                         
             $data = array("project_id"=> $projectUUID,
-                          "source_id"=> 'manual',
+                          "source_id"=> $source,
                           "hash_obs" => $obsHashText,
                           "subject_type" => $itemType,
                           "subject_uuid" => $itemUUID,
