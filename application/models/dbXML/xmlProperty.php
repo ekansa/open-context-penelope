@@ -208,67 +208,67 @@ class dbXML_xmlProperty  {
 	}
 	
 	
-	if($itemObj->varLinkURI || $itemObj->propLinkURI){
-	    $elementB = $doc->createElement("oc:linkedData");
-	    if($itemObj->varLinkURI){
-		$elementC = $doc->createElement("oc:relationLink");
-		$elementC->setAttribute("localType", "variable");
-		$elementC->setAttribute("id", $itemObj->varUUID);
-		$elementC->setAttribute("href", $itemObj->varLinkURI);
-		$elementD = $doc->createElement("oc:vocabulary");
-		$elementD->setAttribute("href", $itemObj->varLinkVocabURI);
-		$elementDtext = $doc->createTextNode($itemObj->varLinkVocab);
-		$elementD->appendChild($elementDtext);
-		$elementC->appendChild($elementD);
-		$elementD = $doc->createElement("oc:label");
-		$elementDtext = $doc->createTextNode($itemObj->varLinkLabel);
-		$elementD->appendChild($elementDtext);
-		$elementC->appendChild($elementD);
-		
-		/*
-		if($itemObj->propLinkURI){
-		    $elementD = $doc->createElement("oc:targetLink");
-		    $elementD->setAttribute("localType", "property");
-		    $elementD->setAttribute("id", $itemObj->itemUUID);
-		    $elementD->setAttribute("href", $itemObj->propLinkURI);
-		    $elementE = $doc->createElement("oc:vocabulary");
-		    $elementE->setAttribute("href", $itemObj->propLinkVocabURI);
-		    $elementEtext = $doc->createTextNode($itemObj->propLinkVocab);
-		    $elementE->appendChild($elementEtext);
-		    $elementD->appendChild($elementE);
-		    $elementE = $doc->createElement("oc:label");
-		    $elementEtext = $doc->createTextNode($itemObj->propLinkLabel);
-		    $elementE->appendChild($elementEtext);
-		    $elementD->appendChild($elementE);
-		    $elementC->appendChild($elementD);
-		}
-		*/
-		if(is_array($itemObj->linkedData)){
-		  foreach($itemObj->linkedData as $linkedData){
-				$elementD = $doc->createElement("oc:targetLink");
-				$elementD->setAttribute("localType", "property");
-				$elementD->setAttribute("id", $itemObj->itemUUID);
-				$elementD->setAttribute("href", $linkedData["linkedURI"]);
-				$elementE = $doc->createElement("oc:vocabulary");
-				$elementE->setAttribute("href", $linkedData["vocabURI"]);
-				$elementEtext = $doc->createTextNode($linkedData["vocabulary"]);
-				$elementE->appendChild($elementEtext);
-				$elementD->appendChild($elementE);
-				$elementE = $doc->createElement("oc:label");
-				$elementEtext = $doc->createTextNode($linkedData["linkedLabel"]);
-				$elementE->appendChild($elementEtext);
-				$elementD->appendChild($elementE);
-				$elementC->appendChild($elementD);
+		  if($itemObj->varLinkURI || $itemObj->propLinkURI){
+				$elementB = $doc->createElement("oc:linkedData");
+				if($itemObj->varLinkURI){
+					 $elementC = $doc->createElement("oc:relationLink");
+					 $elementC->setAttribute("localType", "variable");
+					 $elementC->setAttribute("id", $itemObj->varUUID);
+					 $elementC->setAttribute("href", $itemObj->varLinkURI);
+					 $elementD = $doc->createElement("oc:vocabulary");
+					 $elementD->setAttribute("href", $itemObj->varLinkVocabURI);
+					 $elementDtext = $doc->createTextNode($itemObj->varLinkVocab);
+					 $elementD->appendChild($elementDtext);
+					 $elementC->appendChild($elementD);
+					 $elementD = $doc->createElement("oc:label");
+					 $elementDtext = $doc->createTextNode($itemObj->varLinkLabel);
+					 $elementD->appendChild($elementDtext);
+					 $elementC->appendChild($elementD);
+			 
+					 /*
+					 if($itemObj->propLinkURI){
+						  $elementD = $doc->createElement("oc:targetLink");
+						  $elementD->setAttribute("localType", "property");
+						  $elementD->setAttribute("id", $itemObj->itemUUID);
+						  $elementD->setAttribute("href", $itemObj->propLinkURI);
+						  $elementE = $doc->createElement("oc:vocabulary");
+						  $elementE->setAttribute("href", $itemObj->propLinkVocabURI);
+						  $elementEtext = $doc->createTextNode($itemObj->propLinkVocab);
+						  $elementE->appendChild($elementEtext);
+						  $elementD->appendChild($elementE);
+						  $elementE = $doc->createElement("oc:label");
+						  $elementEtext = $doc->createTextNode($itemObj->propLinkLabel);
+						  $elementE->appendChild($elementEtext);
+						  $elementD->appendChild($elementE);
+						  $elementC->appendChild($elementD);
+					 }
+					 */
+					 if(is_array($itemObj->linkedData)){
+						  foreach($itemObj->linkedData as $linkedData){
+								$elementD = $doc->createElement("oc:targetLink");
+								$elementD->setAttribute("localType", "property");
+								$elementD->setAttribute("id", $itemObj->itemUUID);
+								$elementD->setAttribute("href", $linkedData["linkedURI"]);
+								$elementE = $doc->createElement("oc:vocabulary");
+								$elementE->setAttribute("href", $linkedData["vocabURI"]);
+								$elementEtext = $doc->createTextNode($linkedData["vocabulary"]);
+								$elementE->appendChild($elementEtext);
+								$elementD->appendChild($elementE);
+								$elementE = $doc->createElement("oc:label");
+								$elementEtext = $doc->createTextNode($linkedData["linkedLabel"]);
+								$elementE->appendChild($elementEtext);
+								$elementD->appendChild($elementE);
+								$elementC->appendChild($elementD);
+						  }
+					 }
+			 
+				$elementB->appendChild($elementC);
+			  }
+			  
+			  $element->appendChild($elementB);
 		  }
-		}
-		
-		$elementB->appendChild($elementC);
-	    }
-	    
-	    $element->appendChild($elementB);
-	}
 	
-	$root->appendChild($element);
+	 $root->appendChild($element);
     }
     
     

@@ -1,31 +1,31 @@
 <?php
 
 class dbXML_dbProperties  {
-     
-    public $properties; //array of properties
-    public $notes; //array of item notes
-    
-    public $dbName;
-    public $dbPenelope;
-    public $db;
-    
-    
-    
-    
-    public function initialize($db = false){
-        if(!$db){
-            $db_params = OpenContext_OCConfig::get_db_config();
-            $db = new Zend_Db_Adapter_Pdo_Mysql($db_params);
-            $db->getConnection();
-        }
-        
-        $this->db = $db;
-        $this->properties = false;
+	  
+	 public $properties; //array of properties
+	 public $notes; //array of item notes
+	 
+	 public $dbName;
+	 public $dbPenelope;
+	 public $db;
+	 
+	 
+	 
+	 
+	 public function initialize($db = false){
+		  if(!$db){
+				$db_params = OpenContext_OCConfig::get_db_config();
+				$db = new Zend_Db_Adapter_Pdo_Mysql($db_params);
+				$db->getConnection();
+		  }
+		  
+		  $this->db = $db;
+		  $this->properties = false;
 		  $this->notes = false;
-    }
-    
-    public function getProperties($id, $obsNumbers = false){
-        
+	 }
+	 
+	 public function getProperties($id, $obsNumbers = false){
+		  
 		  if(!is_array($obsNumbers)){
 				$obsNumbers = array(0 => false);
 		  }
@@ -38,13 +38,13 @@ class dbXML_dbProperties  {
 				$this->getPropsByObs($id, $obs);
 				$this->getNotesByObs($id, $obs);
 		  }
-    }
-    
-    
-    
-    public function getPropsByObs($id, $obs = false){
-    
-        $db = $this->db;
+	 }
+	 
+	 
+	 
+	 public function getPropsByObs($id, $obs = false){
+	 
+		  $db = $this->db;
 	
 	
 		  if($this->dbPenelope){
@@ -127,16 +127,16 @@ class dbXML_dbProperties  {
 	//echo $sql;
 	
 		  $result = $db->fetchAll($sql, 2);
-        if($result){
-	    
+		  if($result){
+		 
 				if(!$obs){
 					 $obsNum = 1;
 				}
 				else{
 					 $obsNum = $obs;
 				}
-	    
-            $properties = $this->properties;
+		 
+				$properties = $this->properties;
 				if(!is_array($properties)){
 					 $properties = array();
 					 $properties[$obsNum] = array();
@@ -146,7 +146,7 @@ class dbXML_dbProperties  {
 						  $properties[$obsNum] = array();
 					 }
 				}
-	    
+		 
 				foreach($result as $row){
 		
 					 $propertyUUID = $row["property_uuid"];
@@ -209,7 +209,7 @@ class dbXML_dbProperties  {
 						 $validForXML = true;
 					 }
 					 else{
-						   $showVal = tidy_repair_string($xmlNote,
+							$showVal = tidy_repair_string($xmlNote,
 								array( 
 									 'doctype' => "omit",
 									 'input-xml' => true,
@@ -247,32 +247,37 @@ class dbXML_dbProperties  {
 					 }
 		
 				}//end loop
-	    
+		 
 		  $this->properties = $properties;
-        }
-        
-    } //end function
-    
-    
-    
-    
-    public function pen_getLinkedData($itemUUID){
-		$db = $this->db;
-		
-		$output = false;
-		$sql = "SELECT linked_data.linkedLabel, linked_data.linkedURI, linked_data.vocabulary, 	linked_data.vocabURI
-		FROM linked_data
-		WHERE linked_data.itemUUID = '$itemUUID' AND linked_data.linkedType = 'type' ";
-		
-		$result = $db->fetchAll($sql, 2);
-			if($result){
-			$output = array();
-			$output = $result[0];
-		}
-		
-		return $output;
+		  }
+		  
+	 } //end function
+	 
+	 
+	 
+	 
+	 public function pen_getLinkedData($itemUUID, $allLinks = false){
+		  $db = $this->db;
+		  
+		  $output = false;
+		  $sql = "SELECT linked_data.linkedLabel, linked_data.linkedURI, linked_data.vocabulary, 	linked_data.vocabURI
+		  FROM linked_data
+		  WHERE linked_data.itemUUID = '$itemUUID' AND linked_data.linkedType = 'type' ";
+		  
+		  $result = $db->fetchAll($sql, 2);
+		  if($result){
+				$output = array();
+				if(!$allLinks){
+					 $output = $result[0];
+				}
+				else{
+					 $output = $result;
+				}
+		  }
+		  
+		  return $output;
     }
-    
+	 
 	
 	public function pen_getUnitData($itemUUID){
 		$db = $this->db;
@@ -289,28 +294,28 @@ class dbXML_dbProperties  {
 		}
 		
 		return $output;
-    }
+	 }
 	
 	
 	
-    
-    
-    
-    public function getNotesByObs($id, $obs = false){
-    
-        $db = $this->db;
+	 
+	 
+	 
+	 public function getNotesByObs($id, $obs = false){
+	 
+		  $db = $this->db;
 	
 	
 	if($this->dbPenelope){
-	    
-	    if(!$obs){
+		 
+		 if(!$obs){
 		$obsTerm = "";
-	    }
-	    else{
+		 }
+		 else{
 		$obsTerm = "AND observe.obs_num = $obs ";
-	    }
-	    
-	    $sql = "SELECT DISTINCT val_tab.val_text, properties.property_uuid, properties.value_uuid
+		 }
+		 
+		 $sql = "SELECT DISTINCT val_tab.val_text, properties.property_uuid, properties.value_uuid
 		FROM observe
 		LEFT JOIN properties ON observe.property_uuid = properties.property_uuid
 		LEFT JOIN val_tab ON properties.value_uuid = val_tab.value_uuid
@@ -319,48 +324,48 @@ class dbXML_dbProperties  {
 		";
 	}
 	else{
-	    
-	    if(!$obs){
+		 
+		 if(!$obs){
 		$obsTerm = "";
-	    }
-	    else{
+		 }
+		 else{
 		$obsTerm = "AND observe.obs_num = $obs ";
-	    }
-	    
-	    $sql = "SELECT DISTINCT val_tab.val_text, properties.property_uuid, properties.value_uuid
+		 }
+		 
+		 $sql = "SELECT DISTINCT val_tab.val_text, properties.property_uuid, properties.value_uuid
 		FROM observe
 		LEFT JOIN properties ON observe.property_uuid = properties.property_uuid
 		LEFT JOIN val_tab ON properties.value_uuid = val_tab.value_uuid
 		WHERE observe.subject_uuid = '$id' AND properties.variable_uuid = 'NOTES'
 		$obsTerm
 		";
-	    
+		 
 	}
 	
 	//echo $sql;
 	
-        $result = $db->fetchAll($sql, 2);
-        if($result){
-	    
-	    if(!$obs){
+		  $result = $db->fetchAll($sql, 2);
+		  if($result){
+		 
+		 if(!$obs){
 		$obsNum = 1;
-	    }
-	    else{
+		 }
+		 else{
 		$obsNum = $obs;
-	    }
-	    
-            $notes = $this->notes;
-	    if(!is_array($notes)){
+		 }
+		 
+				$notes = $this->notes;
+		 if(!is_array($notes)){
 		$notes= array();
 		$notes[$obsNum] = array();
-	    }
-	    else{
+		 }
+		 else{
 		if(!array_key_exists($obsNum, $notes)){
-		    $notes[$obsNum] = array();
+			 $notes[$obsNum] = array();
 		}
-	    }
-	    
-	    foreach($result as $row){
+		 }
+		 
+		 foreach($result as $row){
 		
 		$propertyUUID = $row["property_uuid"];
 		$valUUID = $row["value_uuid"];
@@ -370,30 +375,30 @@ class dbXML_dbProperties  {
 		$xmlNote .= "</div>".chr(13);
 		@$xml = simplexml_load_string($xmlNote);
 		if($xml){
-		    $validForXML = true;
+			 $validForXML = true;
 		}
 		else{
-		    $validForXML = false;
+			 $validForXML = false;
 		}
 		unset($xml);
 		
 		$actNoteArray = array("propertyUUID" => $propertyUUID,
-				      "valueUUID"=> $valUUID,
-				      "noteText" => $noteText,
-				      "validForXML" => $validForXML);
+						"valueUUID"=> $valUUID,
+						"noteText" => $noteText,
+						"validForXML" => $validForXML);
 		
 		if(!array_key_exists($propertyUUID, $notes[$obsNum])){
-		    $notes[$obsNum][$propertyUUID] = $actNoteArray;
+			 $notes[$obsNum][$propertyUUID] = $actNoteArray;
 		}
 		
-	    }//end loop
-	    
-	    $this->notes = $notes;
-        }
-        
-        
-    } //end function
-    
-    
-    
+		 }//end loop
+		 
+		 $this->notes = $notes;
+		  }
+		  
+		  
+	 } //end function
+	 
+	 
+	 
 }  

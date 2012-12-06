@@ -35,8 +35,7 @@ class dbXML_dbPropitem  {
     public $varLinkVocab; //name of the vocabulary for the linked concept
     public $varLinkVocabURI; //URI to the vocabulary for the linked concept
  
-	 
-	 public $linkedData; //array of linked data
+	 public $linkedData; //array of linked data, objects that relate to the current property
 	 
 	 public $varUnitURI; //uri for the measurement unit
 	 public $varUnitName; //name of the measurement unit
@@ -102,6 +101,7 @@ class dbXML_dbPropitem  {
 	$this->varLinkURI = false;
 	$this->varLinkVocab = false;
 	$this->varLinkVocabURI = false;
+	$this->linkedData = false;
 	
 	$this->valUUID = false;
 	$this->value = false;
