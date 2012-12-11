@@ -16,47 +16,56 @@ class dbXML_xmlNotes  {
 	$doc = $this->doc;
 	$rootNode = $this->rootNode;
 	
-	if(is_array($notes)){
-	    $element = $doc->createElement("arch:notes");    
-	    foreach($notes as $note){
-		$elementB = $doc->createElement("arch:note");
-		if(array_key_exists("type",  $note)){
-		    $elementB->setAttribute("type", $note["type"]);
-		}
-		$elementC = $doc->createElement("arch:string");
-		
-		$note["validForXML"] = false;
-		if($note["validForXML"]){
-		    $elementC->setAttribute("type", "xhtml");
-		}
-		
-		//$note["validForXML"] = false;
-		if($note["validForXML"]){
-		    
-		    //$noteXML = '<div>'.chr(13);
-		    
-		    $noteXML = str_replace("<", "<xhtml:", $note["noteText"]);
-		    $noteXML = str_replace("</", "</xhtml:", $noteXML);
-		    //$noteXML .= '</div>'.chr(13);
-		    
-		    $elementD = $doc->createElement("xhtml:div");
-		    $elementD->setAttribute("xmlns:xhtml", "http://www.w3.org/1999/xhtml");
-		    $contentFragment = $doc->createDocumentFragment();
-		    $contentFragment->appendXML($noteXML);  // add note xml string
-		    $elementD->appendChild($contentFragment);
-		    $elementC->appendChild($elementD);
-		}
-		else{
-		    $elementCtext = $doc->createTextNode($note["noteText"]);
-		    $elementC->appendChild($elementCtext);
-		}
-		
-		$elementB->appendChild($elementC);
-		$element->appendChild($elementB);
-	    }
+	 if(is_array($notes)){
+		  $element = $doc->createElement("arch:notes");    
+		  foreach($notes as $note){
+				$elementB = $doc->createElement("arch:note");
+				if(array_key_exists("type",  $note)){
+					 $elementB->setAttribute("type", $note["type"]);
+				}
+				$elementC = $doc->createElement("arch:string");
+				if(!$note["validForXML"]){
+					 //attempt some cleanup to make valid XHTML
+					 $xmlNote = "<div>".chr(13);
+					 $xmlNote .= $note["noteText"].chr(13);
+					 $xmlNote .= "</div>".chr(13);
+					 
+					 $xmlNote = tidy_repair_string($xmlNote,
+									 array( 
+										  'doctype' => "omit",
+										  'input-xml' => true,
+										  'output-xml' => true 
+									 ));
+								
+					 @$xml = simplexml_load_string($xmlNote);
+					 if($xml){
+						  $note["validForXML"] = true;
+						  $note["noteText"] = $xmlNote;
+					 }
+				}
+		  
+				if($note["validForXML"]){
+				  
+				  $elementC->setAttribute("type", "xhtml");
+				  $elementCC = $doc->createElement("div");
+				  $elementCC->setAttribute("xmlns", "http://www.w3.org/1999/xhtml");
+				  $contentFragment = $doc->createDocumentFragment();
+				  $contentFragment->appendXML($note["noteText"]);  // add the XHTML fragment
+				  $elementCC->appendChild($contentFragment);
+				  $elementC->appendChild($elementCC);
+						
+				}
+				else{
+					 $elementCtext = $doc->createTextNode($note["noteText"]);
+					 $elementC->appendChild($elementCtext);
+				}
+				
+				$elementB->appendChild($elementC);
+				$element->appendChild($elementB);
+		  }
 	    $rootNode->appendChild($element);
 	    $this->rootNode = $rootNode;
-	}
+	 }
 	
     }
     

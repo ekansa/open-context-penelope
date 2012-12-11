@@ -201,23 +201,34 @@ class dbXML_dbProperties  {
 						 $valueDate = false;
 					 }
 			
+					 $validXHTML = false;
 					 $xmlNote = "<div>".chr(13);
 					 $xmlNote .= $showVal.chr(13);
 					 $xmlNote .= "</div>".chr(13);
 					 @$xml = simplexml_load_string($xmlNote);
 					 if($xml){
 						 $validForXML = true;
+						 if(stristr($showVal, "</")){
+								//this is marked up text. need to treat differently
+								$validXHTML = true;
+						 }
 					 }
 					 else{
-							$showVal = tidy_repair_string($xmlNote,
-								array( 
-									 'doctype' => "omit",
-									 'input-xml' => true,
-									 'output-xml' => true 
-								));
-						  
-						  
-						 $validForXML = false;
+						  $validForXML = false;
+						  if($varType == "alphanumeric"){
+								$showVal = tidy_repair_string($xmlNote,
+									 array( 
+										  'doctype' => "omit",
+										  'input-xml' => true,
+										  'output-xml' => true 
+									 ));
+								
+								@$xml = simplexml_load_string($showVal);
+								if($xml){
+									$validForXML = true;
+									$validXHTML = true;
+								}
+						  }
 					 }
 					 unset($xml);
 			
@@ -236,6 +247,7 @@ class dbXML_dbProperties  {
 									"valueDate" => $valueDate,
 									"showVal" => $showVal,
 									"validForXML" => $validForXML,
+									"validXHTML" => $validXHTML,
 									"varLinkedData" => $linkedDataVar,
 									"varUnitsData" => $varUnitsData,
 									"propLinkedData" => $linkedDataProp,

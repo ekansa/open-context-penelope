@@ -82,11 +82,24 @@ class dbXML_xmlProperties  {
 		$elementB->appendChild($elementC);
 		
 		//display value
-		$elementC = $doc->createElement("oc:show_val");
-		$elementCtext = $doc->createTextNode($property["showVal"]);
-		$elementC->appendChild($elementCtext); 
-		$elementB->appendChild($elementC);
-		
+		if($property["varType"] == "alphanumeric" && $property["validXHTML"] ){
+		  //has xhtml
+		  $elementC = $doc->createElement("oc:show_val");
+		  $elementC->setAttribute("type", "xhtml");
+		  $elementCC = $doc->createElement("div");
+		  $elementCC->setAttribute("xmlns", "http://www.w3.org/1999/xhtml");
+		  $contentFragment = $doc->createDocumentFragment();
+		  $contentFragment->appendXML($property["showVal"]);  // add the XHTML fragment
+		  $elementCC->appendChild($contentFragment);
+		  $elementC->appendChild($elementCC);
+		  $elementB->appendChild($elementC);
+		}
+		else{
+		  $elementC = $doc->createElement("oc:show_val");
+		  $elementCtext = $doc->createTextNode($property["showVal"]);
+		  $elementC->appendChild($elementCtext); 
+		  $elementB->appendChild($elementC);
+		}
 		
 		if(is_array($property["varLinkedData"]) || is_array($property["propLinkedData"]) ){
 		    $elementC = $doc->createElement("oc:linkedData");
