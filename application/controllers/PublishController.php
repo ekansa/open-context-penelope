@@ -12,7 +12,7 @@ class PublishController extends Zend_Controller_Action
     const xmlRoot = "http://about.oc/oc_xmlgen/";
     const defDest = "http://opencontext/publish/itempublish";
     const hostRoot = "http://penelope.oc";
-    const mediaOnly = true;
+    const mediaOnly = false;
     
     function init()
     {
@@ -544,6 +544,7 @@ class PublishController extends Zend_Controller_Action
         if(self::mediaOnly){
              $itemCounts["prop"] = 0;
         }
+         $itemCounts["prop"] = 0;
         
         $whereTabs = $this->makeTabCond("properties", $tabIDs);
         $limitListJoin = $this->makeLimitListJoin("properties", $limitList);
@@ -566,7 +567,7 @@ class PublishController extends Zend_Controller_Action
         if(self::mediaOnly){
              $itemCounts["NCprop"] = 0;
         }
-        
+        $itemCounts["NCprop"] = 0;
         
         $whereTabs = $this->makeTabCond("resource", $tabIDs);
         $limitListJoin = $this->makeLimitListJoin("resource", $limitList);
@@ -766,6 +767,16 @@ class PublishController extends Zend_Controller_Action
                 WHERE $whereTabs published_docs.item_uuid IS NULL AND
                 space.project_id = '".$projectUUID."'
                 ORDER BY space.label_sort, space.class_uuid, space.space_label
+                LIMIT $startNum, $batchSize
+                ";
+            
+             $sql = "SELECT space.uuid as itemUUID
+                FROM space
+                $limitListJoin
+                LEFT JOIN published_docs ON (published_docs.pubdest = '$clientURI' AND space.uuid = published_docs.item_uuid)
+                WHERE $whereTabs published_docs.item_uuid IS NULL AND
+                space.project_id = '".$projectUUID."'
+                
                 LIMIT $startNum, $batchSize
                 ";    
         }
