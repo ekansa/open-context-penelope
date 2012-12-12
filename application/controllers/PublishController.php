@@ -773,10 +773,11 @@ class PublishController extends Zend_Controller_Action
              $sql = "SELECT space.uuid as itemUUID
                 FROM space
                 $limitListJoin
-                LEFT JOIN published_docs ON (published_docs.pubdest = '$clientURI' AND space.uuid = published_docs.item_uuid)
-                WHERE $whereTabs published_docs.item_uuid IS NULL AND
+                WHERE space.uuid NOT IN (SELECT published_docs.item_uuid FROM published_docs WHERE published_docs.pubdest = '$clientURI')
+                AND
+                $whereTabs
                 space.project_id = '".$projectUUID."'
-                
+                ORDER BY space.uuid
                 LIMIT $startNum, $batchSize
                 ";    
         }
