@@ -40,6 +40,9 @@ class dbXML_dbPropitem  {
 	 public $varUnitURI; //uri for the measurement unit
 	 public $varUnitName; //name of the measurement unit
 	 public $varUnitAbrv; //abreviation for the measurement unit
+	 
+	 public $varUnitTypeURI; //uri for the measurement type
+	 public $varUnitTypeName; //name of the measurement type
 	
     public $valUUID;
     public $value;
@@ -178,6 +181,12 @@ class dbXML_dbPropitem  {
 					$this->varUnitName = $unitData["linkedLabel"];
 					$this->varUnitAbrv = $unitData["linkedAbrv"];
 				}
+				
+				$unitTypeData = $this->pen_getUnitTypeData($this->varUUID);
+				if(is_array($unitTypeData)){
+					$this->varUnitTypeURI = $unitData["linkedURI"];
+					$this->varUnitTypeName = $unitData["linkedLabel"];
+				}
 		
 				$linkedData = $this->pen_getLinkedData($this->varUUID);
 				if(is_array($linkedData)){
@@ -270,6 +279,23 @@ class dbXML_dbPropitem  {
 		return $output;
     }
 	
+	
+	 public function pen_getUnitTypeData($itemUUID){
+		$db = $this->db;
+		
+		$output = false;
+		$sql = "SELECT linked_data.linkedLabel, linked_data.linkedURI
+		FROM linked_data
+		WHERE linked_data.itemUUID = '$itemUUID' AND linked_data.linkedType = 'unit-type' ";
+		
+		$result = $db->fetchAll($sql, 2);
+		if($result){
+			$output = array();
+			$output = $result[0];
+		}
+		
+		return $output;
+	 }
 	
 	
     

@@ -65,6 +65,11 @@ class dbXML_xmlProperties  {
 			$elementC->setAttribute("name", $property["varUnitsData"]["linkedLabel"]);
 			$elementC->setAttribute("abrv", $property["varUnitsData"]["linkedAbrv"]);
 		}
+		if(is_array($property["varUnitTypeData"])){
+			//add standard units of measurement linking data
+			$elementC->setAttribute("unitTypeHref", $property["varUnitTypeData"]["linkedURI"]);
+			$elementC->setAttribute("unitTypeName", $property["varUnitTypeData"]["linkedLabel"]);
+		}
 		
 		
 		//propID

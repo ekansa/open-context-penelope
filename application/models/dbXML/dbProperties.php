@@ -234,6 +234,7 @@ class dbXML_dbProperties  {
 			
 					 //get linked data relations for the variable and the property
 					 $varUnitsData = $this->pen_getUnitData($varUUID);
+					 $unitTypeData = $this->pen_getUnitTypeData($varUUID);
 					 $linkedDataVar = $this->pen_getLinkedData($varUUID);
 					 $linkedDataProp = $this->pen_getLinkedData($propertyUUID, true);
 					 
@@ -250,6 +251,7 @@ class dbXML_dbProperties  {
 									"validXHTML" => $validXHTML,
 									"varLinkedData" => $linkedDataVar,
 									"varUnitsData" => $varUnitsData,
+									"varUnitTypeData" => $unitTypeData,
 									"propLinkedData" => $linkedDataProp,
 									"hideLink" => $hideLink
 									);
@@ -298,6 +300,23 @@ class dbXML_dbProperties  {
 		$sql = "SELECT linked_data.linkedLabel, linked_data.linkedURI, linked_data.linkedAbrv
 		FROM linked_data
 		WHERE linked_data.itemUUID = '$itemUUID' AND linked_data.linkedType = 'unit' ";
+		
+		$result = $db->fetchAll($sql, 2);
+		if($result){
+			$output = array();
+			$output = $result[0];
+		}
+		
+		return $output;
+	 }
+	 
+	 public function pen_getUnitTypeData($itemUUID){
+		$db = $this->db;
+		
+		$output = false;
+		$sql = "SELECT linked_data.linkedLabel, linked_data.linkedURI
+		FROM linked_data
+		WHERE linked_data.itemUUID = '$itemUUID' AND linked_data.linkedType = 'unit-type' ";
 		
 		$result = $db->fetchAll($sql, 2);
 		if($result){

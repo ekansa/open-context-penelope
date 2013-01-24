@@ -1,0 +1,74 @@
+<?php
+    
+$linkVarObj = $this->linkVarObj;
+    
+?>
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"> 
+    <head> 
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    </head>
+    <body>
+        
+        <h1>Add Unit-types to Decimal Variables</h1>
+        
+        
+        <table>
+            <thead>
+                <tr>
+                    <th>Variable</th>
+                    <th>Unit Type URI</th>
+                    <th>Unit Type</th>
+                    <th>Unit URI</th>
+                    <th>Unit</th>
+                </tr>
+            </thead>
+        
+            <tbody>
+            <?php
+            if(is_array($linkVarObj->variables)){
+                foreach($linkVarObj->variables as $row){
+            ?>
+                <tr>
+                    <form action="var-unit-type-add" method="post" >
+                        
+                        <input type="hidden" name="projectUUID" value="<?php echo $linkVarObj->projUUID; ?>" />
+                        <input type="hidden" name="varUUID" value="<?php echo $row["variable_uuid"]; ?>" />
+                        <td><?php echo $row["var_label"]; ?>
+                            <br/>
+                            <span style="font-size:xx-small;"><?php echo $row["variable_uuid"]; ?>
+                            <br/>
+                            (Add notes <a href="../describe/var-props?varUUID=<?php echo $row["variable_uuid"]; ?>">[Click Here]</a>)
+                            </span>
+                        </td>
+                        
+                        <td><input size="50" style="font-size:xx-small;" name="unitTypeURI" type="text" value="<?php echo $row["unitTypeURI"]; ?>" />
+                        </td>
+                        <td><input size="20" name="unitType" type="text" value="<?php echo $row["unitType"]; ?>" />
+                        </td>
+                        
+                        
+                        <td><input size="50" style="font-size:xx-small;" name="unitURI" type="text" value="<?php echo $row["linkedURI"]; ?>" />
+                        </td>
+                        <td><input size="20" name="unit" type="text" value="<?php echo $row["linkedLabel"]; ?>" />
+                        </td>
+                       
+                        <td><input name="submit" type="submit" /></td>
+                    </form>
+                </tr>
+            
+            <?php
+            
+                }; //end loop
+            }//end case with variables
+            else{
+                echo print_r($linkVarObj->variables);
+            }
+            
+            ?>
+            </tbody>
+        </table>
+        
+    </body>
+</html>
