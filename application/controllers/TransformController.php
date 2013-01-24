@@ -1012,7 +1012,8 @@ class TransformController extends App_Controller_PenelopeController
     //this processes values and properties in properties where two fields make a var/val pair
     private function duo_field_valueDo($act_varID, $act_var, $var_fieldNum, $var_fieldName, $val_fieldName, $dataTableName, $projectUUID){
         $db = Zend_Registry::get('db');
-        
+        $act_var = addslashes($act_var);
+		  
         $sql = "SELECT DISTINCT $dataTableName.$val_fieldName AS val
         FROM $dataTableName
         WHERE $dataTableName.$var_fieldName = '$act_var'
@@ -1087,7 +1088,8 @@ class TransformController extends App_Controller_PenelopeController
         
         $db = Zend_Registry::get('db');
         $this->setUTFconnection($db);
-        
+        $act_var = addslashes($act_var);
+		  
         $sql = "SELECT $dataTableName.$val_fieldName AS val
         FROM $dataTableName
         WHERE $dataTableName.$var_fieldName = '$act_var'
@@ -1147,7 +1149,8 @@ class TransformController extends App_Controller_PenelopeController
         
         $db = Zend_Registry::get('db');
         $this->setUTFconnection($db);
-        
+        $act_var = addslashes($act_var);
+		  
         $sql = "SELECT var_tab.variable_uuid
         FROM var_tab
         WHERE var_tab.var_label = '$act_var'
@@ -1168,7 +1171,12 @@ class TransformController extends App_Controller_PenelopeController
                           "variable_uuid" => $varUUID,
                           "var_label" => $act_var,
                           "var_type" => $act_varType);
-            $db->insert('var_tab', $data);    
+				try{
+					 $db->insert('var_tab', $data);
+				}
+            catch (Exception $e) {
+                        
+            }
         }
         
         return $varUUID;

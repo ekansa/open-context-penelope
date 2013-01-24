@@ -1114,26 +1114,132 @@ function imageCheckAction(){
 	
     $result = $db->fetchAll($sql, 2);
     foreach($result as $row){
-	$itemUUID = $row["uuid"];
-	$url = "http://penelope2.oc/preview/media?format=xml&UUID=".$itemUUID ;
-	@$xmlString = file_get_contents($url);
-	if($xmlString){
-	    @$xml = simplexml_load_string($xmlString);
-	    if($xml){
-		unset($xml);
-		echo "<br/>Item: ".$itemUUID." OK";
-	    }
-	    else{
-		echo "<br/><h1>Item: ".$itemUUID." BAD XML</h1>";
-	    }
-	}
-	else{
-	    echo "<br/><h1>Item: ".$itemUUID." BAD String!! </h1>";
-	}
-	unset($xmlString);
+	 $itemUUID = $row["uuid"];
+	 $url = "http://penelope2.oc/preview/media?format=xml&UUID=".$itemUUID ;
+	 @$xmlString = file_get_contents($url);
+	 if($xmlString){
+		  @$xml = simplexml_load_string($xmlString);
+		  if($xml){
+		 unset($xml);
+		 echo "<br/>Item: ".$itemUUID." OK";
+		  }
+		  else{
+		 echo "<br/><h1>Item: ".$itemUUID." BAD XML</h1>";
+		  }
+	 }
+	 else{
+		  echo "<br/><h1>Item: ".$itemUUID." BAD String!! </h1>";
+	 }
+	 unset($xmlString);
     }//end loop
 
 }//end function
+
+
+function imageFileCheckAction(){
+
+    $this->_helper->viewRenderer->setNoRender();
+    $db = Zend_Registry::get('db');
+    $this->setUTFconnection($db);
+
+	 
+    $sql = "SELECT *
+    FROM resource
+    WHERE  resource.ia_meta !=  'fixed'
+	 AND resource.ia_meta !=  ''
+	 AND resource.project_id =  'DF043419-F23B-41DA-7E4D-EE52AF22F92F'
+    ";
+	
+    $result = $db->fetchAll($sql, 2);
+    foreach($result as $row){
+		  sleep(.33);
+		  $itemUUID = $row["uuid"];
+		  $thumbOK = $this->checkFileOK($row["ia_thumb"]);
+		  $previewOK = $this->checkFileOK($row["ia_preview"]);
+		  $fullOK = $this->checkFileOK($row["ia_fullfile"]);
+		  if(!$thumbOK || !$previewOK || !$fullOK){
+				$sad = array("t" => $thumbOK, "p" => $previewOK, "f" => $fullOK);
+				$sadSave = Zend_Json::encode($sad );
+				$data = array("ia_meta" => $sadSave);
+				
+				$data = $this->altCapsFiles($row["ia_thumb"], "ia_thumb", $data);
+				$data = $this->altCapsFiles($row["ia_preview"], "ia_preview", $data);
+				$data = $this->altCapsFiles($row["ia_fullfile"], "ia_fullfile", $data);
+				
+				$where = "uuid = '$itemUUID' ";
+				$db->update("resource", $data, $where);
+		  }
+		  else{
+				$data = array("ia_meta" => 'fixed');
+				$where = "uuid = '$itemUUID' ";
+				$db->update("resource", $data, $where);
+		  }
+		  
+    }//end loop
+
+}//end function
+
+
+private function altCapsFiles($url, $urlType, $data){
+	 sleep(.33);
+	 
+	 $urlTest = strtolower($url);
+	 $urlOK = $this->checkFileOK($urlTest);
+	 
+	 if(!$urlOK){
+		  sleep(.33);
+		  if(strstr($url, ".JPG")){
+				$urlTest = str_replace(".JPG", ".jpg", $url);
+				$urlOK = $this->checkFileOK($urlTest);
+		  }elseif(strstr($url, ".jpg")){
+				$urlTest = str_replace(".jpg", ".JPG", $url);
+				$urlOK = $this->checkFileOK($urlTest);
+		  }
+		  
+		  if(!$urlOK){
+				sleep(.33);
+				if(strstr($url, ".JPG")){
+					 $urlTest = strtolower($url);
+					 $urlTest = str_replace(".jpg", ".JPG", $url);
+					 $urlOK = $this->checkFileOK($urlTest);
+				}
+		  }
+		  
+	 }
+	 
+	 if($urlOK){
+		  $data[$urlType] = $urlTest;
+	 }
+	 
+	 return $data;
+}
+
+
+
+
+
+private function checkFileOK($url){
+	 
+	 stream_context_set_default(
+		  array(
+				'http' => array(
+					 'method' => 'HEAD'
+				)
+		  )
+	 );
+	 $headers = get_headers($url);
+	 if ($headers[0] == 'HTTP/1.1 200 OK') {
+		  return true;
+	 }
+	 else{
+		  return false;
+	 }
+}
+
+
+
+
+
 
 
 function findsPropAction(){

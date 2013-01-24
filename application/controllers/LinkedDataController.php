@@ -381,7 +381,7 @@ class LinkedDataController extends Zend_Controller_Action
 	 }
 	 
 	 
-	 
+	 //add British Museum thesaurus terms for object-types
 	 function bmLinkTypesAction(){
 		  $this->_helper->viewRenderer->setNoRender();
 		  
@@ -399,6 +399,7 @@ class LinkedDataController extends Zend_Controller_Action
 	 }
 	 
 	 
+	 //add British Museum thesaurus terms for materials
 	 function bmLinkMaterialsAction(){
 		  $this->_helper->viewRenderer->setNoRender();
 		  
@@ -415,6 +416,42 @@ class LinkedDataController extends Zend_Controller_Action
 		  echo "Done, view results <a href='var?varUUID=".$varUUID."'>[HERE]</a>";
 	 }
 	 
-    
-    
+    //display decimal variables that may need to be linked to unit-types (like a zooarch measurement)
+	 function varUnitTypeAction(){
+		  //$this->_helper->viewRenderer->setNoRender();
+		  
+		  Zend_Loader::loadClass('LinkedData_UnitTypeVar');
+		  
+		  $linkVarObj = new LinkedData_UnitTypeVar;
+		  $linkVarObj->projUUID = $_REQUEST['projectUUID'];
+		  $linkVarObj->getDecimalVariables();
+		  $this->view->linkVarObj = $linkVarObj;
+		  //echo print_r( $linkVarObj->variables);
+	 }
+	 
+	  function varUnitTypeAddAction(){
+		  $this->_helper->viewRenderer->setNoRender();
+		  
+		  Zend_Loader::loadClass('LinkedData_UnitTypeVar');
+		  
+		  $linkVarObj = new LinkedData_UnitTypeVar;
+		  $linkVarObj->projUUID = $_REQUEST['projectUUID'];
+		  $linkVarObj->addUnitType($_REQUEST);
+		  $linkVarObj->getDecimalVariables();
+		  $this->view->linkVarObj = $linkVarObj;
+		  //return $this->render("varUnitType");
+		  
+		  $headerLink = "var-unit-type?projectUUID=".$_REQUEST['projectUUID'];
+		  header("Location: $headerLink");
+		  
+		  
+	 }
+	 
+	 function reDoOwlAction(){
+		  $this->_helper->viewRenderer->setNoRender();
+		   Zend_Loader::loadClass('LinkedData_UnitTypeVar');
+		  
+		  $linkVarObj = new LinkedData_UnitTypeVar;
+		  echo $linkVarObj->redoOWL();
+	 }
 }

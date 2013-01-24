@@ -234,10 +234,8 @@ class PublishController extends Zend_Controller_Action
         
         @$response = $client->request('POST');
         
-        if($response){
+        if(!$response->isError()){
             $responseJSON = $response->getBody();
-            
-            
             $responseObj = Zend_Json::decode($responseJSON);
             $db = Zend_Registry::get('db');
             
@@ -269,6 +267,7 @@ class PublishController extends Zend_Controller_Action
             if(isset($responseObj["solr_main"]["error"])){
                $responseObj["pubStatus"] .= " Solr Index error";
             }
+            
         }//end case with response
         else{
             $hashKey = md5($clientURI.$itemUUID);
@@ -282,6 +281,7 @@ class PublishController extends Zend_Controller_Action
             $responseObj["pubStatus"] = "no response";
             $responseObj["itemUUID"] = $itemUUID;
             $responseObj["type"] = $type;
+            $responseObj["body"] = $response->getBody();
         }
         
         try{
@@ -513,6 +513,7 @@ class PublishController extends Zend_Controller_Action
                 LEFT JOIN published_docs ON (space.uuid = published_docs.item_uuid AND published_docs.pubdest = '$clientURI')
                 WHERE $whereTabs published_docs.item_uuid IS NULL AND
                 space.project_id = '".$projectUUID."'
+                AND space.uuid != '0'
                 ";
         
         $queries[] =  $sql;
@@ -577,6 +578,7 @@ class PublishController extends Zend_Controller_Action
                 LEFT JOIN published_docs ON (resource.uuid = published_docs.item_uuid AND published_docs.pubdest = '$clientURI')
                 WHERE $whereTabs published_docs.item_uuid IS NULL AND
                 resource.project_id = '".$projectUUID."'
+                AND resource.uuid != '0'
                 ";
         
         $queries[] =  $sql;
@@ -777,7 +779,7 @@ class PublishController extends Zend_Controller_Action
                 AND
                 $whereTabs
                 space.project_id = '".$projectUUID."'
-                ORDER BY space.uuid
+                AND space.uuid != '0'
                 LIMIT $startNum, $batchSize
                 ";    
         }
@@ -847,7 +849,20 @@ class PublishController extends Zend_Controller_Action
                 WHERE $whereTabs published_docs.item_uuid IS NULL AND
                 resource.project_id = '".$projectUUID."'
                 LIMIT $startNum, $batchSize
-                "; 
+                ";
+            
+            /*
+            $sql = "SELECT resource.uuid as itemUUID
+                FROM resource
+                $limitListJoin
+                WHERE resource.uuid NOT IN (SELECT published_docs.item_uuid FROM published_docs WHERE published_docs.pubdest = '$clientURI')
+                AND
+                $whereTabs
+                resource.project_id = '".$projectUUID."'
+                ORDER BY resource.uuid
+                LIMIT $startNum, $batchSize
+                ";
+                */
         }
         
         if($itemType == "doc"){
