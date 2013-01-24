@@ -226,6 +226,8 @@ class dataEdit_SpaceIdentity  {
 	 function storeIDsWithDuplicatingVars(){
 		  $db = $this->startDB();
 		  
+		  $this->createTable(); //make the table if it does not exist
+		  
 		  //clean the table
 		  $sql = "TRUNCATE TABLE  dupsubjects";
 		  $db->query($sql, 2);
@@ -317,7 +319,19 @@ class dataEdit_SpaceIdentity  {
 
 
 
-
+	 function createTable(){
+		  $db = $this->startDB();
+		  
+		  $sql = "CREATE TABLE IF NOT EXISTS dupsubjects (
+				uuid varchar(50) CHARACTER SET latin1 NOT NULL,
+				source_id varchar(50) NOT NULL,
+				label varchar(50) NOT NULL,
+				class_uuid varchar(50) CHARACTER SET latin1 NOT NULL,
+				PRIMARY KEY (`uuid`)
+			 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;";
+		  
+		  $db->query($sql, 2);
+	 }
 
 
 
