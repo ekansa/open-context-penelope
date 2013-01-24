@@ -304,35 +304,40 @@ function actIDList(itemUUID, itemType){
     var statusUpdate = "<p class='bodyText'>Publishing item: " + itemUUID + " (" + itemType + ")</p>";
     dojo.byId('nextItem').innerHTML = statusUpdate;
     
-    if( itemType == "upSpace" ){
-        doUpdate = true;
-    }
-        
-    if(!doPrefix){    
-        var myAjax = new Ajax.Request(baseURI + 'publish/publishdoc',
-            {method: 'post', parameters:
-            {pubURI: pubURI,
-             projectUUID: projID,
-             itemType: itemType,
-             itemUUID: itemUUID,
-             doUpdate: doUpdate
-            },
-            onComplete: postPublish }
-        );
+    if(itemUUID != undefined){
+        if( itemType == "upSpace" ){
+            doUpdate = true;
+        }
+            
+        if(!doPrefix){    
+            var myAjax = new Ajax.Request(baseURI + 'publish/publishdoc',
+                {method: 'post', parameters:
+                {pubURI: pubURI,
+                 projectUUID: projID,
+                 itemType: itemType,
+                 itemUUID: itemUUID,
+                 doUpdate: doUpdate
+                },
+                onComplete: postPublish }
+            );
+        }
+        else{
+            var myAjax = new Ajax.Request(baseURI + 'publish/publishdoc',
+                {method: 'post', parameters:
+                {pubURI: pubURI,
+                 projectUUID: projID,
+                 itemType: itemType,
+                 itemUUID: itemUUID,
+                 prefixURI: prefixURI_val,
+                 suffixURI: suffixURI_val,
+                 doUpdate: doUpdate
+                },
+                onComplete: postPublish }
+            );   
+        }
     }
     else{
-        var myAjax = new Ajax.Request(baseURI + 'publish/publishdoc',
-            {method: 'post', parameters:
-            {pubURI: pubURI,
-             projectUUID: projID,
-             itemType: itemType,
-             itemUUID: itemUUID,
-             prefixURI: prefixURI_val,
-             suffixURI: suffixURI_val,
-             doUpdate: doUpdate
-            },
-            onComplete: postPublish }
-        );   
+        indexFinish();
     }
 }
 
