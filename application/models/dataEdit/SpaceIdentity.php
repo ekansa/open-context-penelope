@@ -157,7 +157,12 @@ class dataEdit_SpaceIdentity  {
 		  $repeatedVars = array();
 		  foreach($varProps as $varKey => $varPropArray){
 				if(count($varPropArray)>1){
-					 $repeatedVars[$varKey] = $varPropArray;
+					 $varLabel = $varPropArray[0]["var_label"];
+					 $sourceID = $varPropArray[0]["source_id"];
+					 $sourceField = $this->getVarSourceField($varLabel, $sourceID);
+					 $repeatedVars[$varKey] = array("sourceField" => $sourceField,
+															  "vals" => $varPropArray);
+					 
 				}
 		  }
 		  
@@ -165,6 +170,68 @@ class dataEdit_SpaceIdentity  {
 	 }
 	 
 	 
+	 
+	 //get the field_num for a variable from the source data
+	 function getVarSourceField($varLabel, $sourceID){
+		  $db = $this->startDB();
+		  $varLabel = addslashes($varLabel);
+		  $sql = "SELECT field_name
+		  FROM field_summary
+		  WHERE source_id = '$sourceID'
+		  AND field_label LIKE '$varLabel'
+		  LIMIT 1;
+		  ";
+		  
+		  $result =  $db->fetchAll($sql);
+		  if($result){
+				return $result[0]["field_name"];
+		  }
+		  else{
+				 $sql = "SELECT field_name
+				FROM field_summary
+				WHERE source_id = '$sourceID'
+				AND field_label LIKE '%$varLabel%'
+				LIMIT 1;
+				";
+				
+				$result =  $db->fetchAll($sql);
+				if($result){
+					 return $result[0]["field_name"];
+				}
+				else{
+					 return false;	 
+				}
+		  }
+	 }
+	 
+	 
+	 function findVariableValueFields($varLabel, $sourceID){
+		  
+		  $db = $this->startDB();
+		  $varLabel = addslashes($varLabel);
+		  $output = false;
+		  
+		  $sql = "SELECT field_summary.field_name as varField, fs.field_name as valField
+		  FROM field_summary
+		  JOIN field_summary AS fs ON field_summary.pk_field = fs.fk_field_desribes
+		  WHERE field_summary.source_id = '$sourceID' AND field_summary.field_type = 'Variable'
+		  ";
+		  
+		  $result =  $db->fetchAll($sql);
+		  if($result){
+				foreach($result as $row){
+					 $varField = $row["varField"];
+					 $valField = $row["valField"];
+					 
+					 $sql = "SELECT ";	 
+					 
+					 
+					 
+				}
+		  }
+	 
+		  return $output;
+	 }
 	 
 	 
 	 
@@ -180,7 +247,7 @@ class dataEdit_SpaceIdentity  {
 					  properties.val_num =0, properties.val_num, properties.val_num)
 					  ), 
 					  val_tab.val_text
-					  ) AS allprop
+					  ) AS allprop, observe.source_id
 			  FROM observe
 			  LEFT JOIN properties ON observe.property_uuid = properties.property_uuid
 			  LEFT JOIN var_tab ON properties.variable_uuid = var_tab.variable_uuid
