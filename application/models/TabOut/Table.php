@@ -99,6 +99,7 @@ class TabOut_Table  {
 					 }
 					 
 					 $this->linkedFields = $linkedFields;
+					 $this->countLinkedFieldValues();
 					 return $this->linkedFields;
 				}
 				else{
@@ -109,6 +110,43 @@ class TabOut_Table  {
 		  else{
 				return $this->linkedFields;
 		  }
+	 }
+	 
+	 
+	 function countLinkedFieldValues(){
+		  
+		  if(is_array($this->linkedFields)){
+				$db = $this->startDB();
+				$newLinkedFields = array();
+				foreach($this->linkedFields as $lField){
+					 $actField = $lField;
+					 $varIDs = $lField["varIDs"];
+					 $varCond = $this->makeORcondition($varIDs, "variable_uuid", "properties");
+					 
+					 $sql = "SELECT count(observe.property_uuid) as fCount, observe.subject_uuid
+					 FROM observe
+					 JOIN properties ON observe.property_uuid = properties.property_uuid
+					 WHERE ($varCond)
+					 GROUP BY observe.subject_uuid
+					 ORDER BY fCount DESC
+					 LIMIT 1;
+					 ";
+					 
+					 $result =  $db->fetchAll($sql);
+					 if($result){
+						  $actField["fCount"] = $result[0]["fCount"];
+						  $actField["weirdSub"] = "http://penelope.oc/preview/subject?UUID=".$result[0]["subject_uuid"]; //for debugging
+					 }
+					 else{
+						  $actField["fCount"] = false;
+					 }
+					 
+					 $newLinkedFields[] = $actField;
+				}
+				
+				$this->linkedFields = $newLinkedFields;
+		  }
+		  
 	 }
 	 
 	 
