@@ -18,25 +18,94 @@ class dataEdit_SpaceIdentity  {
 				$sourceIDs = $probItem["source-ids"];
 				$UUIDsources = $this->itemDuplicate($itemUUID, $sourceIDs);
 				$repeatedVars = $this->repeatedVariables($itemUUID);
-				
-				foreach($UUIDsources as $itemKey => $sourceData){
-					 
+				$propertyJudgements = $this->judgeProperties($sourceID, $repeatedVars, $UUIDsources);
+				//$propertyJudgements = false;
+				//$output[] = array("propsOKs" => $propertyJudgements, "repeats" => $repeatedVars, "sources" => $UUIDsources);
+				if(!$propertyJudgements["badMatches"]){
+					 $this->fixBadProperties($propertyJudgements["propOKs"]);
 				}
 				
-				$output[] = array("repeats" => $repeatedVars, "sources" => $UUIDsources);
+				
+				$output[] = $propertyJudgements;
 		  }
 		  
 		  return $output;
 	 }
 	 
 	 
+	 
+	 function fixBadProperties($propOKs){
+		  
+		  $db = $this->startDB();
+		  $fixedIDs = array();
+		  foreach($propOKs as $prop){
+				if(!$prop["recordMatch"]){
+					 $subjectUUID = $prop["subjectUUID"];
+					 $propertyUUID = $prop["property_uuid"];
+					 $where = array();
+					 $where[] = "subject_uuid = '$subjectUUID' ";
+					 $where[] = "property_uuid = '$propertyUUID' ";
+					 $data = array("subject_uuid" => $subjectUUID."-dedup");
+					 $db->update("observe", $data, $where);
+					 if(!in_array($subjectUUID, $fixedIDs)){
+						  $fixedIDs[] = $subjectUUID;
+					 }
+				}
+		  }
+		  
+		  foreach($fixedIDs as $itemUUID){
+				$where = "uuid = '$itemUUID' ";
+				$db->delete("dupsubjects", $where);
+		  }
+	 }
+	 
+	 
+
 	 //this finds duplicate variables, removes values not tied to the items source record
-	 function cleanProperties($subjectUUID, $sourceID, $sourceRecID){
+	 function judgeProperties($sourceID, $repeatedVars, $UUIDsources){
 		  
+		  $db = $this->startDB();
 		  
+		  $propOKs = array(); // array of subject and property values to keep or delete
+		  $badMatches = array();
 		  
+		  foreach($repeatedVars as $varUUID => $varArray){
+				$varField = $varArray["sourceField"];
+				foreach($varArray["vals"] as $valArray){
+					 $varLabel = $valArray["var_label"];
+					 $val = $valArray["val"];
+					 $propUUID = $valArray["property_uuid"];
+					 $anyFound = false;
+					 foreach($UUIDsources as $subjectUUID => $sourceRec){
+						  $sourceRecID = $sourceRec["id"]; //record number where the item comes from
+						  $recordMatch = false;
+
+						  if($varField != false){
+								$recordMatch = $this->findValueSource($varField, $val, $sourceRecID, $sourceID);
+						  }
+						  else{
+								$recordMatch = $this->findVariableValueSource($varLabel, $val, $sourceRecID, $sourceID);
+						  }
+						  
+						  if($recordMatch){
+								$anyFound = true;
+						  }
+						  $valArray["subjectUUID"] = $subjectUUID;
+						  $valArray["sourceRecID"] = $sourceRecID;
+						  $valArray["recordMatch"] = $recordMatch;
+						  $propOKs[] = $valArray;
+					 }
+					 if(!$anyFound){
+						  $noMatches[] = $valArray;
+					 }
+				}
+		  }
 		  
+		  if(count($badMatches)<1){
+				$badMatches = false;
+		  }
 		  
+		  return array("propOKs" => $propOKs, "badMatches" => $badMatches);
 	 }
 	 
 	 
@@ -69,7 +138,7 @@ class dataEdit_SpaceIdentity  {
 					 $newSpace["sample_des"] = Zend_Json::encode(array("src" => $sourceItem, "srcID" => $itemUUID));
 					 $itemOK = false;
 					 try{
-						  //$db->insert("space", $newSpace); //add the new space item, duplicating the old
+						  $db->insert("space", $newSpace); //add the new space item, duplicating the old
 						  $itemOK = true;
 					 }
 					 catch (Exception $e) {
@@ -106,7 +175,7 @@ class dataEdit_SpaceIdentity  {
 				$data["hash_obs"] = $data["hash_obs"]."-".$increment; 
 				$data["subject_uuid"] = $newUUID;
 				try{
-					 //$db->insert("observe", $data); //add list of subject items with multiple of the same var
+					 $db->insert("observe", $data); //add list of subject items with multiple of the same var
 				}
 				catch (Exception $e) {
 				
@@ -136,7 +205,7 @@ class dataEdit_SpaceIdentity  {
 				}
 				
 				try{
-					 //$db->insert("links", $data); //add list of subject items with multiple of the same var
+					 $db->insert("links", $data); //add list of subject items with multiple of the same var
 				}
 				catch (Exception $e) {
 				
@@ -205,15 +274,40 @@ class dataEdit_SpaceIdentity  {
 	 }
 	 
 	 
-	 function findVariableValueFields($varLabel, $sourceID){
+	 //finds variables and value pairs in a source table, limited to a given record ID
+	 function findValueSource($varField, $val, $recID, $sourceID){
+		  
+		  $db = $this->startDB();
+		  $val = addslashes($val);
+		  $output = false;
+		  
+		  $sql = "SELECT id, $varField
+					 FROM $sourceID
+					 WHERE id = $recID AND $varField = '$val'
+					 LIMIT 1;
+					 ";	 
+					 
+		  $resB = $db->fetchAll($sql);
+		  if($resB){
+				$output = true;
+		  }
+	 
+		  return $output;
+	 }
+	 
+	 
+	 
+	 //finds variables and value pairs in a source table, limited to a given record ID
+	 function findVariableValueSource($varLabel, $val, $recID, $sourceID){
 		  
 		  $db = $this->startDB();
 		  $varLabel = addslashes($varLabel);
+		  $val = addslashes($val);
 		  $output = false;
 		  
 		  $sql = "SELECT field_summary.field_name as varField, fs.field_name as valField
 		  FROM field_summary
-		  JOIN field_summary AS fs ON field_summary.pk_field = fs.fk_field_desribes
+		  JOIN field_summary AS fs ON field_summary.pk_field = fs.fk_field_describes
 		  WHERE field_summary.source_id = '$sourceID' AND field_summary.field_type = 'Variable'
 		  ";
 		  
@@ -223,10 +317,17 @@ class dataEdit_SpaceIdentity  {
 					 $varField = $row["varField"];
 					 $valField = $row["valField"];
 					 
-					 $sql = "SELECT ";	 
+					 $sql = "SELECT id, $varField, $valField
+					 FROM $sourceID
+					 WHERE id = $recID AND $varField = '$varLabel' AND $valField = '$val'
+					 LIMIT 1;
+					 ";	 
 					 
-					 
-					 
+					 $resB = $db->fetchAll($sql);
+					 if($resB){
+						  $output = true;
+						  break;
+					 }
 				}
 		  }
 	 
@@ -247,7 +348,7 @@ class dataEdit_SpaceIdentity  {
 					  properties.val_num =0, properties.val_num, properties.val_num)
 					  ), 
 					  val_tab.val_text
-					  ) AS allprop, observe.source_id
+					  ) AS val, observe.source_id
 			  FROM observe
 			  LEFT JOIN properties ON observe.property_uuid = properties.property_uuid
 			  LEFT JOIN var_tab ON properties.variable_uuid = var_tab.variable_uuid
