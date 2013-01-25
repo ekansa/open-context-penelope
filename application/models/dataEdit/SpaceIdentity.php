@@ -148,6 +148,7 @@ class dataEdit_SpaceIdentity  {
 						  $UUIDsources[$newUUID] = $sourceItem;
 						  $this->duplicateItemObs($itemUUID, $newUUID, $increment);
 						  $this->duplicateItemLinks($itemUUID, $newUUID, $increment);
+						  $this->duplicateItemContext($itemUUID, $newUUID, $increment);
 					 }
 				}
 				else{
@@ -195,7 +196,7 @@ class dataEdit_SpaceIdentity  {
 		  $result = $db->fetchAll($sql);
 		  foreach($result as $row){
 				$data = $row;
-				$data["hash_obs"] = $data["hash_link"]."-".$increment;
+				$data["hash_link"] = $data["hash_link"]."-".$increment;
 				$data["link_uuid"] = GenericFunctions::generateUUID();
 				if($data["origin_uuid"] == $oldUUID){
 					 $data["origin_uuid"] = $newUUID;
@@ -206,6 +207,34 @@ class dataEdit_SpaceIdentity  {
 				
 				try{
 					 $db->insert("links", $data); //add list of subject items with multiple of the same var
+				}
+				catch (Exception $e) {
+				
+				}
+		  }
+		  
+	 }
+	 
+	 //this function is used to duplicate an item's linking relations
+	 function duplicateItemContext($oldUUID, $newUUID, $increment){
+		  
+		  $db = $this->startDB();
+		  $sql = "SELECT * FROM space_contain WHERE parent_uuid = '$oldUUID' OR child_uuid = '$oldUUID' ";
+		  
+		  $result = $db->fetchAll($sql);
+		  foreach($result as $row){
+				$data = $row;
+				$data["hash_all"] = $data["hash_link"]."-".$increment;
+				
+				if($data["parent_uuid"] == $oldUUID){
+					 $data["parent_uuid"] = $newUUID;
+				}
+				if($data["child_uuid"] == $oldUUID){
+					 $data["child_uuid"] = $newUUID;
+				}
+				
+				try{
+					 $db->insert("space_contain", $data); //add list of subject items with multiple of the same var
 				}
 				catch (Exception $e) {
 				
