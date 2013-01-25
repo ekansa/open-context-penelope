@@ -135,7 +135,7 @@ class TabOut_Table  {
 					 $result =  $db->fetchAll($sql);
 					 if($result){
 						  $actField["fCount"] = $result[0]["fCount"];
-						  $actField["weirdSub"] = "http://penelope.oc/preview/subject?UUID=".$result[0]["subject_uuid"]; //for debugging
+						  $actField["weirdSub"] = "http://penelope.oc/preview/space?UUID=".$result[0]["subject_uuid"]; //for debugging
 					 }
 					 else{
 						  $actField["fCount"] = false;

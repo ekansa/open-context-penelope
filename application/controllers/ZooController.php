@@ -65,6 +65,27 @@ class ZooController extends Zend_Controller_Action {
 	 
 
 	 //check identifier uniqueness by seeing if the same variable is used more than once
+	 function idCheckAction(){
+		  
+		  //this line is necessary for ajax calls:
+        $this->_helper->viewRenderer->setNoRender();        
+        
+        //get selected root item then add it and all children to database
+        $projUUID = "731B0670-CE2A-414A-8EF6-9C050A1C60F5";
+        
+		  Zend_Loader::loadClass('dataEdit_SpaceIdentity');
+		  
+		  $editObj = new dataEdit_SpaceIdentity;
+		  $editObj->projUUID = $projUUID;
+		  //$editObj->storeIDsWithDuplicatingVars();
+		  $sourceIDs = $editObj->getSourceDataIDs();
+		  //$output = $editObj->fixIdentities();
+		 
+		  header('Content-Type: application/json; charset=utf8');
+		  echo Zend_Json::encode($sourceIDs);
+	 }
+
+	 //check identifier uniqueness by seeing if the same variable is used more than once
 	 function idCheckFixAction(){
 		  
 		  //this line is necessary for ajax calls:
@@ -84,8 +105,6 @@ class ZooController extends Zend_Controller_Action {
 		  header('Content-Type: application/json; charset=utf8');
 		  echo Zend_Json::encode($output);
 	 }
-
-
 	 
 	 
 

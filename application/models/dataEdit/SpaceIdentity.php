@@ -1,12 +1,26 @@
 <?php
 
+//fix space entities where the source datatable did not have unique labeling
+//and we should not have repeating variables
 class dataEdit_SpaceIdentity  {
     
     public $db;
 	 public $projUUID;
 	 
+	 public $sourceParents = array();
 	 
-	 
+	 /*
+	  This function goes through items identified as having repeating variables
+	  it then duplicates the items based on the number of records in the imported source data table
+	  that have the same labeling AND spatial context. the array of records from the source table
+	  with the same label and same spatial context is $sourceIDs
+	  
+	  Once the records are duplicated, the function the functions removes properties that are not present
+	  in the corresponding record of the source data table. 
+	  
+	  This only works if no edits to property values, context labels, or spatial labels took place
+	  
+	  */
 	 function fixIdentities(){
 		  
 		  $probItems = $this->getSourceDataIDs();
@@ -17,7 +31,7 @@ class dataEdit_SpaceIdentity  {
 				$sourceID = $probItem["source_id"];
 				$sourceIDs = $probItem["source-ids"];
 				$UUIDsources = $this->itemDuplicate($itemUUID, $sourceIDs);
-				$repeatedVars = $this->repeatedVariables($itemUUID);
+				$repeatedVars = $this->singleORrepeatedVariables($itemUUID);
 				$propertyJudgements = $this->judgeProperties($sourceID, $repeatedVars, $UUIDsources);
 				//$propertyJudgements = false;
 				//$output[] = array("propsOKs" => $propertyJudgements, "repeats" => $repeatedVars, "sources" => $UUIDsources);
@@ -45,7 +59,7 @@ class dataEdit_SpaceIdentity  {
 					 $where = array();
 					 $where[] = "subject_uuid = '$subjectUUID' ";
 					 $where[] = "property_uuid = '$propertyUUID' ";
-					 $data = array("subject_uuid" => $subjectUUID."-dedup");
+					 $data = array("subject_uuid" => $subjectUUID."_dup");
 					 $db->update("observe", $data, $where);
 					 if(!in_array($subjectUUID, $fixedIDs)){
 						  $fixedIDs[] = $subjectUUID;
@@ -128,27 +142,36 @@ class dataEdit_SpaceIdentity  {
 				
 				if($i>0){
 					 //don't make a new item for the first record, since we already have it. make it for the second record and after
-					 $newSpace = $originalSpace;
-					 $newUUID = GenericFunctions::generateUUID();
 					 $increment = chr($charID);
-					 $newSpace["uuid"] = $newUUID;
-					 $newSpace["space_label"] = $newSpace["space_label"]."-".$increment;
-					 $newSpace["full_context"] = $newSpace["full_context"]."-".$increment;
-					 $newSpace["hash_fcntxt"] = $newSpace["hash_fcntxt"]."-".$increment;
-					 $newSpace["sample_des"] = Zend_Json::encode(array("src" => $sourceItem, "srcID" => $itemUUID));
-					 $itemOK = false;
-					 try{
-						  $db->insert("space", $newSpace); //add the new space item, duplicating the old
-						  $itemOK = true;
+					 $newLabel = $originalSpace["space_label"]."-".$increment;
+					 $newContext = $originalSpace["full_context"]."-".$increment;
+					 $existingNew = $this->checkNewSpace($newLabel, $newContext);
+					 if(!$existingNew){
+						  $newSpace = $originalSpace;
+						  $newUUID = GenericFunctions::generateUUID();
+						  $newSpace["uuid"] = $newUUID;
+						  $newSpace["space_label"] = $newLabel;
+						  $newSpace["full_context"] = $newContext;
+						  $newSpace["hash_fcntxt"] = $newSpace["hash_fcntxt"]."-".$increment;
+						  $newSpace["sample_des"] = Zend_Json::encode(array("src" => $sourceItem, "srcID" => $itemUUID));
+						  $itemOK = false;
+						  try{
+								$db->insert("space", $newSpace); //add the new space item, duplicating the old
+								$itemOK = true;
+						  }
+						  catch (Exception $e) {
+	 
+						  }
+						  if($itemOK){
+								$UUIDsources[$newUUID] = $sourceItem;
+								$this->duplicateItemObs($itemUUID, $newUUID, $increment);
+								$this->duplicateItemLinks($itemUUID, $newUUID, $increment);
+								$this->duplicateItemContext($itemUUID, $newUUID, $increment);
+						  }
 					 }
-					 catch (Exception $e) {
-
-					 }
-					 if($itemOK){
+					 else{
+						  $newUUID = $existingNew["uuid"];
 						  $UUIDsources[$newUUID] = $sourceItem;
-						  $this->duplicateItemObs($itemUUID, $newUUID, $increment);
-						  $this->duplicateItemLinks($itemUUID, $newUUID, $increment);
-						  $this->duplicateItemContext($itemUUID, $newUUID, $increment);
 					 }
 				}
 				else{
@@ -163,6 +186,19 @@ class dataEdit_SpaceIdentity  {
 	 }
 	 
 	 
+	 //get the new space item if it exists
+	 function checkNewSpace($newLabel, $newContext){
+		  $db = $this->startDB();
+		  $sql = "SELECT * FROM space WHERE space_label = '$newLabel' AND full_context = '$newContext' LIMIT 1; ";
+		  $result = $db->fetchAll($sql);
+		  if($result){
+				return $result[0];
+		  }
+		  else{
+				return false;
+		  }
+		  
+	 }
 	 
 	 //this function is used to duplicate an item's observations
 	 function duplicateItemObs($oldUUID, $newUUID, $increment){
@@ -184,8 +220,6 @@ class dataEdit_SpaceIdentity  {
 		  }
 		  
 	 }
-	 
-	 
 	 
 	 //this function is used to duplicate an item's linking relations
 	 function duplicateItemLinks($oldUUID, $newUUID, $increment){
@@ -244,8 +278,16 @@ class dataEdit_SpaceIdentity  {
 	 }
 	 
 	 
-	 //get an array of the variables that are repeated for a given item
-	 function repeatedVariables($itemUUID){
+	 //process get properties for an item and process them to get ready for checking
+	 //with 2nd param true, get an array of the variables that are repeated for a given item
+	 function singleORrepeatedVariables($itemUUID, $doRepeatsOnly = false){
+		  if($doRepeatsOnly){
+				$moreThan = 1;
+		  }
+		  else{
+				$moreThan = 0;
+		  }
+		  
 		  $allprops = $this->itemProperties($itemUUID);
 		  $varProps = array();
 		  foreach($allprops as $prop){
@@ -254,7 +296,7 @@ class dataEdit_SpaceIdentity  {
 		  }
 		  $repeatedVars = array();
 		  foreach($varProps as $varKey => $varPropArray){
-				if(count($varPropArray)>1){
+				if(count($varPropArray) > $moreThan){
 					 $varLabel = $varPropArray[0]["var_label"];
 					 $sourceID = $varPropArray[0]["source_id"];
 					 $sourceField = $this->getVarSourceField($varLabel, $sourceID);
@@ -401,7 +443,7 @@ class dataEdit_SpaceIdentity  {
 		  $db = $this->startDB();
 		  $output = array();
 		  
-		  $sql = "SELECT * FROM dupsubjects WHERE 1 ";
+		  $sql = "SELECT * FROM dupsubjects WHERE 1";
 		  $result =  $db->fetchAll($sql);
 		  if($result){
 				foreach($result as $row){
@@ -409,9 +451,9 @@ class dataEdit_SpaceIdentity  {
 					 $itemLabel = $row["label"];
 					 $classUUID = $row["class_uuid"];
 					 $sourceID = $row["source_id"];
-		  
+					 $itemContext = $row["full_context"];
 					 $actItem = $row;
-					 $actItem["source-ids"] = $this->getSourceIDs($itemLabel, $sourceID, $classUUID);
+					 $actItem["source-ids"] = $this->getSourceIDs($itemLabel, $itemContext, $sourceID, $classUUID);
 					 $output[] = $actItem;
 				}
 		  }
@@ -438,7 +480,7 @@ class dataEdit_SpaceIdentity  {
 				foreach($result as $row){
 					 $varID = $row["variable_uuid"];
 					 $sql = "SELECT count(observe.property_uuid) as fCount, observe.subject_uuid,
-								space.space_label, space.source_id, space.class_uuid
+								space.space_label, space.source_id, space.class_uuid, space.full_context, space.sample_des
 								FROM observe
 								JOIN properties ON observe.property_uuid = properties.property_uuid
 								JOIN space ON observe.subject_uuid = space.uuid
@@ -452,11 +494,12 @@ class dataEdit_SpaceIdentity  {
 						  foreach($resultB as $rowB){
 								$itemUUID = $rowB["subject_uuid"];
 								$fCount = $rowB["fCount"];
-								if($fCount > 1){
+								if($fCount > 1 && strlen($rowB["sample_des"]) < 1){
 									 $data = array("uuid" => $itemUUID);
 									 $data["source_id"] = $rowB["source_id"];
 									 $data["label"] = $rowB["space_label"];
 									 $data["class_uuid"] = $rowB["class_uuid"];
+									 $data["full_context"] = $rowB["full_context"];
 									 try{
 										  $db->insert("dupsubjects", $data); //add list of subject items with multiple of the same var
 									 }
@@ -474,13 +517,81 @@ class dataEdit_SpaceIdentity  {
 	 }
 
 
-	 //looks up an item lable, its class, and its source table to get its original source table record ID
-	 function getSourceIDs($itemLabel, $sourceID, $classUUID){
+	 //this function makes a condition 
+	 function getSourceContexts($actField, $sourceID, $parentArray = false){
 		  
 		  $db = $this->startDB();
 		  
 		  //get labeling prefix
-		  $sql = "SELECT field_name, field_lab_com
+		  $sql = "SELECT field_summary.field_name, field_summary.field_lab_com
+		  FROM field_summary
+		  JOIN field_links ON (field_links.source_id =  field_summary.source_id
+				AND field_links.field_parent_name = field_summary.field_name)
+		  WHERE field_summary.source_id = '$sourceID'
+		  AND field_links.field_child_name = '$actField'
+		  AND field_summary.field_type = 'Locations or Objects'
+		  ";
+		  
+		  $result = $db->fetchAll($sql);
+		  if($result){
+				if(!$parentArray){
+					 $parentArray = array();
+				}
+				$parentArray[] = $result[0];
+				$parentArray = $this->getSourceContexts($result[0]["field_name"], $sourceID, $parentArray);
+		  }
+		  
+		  return $parentArray;
+	 }
+
+	 //make query condition from contexts
+	 function sourceContextCondition($itemContext, $sourceContexts){
+		  $output = "";
+		  if(is_array($sourceContexts)){
+				
+				if(strstr($itemContext, "|xx|")){
+					 $rawContextArray = explode("|xx|", $itemContext);
+				}
+				else{
+					 $rawContextArray = array($itemContext);
+				}
+				$contextArray = array(); //this will be sorted, most specific context first, then up the parents to most general
+				$contextCount = count($rawContextArray);
+				$i = $contextCount;
+				while($i >= 0){
+					 if(isset($rawContextArray[$i])){
+						  $contextArray[] = $rawContextArray[$i];
+					 }
+					 $i = $i - 1;
+				}
+				
+				$i = 1 ; //skip the first context, since that is the item label
+				foreach($sourceContexts as $sourceContext){
+					 if($i < $contextCount){
+						  //only make if the source table has the fields
+						  $actContextLabel = $contextArray[$i];
+						  $labelCom = $sourceContext["field_lab_com"];
+						  $sourceField = $sourceContext["field_name"];
+						  $originalID  = str_replace($labelCom, "", $actContextLabel);
+						  $originalID = trim($originalID);
+						  $output .= " AND $sourceField = '$originalID' ";
+					 }
+					 $i++;
+				}
+				
+		  }
+		  return $output;
+	 }
+	 
+
+	 //looks up an item label, its class, and its source table to get its original source table record ID
+	 function getSourceIDs($itemLabel, $itemContext, $sourceID, $classUUID){
+		  $sourceParents = $this->sourceParents; //array of source table spatial hierachy arrays
+		  
+		  $db = $this->startDB();
+		  
+		  //get labeling prefix
+		  $sql = "SELECT pk_field, field_name, field_lab_com
 		  FROM field_summary
 		  WHERE source_id = '$sourceID'
 		  AND fk_class_uuid = '$classUUID'
@@ -491,13 +602,24 @@ class dataEdit_SpaceIdentity  {
 		  if($resultB){
 				$labelCom = $resultB[0]["field_lab_com"];
 				$sourceField = $resultB[0]["field_name"];
-				
 				$originalID  = str_replace($labelCom, "", $itemLabel);
 				$originalID = trim($originalID);
 				
+				if(!isset($sourceParents[$sourceID])){
+					 $sourceContexts = $this->getSourceContexts($sourceField, $sourceID);
+					 $sourceParents[$sourceID] = $sourceContexts;
+					 $this->sourceParents = $sourceParents; //save it for later
+				}
+				else{
+					 $sourceContexts = $sourceParents[$sourceID];
+				}
+				$containCondition = $this->sourceContextCondition($itemContext, $sourceContexts);
+				
 				$sql = "SELECT id, $sourceField
 				FROM $sourceID
-				WHERE ".$sourceField." = '$originalID' ";
+				WHERE ".$sourceField." = '$originalID'
+				$containCondition
+				";
 				
 				$resultC = $db->fetchAll($sql);
 				if($resultC){
@@ -523,6 +645,7 @@ class dataEdit_SpaceIdentity  {
 				uuid varchar(50) CHARACTER SET latin1 NOT NULL,
 				source_id varchar(50) NOT NULL,
 				label varchar(50) NOT NULL,
+				full_context varchar(200) NOT NULL,
 				class_uuid varchar(50) CHARACTER SET latin1 NOT NULL,
 				PRIMARY KEY (`uuid`)
 			 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;";
