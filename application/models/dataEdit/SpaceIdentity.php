@@ -224,7 +224,7 @@ class dataEdit_SpaceIdentity  {
 		  $result = $db->fetchAll($sql);
 		  foreach($result as $row){
 				$data = $row;
-				$data["hash_all"] = $data["hash_link"]."-".$increment;
+				$data["hash_all"] = $data["hash_all"]."-".$increment;
 				
 				if($data["parent_uuid"] == $oldUUID){
 					 $data["parent_uuid"] = $newUUID;
