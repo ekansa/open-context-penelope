@@ -41,6 +41,8 @@ class TableController extends Zend_Controller_Action {
 		  }
 		  
 		  Zend_Loader::loadClass('TabOut_Table');
+		  $tableArray = false;
+		  $linkedFields = false;
 		  
 		  $tableObj = new TabOut_Table;
 		  $tableObj->setSize = $setSize;
@@ -48,9 +50,9 @@ class TableController extends Zend_Controller_Action {
 		  $linkedFields = $tableObj->getLinkedVariables($classUUID);
 		  $tableArray = $tableObj->makeTableArray($classUUID);
 		  
-		 
+		  $output = array("tableData" => $tableArray, "linkedFields" => $linkedFields);
 		  header('Content-Type: application/json; charset=utf8');
-		  echo Zend_Json::encode($tableArray);
+		  echo Zend_Json::encode($output);
 	 }
 	 
 

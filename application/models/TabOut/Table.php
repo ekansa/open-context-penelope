@@ -9,7 +9,11 @@ class TabOut_Table  {
 	 public $actVarIDs; //array of active variableIDs
 	 
 	 public $maxContextFields; //number of context depth
+	 
+	 public $showFieldURIs = false; //show the URIs of fields for linked data
 	 public $linkedFields; //standard fields from ontology links
+	 public $LFtypeCount = 0; //count of linked fields of type type
+	 public $LFunitTypeCount = 0; //count of linked fields of type unit-type
 	 
 	 public $db;
 	 
@@ -27,12 +31,14 @@ class TabOut_Table  {
 		  $this->getMaxContextDepth($classUUID); //get the maximum context depth
 		  $this->getProjects($classUUID);
 		  $projectNames = $this->projectNames;
+		  $linkedFields = $this->getLinkedVariables($classUUID);
+		  
 		  $result = $this->getClass($classUUID); //get the list of items, their labels, and their context
 		  if($result){
 				$tabArray = array();
 				foreach($result as $row){
 					 $actRecord = array();
-					 
+					 $itemUUID = $row["uuid"];
 					 $uuidKey = self::OCspatialURIbase.$row["uuid"];
 					 $projectUUID = $row["project_id"];
 					 $projectURI = self::OCprojectURIbase.$projectUUID;
@@ -72,7 +78,51 @@ class TabOut_Table  {
 					 }
 					 
 				
-					 $actRecord["Parent context URI"] = $parentURI;
+					 $actRecord["Context URI"] = $parentURI;
+					 
+					 $jj= 0;
+					 foreach($linkedFields as $linkedField){
+						  
+						  if($linkedField["linkedType"] == "type"){
+					 			$linkedObject = $this->itemLinkedTypeValues($itemUUID, $linkedField["varIDs"]);
+								
+								if($this->showFieldURIs){
+									 $propKeyA = "URI: ".$linkedField["linkedLabel"]." (".$linkedField["linkedURI"].")";
+									 $propKeyB = "Label: ".$linkedField["linkedLabel"]." (".$linkedField["linkedURI"].")";
+								}
+								else{
+									 $propKeyA = $linkedField["linkedLabel"]." [URI]";
+									 $propKeyB = $linkedField["linkedLabel"]." [Label]";
+								}
+								if(!$linkedObject){
+									 $actRecord[$propKeyA] = "";
+									 $actRecord[$propKeyB] = "";
+								}
+								else{
+									 $actRecord[$propKeyA] = $linkedObject[0]["linkedURI"];
+									 $actRecord[$propKeyB] = $linkedObject[0]["linkedLabel"];
+								}
+								
+						  }
+						  elseif($linkedField["linkedType"] == "unit-type"){
+								$linkedVal= $this->itemLinkedUnitTypeValues($itemUUID, $linkedField["varIDs"]);
+								if($this->showFieldURIs){
+									 $propKeyA = $linkedField["linkedLabel"]." (".$linkedField["linkedURI"].")";
+								}
+								else{
+									 $propKeyA = $linkedField["linkedLabel"];
+								}
+								$actRecord[$propKeyA] = $linkedVal;
+						  }
+						  
+						  if($jj >= $this->LFtypeCount){
+								//break;
+						  }
+						  
+						  $jj++;
+					 }
+					 
+					 
 					 
 					 $tabArray[$uuidKey] = $actRecord;
 				}
@@ -87,6 +137,81 @@ class TabOut_Table  {
 	 
 	 
 	 
+	 function itemLinkedTypeValues($itemUUID, $actVarIDs){
+		  $db = $this->startDB();
+		  
+		  $varCondition = $this->makeORcondition($actVarIDs, "variable_uuid", "properties");
+		  
+		  $sql = "SELECT properties.property_uuid, linked_data.linkedLabel, linked_data.linkedURI
+		  FROM observe
+		  JOIN properties ON observe.property_uuid = properties.property_uuid
+		  JOIN linked_data ON properties.property_uuid = linked_data.itemUUID
+		  WHERE observe.subject_uuid = '$itemUUID' AND ($varCondition)
+		  ORDER BY linked_data.linkedLabel
+		  ";
+		  
+		  $result = $db->fetchAll($sql);
+		  return $result;
+		  
+	 }
+	 
+	 
+	 function itemLinkedUnitTypeValues($itemUUID, $actVarIDs){
+		  $db = $this->startDB();
+		  
+		  $varCondition = $this->makeORcondition($actVarIDs, "variable_uuid", "properties");
+		  
+		   $sql = "SELECT  
+				  IF (
+				  val_tab.val_text IS NULL , (
+					  IF (
+					  properties.val_num =0, properties.val_num, properties.val_num)
+					  ), 
+					  val_tab.val_text
+					  ) AS val
+			  FROM observe
+			  LEFT JOIN properties ON observe.property_uuid = properties.property_uuid
+			  LEFT JOIN var_tab ON properties.variable_uuid = var_tab.variable_uuid
+			  LEFT JOIN val_tab ON properties.value_uuid = val_tab.value_uuid
+			  WHERE observe.subject_uuid = '$itemUUID'
+			  AND ($varCondition)";
+		  
+		  $result = $db->fetchAll($sql);
+		  if($result){
+				return $result[0]["val"];
+		  }
+		  else{
+				return "";
+		  }
+		  
+	 }
+	 
+	 
+	 
+	 
+	 //get the original (non ontology) properties for a given itemUUID
+	 function itemProperties($itemUUID){
+		  $db = $this->startDB();
+		  
+		  $sql = "SELECT properties.variable_uuid, properties.property_uuid,  
+				  var_tab.var_label, 
+				  IF (
+				  val_tab.val_text IS NULL , (
+					  IF (
+					  properties.val_num =0, properties.val_num, properties.val_num)
+					  ), 
+					  val_tab.val_text
+					  ) AS val, observe.source_id
+			  FROM observe
+			  LEFT JOIN properties ON observe.property_uuid = properties.property_uuid
+			  LEFT JOIN var_tab ON properties.variable_uuid = var_tab.variable_uuid
+			  LEFT JOIN val_tab ON properties.value_uuid = val_tab.value_uuid
+			  WHERE observe.subject_uuid = '$itemUUID' 
+			  ORDER BY var_tab.sort_order";
+		  
+		  return $db->fetchAll($sql);
+		  
+	 }
 	 
 	 
 	 
@@ -161,7 +286,11 @@ class TabOut_Table  {
 				$itemCondition = $this->makeORcondition($actVarIDs, "itemUUID");
 				
 				$sql = "SELECT linked_data.linkedURI, linked_data.linkedLabel, linked_data.linkedType,
-				AVG(var_tab.sort_order) as fSort
+				IF (
+				  linked_data.linkedType = 'unit-type',
+					 AVG(var_tab.sort_order) + 100,
+					 AVG(var_tab.sort_order) 
+					 ) AS  fSort
 				FROM linked_data
 				JOIN var_tab ON linked_data.itemUUID = var_tab.variable_uuid
 				WHERE linked_data.linkedType != 'unit' AND ($varCondition)
@@ -173,6 +302,14 @@ class TabOut_Table  {
 				if($result){
 					 $linkedFields = array();
 					 foreach($result as $row){
+						  
+						  if($row["linkedType"] == "type"){
+								$this->LFtypeCount++;
+						  }
+						  elseif($row["linkedType"] == "unit-type"){
+								$this->LFunitTypeCount++;
+						  }
+						  
 						  $actLinkedData = $row;
 						  $actURI = $row["linkedURI"];
 						  $sql = "SELECT itemUUID FROM linked_data WHERE linkedURI = '$actURI' AND ($itemCondition) ";
