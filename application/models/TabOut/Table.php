@@ -26,12 +26,22 @@ class TabOut_Table  {
 	 const contextDelim = "|xx|";
 	 
 	 
+	 public $linkedTypeConfigs = array("http://opencontext.org/vocabularies/open-context-zooarch/zoo-0077" =>
+												  array(0 => array(	"labeling" => " (distal)",
+																		   "cond" => " AND linked_data.linkedLabel LIKE '%distal%'"),
+														  1 => array(	"labeling" => " (proximal)",
+																				"cond" => " AND linked_data.linkedLabel LIKE '%proximal%'")
+														 )
+												  );
+	 
+	 
+	 
 	 function makeTableArray($classUUID){
 		  
 		  $this->getMaxContextDepth($classUUID); //get the maximum context depth
 		  $this->getProjects($classUUID);
 		  $projectNames = $this->projectNames;
-		  $linkedFields = $this->getLinkedVariables($classUUID);
+		  $this->getLinkedVariables($classUUID);
 		  
 		  $result = $this->getClass($classUUID); //get the list of items, their labels, and their context
 		  if($result){
@@ -80,49 +90,7 @@ class TabOut_Table  {
 				
 					 $actRecord["Context URI"] = $parentURI;
 					 
-					 $jj= 0;
-					 foreach($linkedFields as $linkedField){
-						  
-						  if($linkedField["linkedType"] == "type"){
-					 			$linkedObject = $this->itemLinkedTypeValues($itemUUID, $linkedField["varIDs"]);
-								
-								if($this->showFieldURIs){
-									 $propKeyA = "URI: ".$linkedField["linkedLabel"]." (".$linkedField["linkedURI"].")";
-									 $propKeyB = "Label: ".$linkedField["linkedLabel"]." (".$linkedField["linkedURI"].")";
-								}
-								else{
-									 $propKeyA = $linkedField["linkedLabel"]." [URI]";
-									 $propKeyB = $linkedField["linkedLabel"]." [Label]";
-								}
-								if(!$linkedObject){
-									 $actRecord[$propKeyA] = "";
-									 $actRecord[$propKeyB] = "";
-								}
-								else{
-									 $actRecord[$propKeyA] = $linkedObject[0]["linkedURI"];
-									 $actRecord[$propKeyB] = $linkedObject[0]["linkedLabel"];
-								}
-								
-						  }
-						  elseif($linkedField["linkedType"] == "unit-type"){
-								$linkedVal= $this->itemLinkedUnitTypeValues($itemUUID, $linkedField["varIDs"]);
-								if($this->showFieldURIs){
-									 $propKeyA = $linkedField["linkedLabel"]." (".$linkedField["linkedURI"].")";
-								}
-								else{
-									 $propKeyA = $linkedField["linkedLabel"];
-								}
-								$actRecord[$propKeyA] = $linkedVal;
-						  }
-						  
-						  if($jj >= $this->LFtypeCount){
-								//break;
-						  }
-						  
-						  $jj++;
-					 }
-					 
-					 
+					 $actRecord = $this->tableAddLinkedFields($itemUUID, $actRecord); //add the linked data fields
 					 
 					 $tabArray[$uuidKey] = $actRecord;
 				}
@@ -136,8 +104,71 @@ class TabOut_Table  {
 	 }
 	 
 	 
+	 //this adds linked data to a table record. 
+	 function tableAddLinkedFields($itemUUID, $actRecord){
+		  $linkedTypeConfigs = $this->linkedTypeConfigs;
+		  $linkedFields = $this->linkedFields;
+		  
+		  foreach($linkedFields as $linkedField){
+				
+				if($linkedField["linkedType"] == "type"){
+					 if(array_key_exists($linkedField["linkedURI"], $linkedTypeConfigs)){
+						  //there's some special configuration for this linkeduri field!
+						  $actLF = array();
+						  foreach($linkedTypeConfigs[$linkedField["linkedURI"]] as $config){
+								$actConfig = $linkedField;
+								$actConfig["linkedLabel"] = $actConfig["linkedLabel"].$config["labeling"];
+								$actConfig["cond"] = $config["cond"];
+								$actLF[] = $actConfig;
+						  }
+					 }
+					 else{
+						  $actLF = array();
+						  $actConfig = $linkedField;
+						  $actConfig["cond"] = "";
+						  $actLF[] = $actConfig;
+					 }
+					 
+					 foreach($actLF as $lf){
+						  $linkedObject = $this->itemLinkedTypeValues($itemUUID, $lf["varIDs"], $lf["cond"]);
+						  
+						  if($this->showFieldURIs){
+								$propKeyA = "URI: ".$lf["linkedLabel"]." (".$lf["linkedURI"].")";
+								$propKeyB = "Label: ".$lf["linkedLabel"]." (".$lf["linkedURI"].")";
+						  }
+						  else{
+								$propKeyA = $lf["linkedLabel"]." [URI]";
+								$propKeyB = $lf["linkedLabel"]." [Label]";
+						  }
+						  if(!$linkedObject){
+								$actRecord[$propKeyA] = "";
+								$actRecord[$propKeyB] = "";
+						  }
+						  else{
+								$actRecord[$propKeyA] = $linkedObject[0]["linkedURI"];
+								$actRecord[$propKeyB] = $linkedObject[0]["linkedLabel"];
+						  }
+					 }
+					 
+				}
+				elseif($linkedField["linkedType"] == "unit-type"){
+					 $linkedVal= $this->itemLinkedUnitTypeValues($itemUUID, $linkedField["varIDs"]);
+					 if($this->showFieldURIs){
+						  $propKeyA = $linkedField["linkedLabel"]." (".$linkedField["linkedURI"].")";
+					 }
+					 else{
+						  $propKeyA = $linkedField["linkedLabel"];
+					 }
+					 $actRecord[$propKeyA] = $linkedVal;
+				}
+				
+		  }
+		  
+		  return $actRecord;
+	 }
 	 
-	 function itemLinkedTypeValues($itemUUID, $actVarIDs){
+	 
+	 function itemLinkedTypeValues($itemUUID, $actVarIDs, $optCondition = ""){
 		  $db = $this->startDB();
 		  
 		  $varCondition = $this->makeORcondition($actVarIDs, "variable_uuid", "properties");
@@ -146,7 +177,7 @@ class TabOut_Table  {
 		  FROM observe
 		  JOIN properties ON observe.property_uuid = properties.property_uuid
 		  JOIN linked_data ON properties.property_uuid = linked_data.itemUUID
-		  WHERE observe.subject_uuid = '$itemUUID' AND ($varCondition)
+		  WHERE observe.subject_uuid = '$itemUUID' AND ($varCondition) $optCondition
 		  ORDER BY linked_data.linkedLabel
 		  ";
 		  
