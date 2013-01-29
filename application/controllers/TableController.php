@@ -26,15 +26,31 @@ class TableController extends Zend_Controller_Action {
         $this->_helper->viewRenderer->setNoRender();        
         
         //class of items to export in a table
-        $classUUID = "881CEDA3-C445-4C9C-4D4B-634BD2963892";
-        
+        $classUUID = "881CEDA3-C445-4C9C-4D4B-634BD2963892"; //animal bone
+		  $page = 1;
+		  $setSize = 500;
+		  
+        if(isset($_REQUEST["classUUID"])){
+				$classUUID = $_REQUEST["classUUID"];
+		  }
+		  if(isset($_REQUEST["page"])){
+				$page = $_REQUEST["page"];
+		  }
+		  if(isset($_REQUEST["setSize"])){
+				$setSize = $_REQUEST["setSize"];
+		  }
+		  
 		  Zend_Loader::loadClass('TabOut_Table');
 		  
 		  $tableObj = new TabOut_Table;
+		  $tableObj->setSize = $setSize;
+		  $tableObj->page = $page;
 		  $linkedFields = $tableObj->getLinkedVariables($classUUID);
+		  $tableArray = $tableObj->makeTableArray($classUUID);
+		  
 		 
 		  header('Content-Type: application/json; charset=utf8');
-		  echo Zend_Json::encode($linkedFields);
+		  echo Zend_Json::encode($tableArray);
 	 }
 	 
 

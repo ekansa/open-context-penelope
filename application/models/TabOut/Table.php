@@ -2,7 +2,8 @@
 
 class TabOut_Table  {
     
-    
+    public $tabArray;
+	 public $projectNames; //array of project names
 	 public $actProjectIDs; //array of active projects
 	 public $actVariables; //array of active variables (variable_uuid, var_label, sort_order)
 	 public $actVarIDs; //array of active variableIDs
@@ -12,22 +13,105 @@ class TabOut_Table  {
 	 
 	 public $db;
 	 
+	 public $page;
+	 public $recStart;
+	 public $setSize;
+	 
+	 const OCspatialURIbase = "http://opencontext.org/subjects/";
+	 const OCprojectURIbase = "http://opencontext.org/projects/";
+	 const contextDelim = "|xx|";
+	 
+	 
+	 function makeTableArray($classUUID){
+		  
+		  $this->getMaxContextDepth($classUUID); //get the maximum context depth
+		  $this->getProjects($classUUID);
+		  $projectNames = $this->projectNames;
+		  $result = $this->getClass($classUUID); //get the list of items, their labels, and their context
+		  if($result){
+				$tabArray = array();
+				foreach($result as $row){
+					 $actRecord = array();
+					 
+					 $uuidKey = self::OCspatialURIbase.$row["uuid"];
+					 $projectUUID = $row["project_id"];
+					 $projectURI = self::OCprojectURIbase.$projectUUID;
+					 $projectName = $projectNames[$projectUUID];
+					 
+					 $label = $row["space_label"];
+					 $parent = $this->getParentID($row["uuid"]); 
+					 if($parent != false){
+						  $parentURI = self::OCspatialURIbase.$parent["uuid"];
+					 }
+					 else{
+						  $parentURI = "";
+					 }
+					 
+					 $actRecord["Item label"] = $label;
+					 $actRecord["Project URI"] = $projectURI;
+					 $actRecord["Project name"] = $projectName;
+					 
+					 
+					 $rawContext = $row["full_context"];
+					 $rawContextArray = explode(self::contextDelim, $rawContext);
+					 $i = 0;
+					 while($i < $this->maxContextFields){
+						  $contextLabelKey = "Context (".($i + 1).")";
+						  if(isset($rawContextArray[$i])){
+								if($rawContextArray[$i] != $label){
+									 $actRecord[$contextLabelKey] = $rawContextArray[$i];
+								}
+								else{
+									 $actRecord[$contextLabelKey] = "";
+								}
+						  }
+						  else{
+								$actRecord[$contextLabelKey] = "";
+						  }
+					 $i++;
+					 }
+					 
+				
+					 $actRecord["Parent context URI"] = $parentURI;
+					 
+					 $tabArray[$uuidKey] = $actRecord;
+				}
+				
+				return $tabArray;
+		  }
+		  else{
+				return false;
+		  }
+		  
+	 }
+	 
+	 
+	 
+	 
+	 
+	 
+	 //get a list of items in a class
 	 function getClass($classUUID){
 		  
 		  $errors = array();
 		  $db = $this->startDB();
 		  
-		  $sql = "SELECT uuid, space_label, full_context
+		  $this->recStart = ($this->page - 1) * $this->setSize;
+		  
+		  $sql = "SELECT uuid, project_id, space_label, full_context
 		  FROM space
-		  WHERE class_uuid = '$classUUID';
+		  WHERE class_uuid = '$classUUID'
+		  ORDER BY project_id, full_context
+		  LIMIT ".($this->recStart ).",".($this->setSize)."
+		  ;
 		  ";
 		  
 		  $result =  $db->fetchAll($sql);
-		  foreach($result as $row){
-				
-		  }
-		  
+		  return $result;
 	 }
+	 
+	 
+	 
 	 
 	 
 	 
@@ -67,7 +151,8 @@ class TabOut_Table  {
 		  }
 	 }
 	 
-	 
+	 //this function makes a list of unique properties and measurement types from
+	 //external vocabularies referenced in the dataset. The variable UUIDs linked to these external concepts are provided
 	 function getLinkedVariables($classUUID){
 		  if(!is_array($this->linkedFields)){
 				$db = $this->startDB();
@@ -135,7 +220,7 @@ class TabOut_Table  {
 					 $result =  $db->fetchAll($sql);
 					 if($result){
 						  $actField["fCount"] = $result[0]["fCount"];
-						  $actField["weirdSub"] = "http://penelope.oc/preview/space?UUID=".$result[0]["subject_uuid"]; //for debugging
+						  $actField["example"] = "http://penelope.oc/preview/space?UUID=".$result[0]["subject_uuid"]; //for debugging
 					 }
 					 else{
 						  $actField["fCount"] = false;
@@ -203,10 +288,10 @@ class TabOut_Table  {
 	 }
 	 
 	 //get the number of fields needed for the deepest containment hierarchy
-	 function getMaxContext($classUUID){
+	 function getMaxContextDepth($classUUID){
 		  $db = $this->startDB();
 		  
-		  $sql = "SELECT (LENGTH(full_context) - LENGTH(REPLACE(full_context, '|xx|', ''))) / LENGTH('|xx|') AS cnt
+		  $sql = "SELECT (LENGTH(full_context) - LENGTH(REPLACE(full_context, '".self::contextDelim."', ''))) / LENGTH('".self::contextDelim."') AS cnt
 		  FROM space
 		  WHERE class_uuid = '$classUUID'
 		  ORDER BY cnt DESC
@@ -215,7 +300,7 @@ class TabOut_Table  {
 		  
 		  $result =  $db->fetchAll($sql);
 		  if($result){
-				$this->maxContextFields = $result[0]["cnt"];
+				$this->maxContextFields = $result[0]["cnt"] - 1; //the minus one is there because the last is the item label
 		  }
 		  else{
 				$this->maxContextFields = 0;
@@ -228,17 +313,23 @@ class TabOut_Table  {
 		  if(!is_array($this->actProjectIDs)){
 				$db = $this->startDB();
 				
-				$sql = "SELECT DISTINCT project_id
+				
+				$sql = "SELECT DISTINCT space.project_id, project_list.project_name
 				FROM space
-				WHERE class_uuid = '$classUUID' AND project_id != '0' ";
+				JOIN project_list ON space.project_id = project_list.project_id
+				WHERE space.class_uuid = '$classUUID' AND space.project_id != '0' ";
 				
 				$result =  $db->fetchAll($sql);
 				if($result){
 					 $actProjectIDs = array();
+					 $projectNames = array();
 					 foreach($result as $row){
-						  $actProjectIDs[] = $row["project_id"];
+						  $projectUUID = $row["project_id"];
+						  $actProjectIDs[] = $projectUUID;
+						  $projectNames[$projectUUID] = $row["project_name"];
 					 }
 					 $this->actProjectIDs = $actProjectIDs;
+					 $this->projectNames = $projectNames;
 					 return $actProjectIDs;
 				}
 				else{
