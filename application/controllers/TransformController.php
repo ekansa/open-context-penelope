@@ -9,10 +9,10 @@ class TransformController extends App_Controller_PenelopeController
     
      //make sure all connections are UTF-8 OK
     private function setUTFconnection($db){
-	$sql = "SET collation_connection = utf8_unicode_ci;";
-	$db->query($sql, 2);
-	$sql = "SET NAMES utf8;";
-	$db->query($sql, 2);
+		  $sql = "SET collation_connection = utf8_unicode_ci;";
+		  $db->query($sql, 2);
+		  $sql = "SET NAMES utf8;";
+		  $db->query($sql, 2);
     }
     
     
@@ -128,7 +128,7 @@ class TransformController extends App_Controller_PenelopeController
         $this->_helper->viewRenderer->setNoRender();
         $projectUUID    = $_REQUEST['projectUUID'];
         $db = Zend_Registry::get('db');        
-        
+        $this->setUTFconnection($db);
         $select = $db->select()
             ->distinct()
             ->from(
@@ -207,7 +207,7 @@ class TransformController extends App_Controller_PenelopeController
 
         //retrieve the associated field_summary records that are designated as 'Property':
         $fieldSummary    = new Table_FieldSummary();
-        $select = $fieldSummary->select()->where('field_type = ?', 'Property');
+        $select = $fieldSummary->select()->where('field_type = ?', 'Property')->order("field_num ASC");
         $fieldRows      = $fileSummaryRow->findDependentRowset('Table_FieldSummary', null, $select);
         
         //retrieve the parent project record:
@@ -1342,7 +1342,7 @@ class TransformController extends App_Controller_PenelopeController
     
     private function spatial_noContain_check($dataTableName){
         $db = Zend_Registry::get('db');
-        
+        $this->setUTFconnection($db);
         $sql = "SELECT field_links.field_parent_name
         FROM field_links
         WHERE field_links.fk_link_type = '1'
@@ -1368,7 +1368,7 @@ class TransformController extends App_Controller_PenelopeController
     //no new spatial items are created, matches on class and item label
     private function spatial_noContain_do($dataTableName, $projectUUID = false){
         $db = Zend_Registry::get('db');
-        
+        $this->setUTFconnection($db);
         if(!$projectUUID){
             $sql = "SELECT file_summary.project_id AS projectUUID
             FROM file_summary
@@ -1418,6 +1418,7 @@ class TransformController extends App_Controller_PenelopeController
         
         $idCount = 0;
         $db = Zend_Registry::get('db');
+		  $this->setUTFconnection($db);
         $sql = "SELECT DISTINCT $dataTableName.$act_fieldName AS spfield
         FROM $dataTableName
         WHERE CHAR_LENGTH($dataTableName.$act_fieldName) > 0
@@ -1525,6 +1526,7 @@ class TransformController extends App_Controller_PenelopeController
     //this function gets a title for a given media file 
     private function getmediaTile($dataTableName, $mediaFieldNum, $recordNum, $resUUID){
          $db = Zend_Registry::get('db');
+			$this->setUTFconnection($db);
          $select = $db->select()
             ->distinct()
             ->from  (
@@ -2931,6 +2933,7 @@ class TransformController extends App_Controller_PenelopeController
     private function markDataTableAsComplete($projectUUID, $dataTableName)
     {
         $db = Zend_Registry::get('db');
+		  $this->setUTFconnection($db);
         $result     = $db->fetchOne("select max(process_order) from file_summary where project_id ='" .  $projectUUID. "'");// this is a single string valueecho $result;
         $processNumber  = (($result == null) ? 1 : (((int)$result)+1));
         
@@ -2942,5 +2945,6 @@ class TransformController extends App_Controller_PenelopeController
             'imp_done_timestamp' => new Zend_Db_Expr('NOW()'));
         $fileSummary->update($data, $whereClause);
     }
-
+	 
+	
 }

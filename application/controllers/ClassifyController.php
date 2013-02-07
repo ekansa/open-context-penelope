@@ -29,7 +29,7 @@ class ClassifyController extends App_Controller_PenelopeController
         //1.  set data records:
         $fieldSummaryTable = new Table_FieldSummary();
         $whereClause = ("source_id = '" . $dataTableName . "'");
-        $rows = $fieldSummaryTable->fetchAll($whereClause);
+        $rows = $fieldSummaryTable->fetchAll($whereClause, "field_num ASC");
         $dgHelper->setDataRecords($rows, "pk_field");
         
         //2.  define a layout:
