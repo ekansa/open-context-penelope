@@ -124,7 +124,11 @@ class LinkedData_BoneMeasurement  {
 				foreach($annotations as $annos){
 					 foreach($annos as $annoKey => $value){
 						  //echo "<br> $annoKey : $value".chr(13).chr(13);
-						  if($annoKey == "rdfs:label" && $value == $varLabel){
+						  $checkVal = strtolower($value);
+						  $checkLabel = strtolower($varLabel);
+						  
+						  //if($annoKey == "rdfs:label" && $value == $varLabel){
+						  if($annoKey == "rdfs:label" && $checkVal == $checkLabel){
 								//found the concept!
 								if(substr(self::OC_zooarch_ontology_base, -1, 1) == "/" && substr($iriKey, 0, 1) == "/"){
 									 $url = substr(self::OC_zooarch_ontology_base, 0, (strlen(self::OC_zooarch_ontology_base)-1)).$iriKey;

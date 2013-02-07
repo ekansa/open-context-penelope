@@ -51,7 +51,7 @@ class ZooController extends Zend_Controller_Action {
         $this->_helper->viewRenderer->setNoRender();        
         
         //get selected root item then add it and all children to database
-        $tableID = "z_4_aa1c977a0";
+        $tableID = "z_6_ebfdbcce8";
         
 		  Zend_Loader::loadClass('LinkedData_BoneMeasurement');
 		  
@@ -71,7 +71,7 @@ class ZooController extends Zend_Controller_Action {
         $this->_helper->viewRenderer->setNoRender();        
         
         //get selected root item then add it and all children to database
-        $projUUID = "731B0670-CE2A-414A-8EF6-9C050A1C60F5";
+        $projUUID = "BC90D462-6639-4087-8527-6BB9E528E07D";
         
 		  Zend_Loader::loadClass('dataEdit_SpaceIdentity');
 		  

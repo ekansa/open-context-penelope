@@ -7,6 +7,7 @@ class TabOut_Table  {
 	 public $actProjectIDs; //array of active projects
 	 public $actVariables; //array of active variables (variable_uuid, var_label, sort_order)
 	 public $actVarIDs; //array of active variableIDs
+	 public $actVarLabels; //array of active variable labels (for whole table, across multiple projects)
 	 
 	 public $maxContextFields; //number of context depth
 	 
@@ -91,6 +92,7 @@ class TabOut_Table  {
 					 $actRecord["Context URI"] = $parentURI;
 					 
 					 $actRecord = $this->tableAddLinkedFields($itemUUID, $actRecord); //add the linked data fields
+					 $actRecord = $this->tableAddSourceFields($itemUUID, $actRecord); //add the source data fields
 					 
 					 $tabArray[$uuidKey] = $actRecord;
 				}
@@ -166,6 +168,27 @@ class TabOut_Table  {
 		  
 		  return $actRecord;
 	 }
+	 
+	 
+	 //this adds source data to a table record. 
+	 function tableAddSourceFields($itemUUID, $actRecord){
+		  
+		  $props = $this->itemProperties($itemUUID);
+		  foreach($this->actVarLabels as $actLabel){
+				$tabField = $actLabel." [Source]";
+				$tabCell = "";
+				foreach($props as $row){
+					 if($row["var_label"] == $actLabel){
+						  $tabCell = $row["val"];
+						  break;
+					 }
+				}
+				$actRecord[$tabField] = $tabCell;
+		  }
+		  
+		  return $actRecord;
+	 }
+	 
 	 
 	 
 	 function itemLinkedTypeValues($itemUUID, $actVarIDs, $optCondition = ""){
@@ -278,21 +301,30 @@ class TabOut_Table  {
 		  if(!is_array($this->actVarIDs)){
 				$db = $this->startDB();
 				
-				$sql = "SELECT DISTINCT var_tab.variable_uuid, var_tab.var_label, var_tab.sort_order
+				$sql = "SELECT round(COUNT(observe.subject_uuid)/10,0) as sCount, var_tab.variable_uuid, var_tab.var_label, var_tab.sort_order
 				FROM space
 				JOIN observe ON observe.subject_uuid = space.uuid
 				JOIN properties ON observe.property_uuid = properties.property_uuid
 				JOIN var_tab ON properties.variable_uuid = var_tab.variable_uuid
 				WHERE space.class_uuid = '$classUUID'
+				GROUP BY var_tab.variable_uuid
+				ORDER BY sCount DESC, var_tab.sort_order, var_tab.var_label
 				";
 				
 				$result =  $db->fetchAll($sql);
+				$actVarLabels = array();
 				if($result){
 					 $this->actVariables = $result;
 					 $actVarIDs = array(); //array of active variableIDs
+					 $actVarLabels = array(); //temporary array of active var labels
 					 foreach($result as $row){
 						  $actVarIDs[] = $row["variable_uuid"];
+						  $varLabel = $row["var_label"];
+						  if(!in_array($varLabel, $actVarLabels)){
+								$actVarLabels[] = $varLabel;
+						  }
 					 }
+					 $this->actVarLabels = $actVarLabels;
 					 $this->actVarIDs = $actVarIDs;
 					 return $this->actVarIDs;
 				}
