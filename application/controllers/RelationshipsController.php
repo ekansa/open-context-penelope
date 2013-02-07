@@ -19,6 +19,7 @@ class RelationshipsController extends App_Controller_PenelopeController
         
         
         $db = Zend_Registry::get('db');
+        $this->setUTFconnection($db);
 
         $select = $db->select()
         ->distinct()
@@ -90,6 +91,7 @@ class RelationshipsController extends App_Controller_PenelopeController
         $dataTableName  = $_REQUEST['dataTableName'];
         
         $db = Zend_Registry::get('db');
+        $this->setUTFconnection($db);
         // query for all relationships that aren't containment relationships:
         $select = $db->select()
             ->distinct()
@@ -204,6 +206,7 @@ class RelationshipsController extends App_Controller_PenelopeController
         //  -------------------------------------------------------
         
         $db = Zend_Registry::get('db');
+        $this->setUTFconnection($db);
         //1. get distinct list of child properties
         $subselect = $db->select()
             ->from  (
@@ -314,6 +317,7 @@ class RelationshipsController extends App_Controller_PenelopeController
         
         // 3.  get sample data for the tree!
         $db = Zend_Registry::get('db');
+        $this->setUTFconnection($db);
         $select = $db->select()
         ->distinct()
         ->from  (
@@ -532,6 +536,7 @@ class RelationshipsController extends App_Controller_PenelopeController
         $fieldTargetName    = $fieldTargetArray[1];
         
         $db = Zend_Registry::get('db');
+        $this->setUTFconnection($db);
         //1.  make sure that the origin / target combination don't already exist:
         $select = $db->select()
                     ->from  (
@@ -602,6 +607,7 @@ class RelationshipsController extends App_Controller_PenelopeController
         $fieldLinkID    = null;
         $fieldLinkName  = null;
         $db = Zend_Registry::get('db');
+        $this->setUTFconnection($db);
         $data = array();
         switch($dialogType)
         {
@@ -729,6 +735,7 @@ class RelationshipsController extends App_Controller_PenelopeController
         $excludeValue   = $_REQUEST['excludeValue'];    
         
         $db = Zend_Registry::get('db');
+        $this->setUTFconnection($db);
         $select = $db->select()
             ->from  (
                         array('f' => 'field_summary'),
@@ -774,6 +781,7 @@ class RelationshipsController extends App_Controller_PenelopeController
         //echo $dialogType . "\n";
         
         $db = Zend_Registry::get('db');
+        $this->setUTFconnection($db);
         switch($dialogType)
         {
             case "containment":
@@ -823,6 +831,7 @@ class RelationshipsController extends App_Controller_PenelopeController
         $this->autoContain($dataTableName);
         
         $db = Zend_Registry::get('db');
+        $this->setUTFconnection($db);
         $select = $db->select()
             ->from  (
                         array('f' => 'field_summary'),
@@ -853,6 +862,7 @@ class RelationshipsController extends App_Controller_PenelopeController
         
         //delete from database:      
         $db = Zend_Registry::get('db');
+        $this->setUTFconnection($db);
         $db->delete('field_links', "fk_field_parent = '" . $fieldOriginID . "' and fk_field_child = '" . $fieldTargetID . "' and source_id = '" . $dataTableName . "'");
         
         echo "The relationship was successfully deleted.";
@@ -865,6 +875,7 @@ class RelationshipsController extends App_Controller_PenelopeController
         $output = true;
         $db = Zend_Registry::get('db');
         $db->getConnection();
+        $this->setUTFconnection($db);
         
         $sql = 'SELECT *
         FROM field_links
@@ -893,6 +904,7 @@ class RelationshipsController extends App_Controller_PenelopeController
         if(!$db){
             $db = Zend_Registry::get('db');
             $db->getConnection();
+            $this->setUTFconnection($db);
         }
         
         $sql = 'SELECT field_links.source_id,
@@ -926,6 +938,7 @@ class RelationshipsController extends App_Controller_PenelopeController
         if(!$db){
             $db = Zend_Registry::get('db');
             $db->getConnection();
+            $this->setUTFconnection($db);
         }
         
         $sql = 'SELECT field_summary.field_label, field_summary.fk_class_uuid	
@@ -956,6 +969,7 @@ class RelationshipsController extends App_Controller_PenelopeController
         if(!$db){
             $db = Zend_Registry::get('db');
             $db->getConnection();
+            $this->setUTFconnection($db);
         }
         
         $sql = 'SELECT field_summary.pk_field,
@@ -983,6 +997,7 @@ class RelationshipsController extends App_Controller_PenelopeController
         if($doAutoContain){
             $db = Zend_Registry::get('db');
             $db->getConnection();
+            $this->setUTFconnection($db);
             
             $sql = 'SELECT *
             FROM file_summary
@@ -1050,7 +1065,12 @@ class RelationshipsController extends App_Controller_PenelopeController
     }
     
     
-    
+    private function setUTFconnection($db){
+		  $sql = "SET collation_connection = utf8_unicode_ci;";
+		  $db->query($sql, 2);
+		  $sql = "SET NAMES utf8;";
+		  $db->query($sql, 2);
+	 }
     
     
     

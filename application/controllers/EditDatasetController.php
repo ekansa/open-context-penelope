@@ -538,37 +538,37 @@ class EditDatasetController extends Zend_Controller_Action
     
     //this makes a pretty looking date
     private function makeNiceDate($dec_time){
-//this function creates human readible dates, with a CE, BCE notation
-//large values have a K for thousands or an M for millions appended()
-
-	$abs_time = abs($dec_time);
-	
-	if($dec_time<0){
-			$suffix = " BCE";
-		}
-		else{
-			$suffix = " CE";
-		}
-	
-	if($abs_time<10000){
-	    if($dec_time<0){
-                $output = (number_format($abs_time)).$suffix;
-	    }
-            else{
-                $output = round($abs_time,0).$suffix;
-            }
-	}//end case with less than 10,000
-	else{
-		
-                if($abs_time<1000000){
-                    $rnd_time = round($abs_time/1000,1);
-                    $output = (number_format($rnd_time))."K".$suffix;
-                }
-                else{
-                    $rnd_time = round($abs_time/1000000,2);
-                    $output = (number_format($rnd_time))."M".$suffix;
-                }
-	}
+		  //this function creates human readible dates, with a CE, BCE notation
+		  //large values have a K for thousands or an M for millions appended()
+		  
+				$abs_time = abs($dec_time);
+			  
+				if($dec_time<0){
+					 $suffix = " BCE";
+				}
+				else{
+					 $suffix = " CE";
+				}
+				
+				if($abs_time<10000){
+					 if($dec_time<0){
+						  $output = (number_format($abs_time)).$suffix;
+					 }
+					 else{
+						  $output = round($abs_time,0).$suffix;
+						  }
+				}//end case with less than 10,000
+				else{
+					
+								 if($abs_time<1000000){
+									  $rnd_time = round($abs_time/1000,2);
+									  $output = (number_format($rnd_time))."K".$suffix;
+								 }
+								 else{
+									  $rnd_time = round($abs_time/1000000,2);
+									  $output = (number_format($rnd_time))."M".$suffix;
+								 }
+				}
 	
 	return $output;
 

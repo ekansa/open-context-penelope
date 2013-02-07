@@ -219,6 +219,7 @@ class SpatialContainment_StateManager extends Zend_Db_Table
     private function getParents($dataTableName)
     {
         $db = Zend_Registry::get('db');
+        $this->setUTFconnection($db);
         //1. get distinct list of child properties
         $subselect = $db->select()
             ->from  (
@@ -434,6 +435,7 @@ class SpatialContainment_StateManager extends Zend_Db_Table
             array_push($queryFieldList, $f);
         
         $db = Zend_Registry::get('db');
+        $this->setUTFconnection($db);
         $select = $db->select()
         ->distinct()
         ->from  (
@@ -1084,6 +1086,7 @@ class SpatialContainment_StateManager extends Zend_Db_Table
     {        
         $spaceLookup    = new Table_SpaceLookup();      // gives us access to 'space_lookup' table functionality
         $db = Zend_Registry::get('db');
+        $this->setUTFconnection($db);
         
         if($dataItem != NULL){
             $selectLU = $db->select()
@@ -1225,6 +1228,7 @@ class SpatialContainment_StateManager extends Zend_Db_Table
     private function getFieldRows($dataTableName, $fieldName)
     {
         $db = Zend_Registry::get('db');
+        $this->setUTFconnection($db);
         $select = $db->select()
         ->distinct()
         ->from(
@@ -1254,6 +1258,15 @@ class SpatialContainment_StateManager extends Zend_Db_Table
     private function doubleDelimiterFix($delim, $path){
         return str_replace($delim.$delim, $delim, $path);
     }
+    
+    
+    //preps for utf8
+	 private function setUTFconnection($db){
+		  $sql = "SET collation_connection = utf8_unicode_ci;";
+		  $db->query($sql, 2);
+		  $sql = "SET NAMES utf8;";
+		  $db->query($sql, 2);
+	 }
     
     
 }

@@ -63,7 +63,8 @@ class Space extends Item implements App_Xml_XmlGenerator
     
     public function getParent()
     {
-        $db             = Zend_Registry::get('db');       
+        $db             = Zend_Registry::get('db');
+        $this->setUTFconnection($db);
         $select = $db->select()
             ->distinct()
             ->from(
@@ -243,6 +244,14 @@ class Space extends Item implements App_Xml_XmlGenerator
         $metadataNode = $parentNode->addChild('metadata', '', $this->namespaceOC);
         $this->project->metadata->generateGenericXML($metadataNode, $this, $this->namespaceOC);
     }
+    
+    //preps for utf8
+	 private function setUTFconnection($db){
+		  $sql = "SET collation_connection = utf8_unicode_ci;";
+		  $db->query($sql, 2);
+		  $sql = "SET NAMES utf8;";
+		  $db->query($sql, 2);
+	 }
 }
 
 
