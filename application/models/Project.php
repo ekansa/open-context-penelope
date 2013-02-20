@@ -40,6 +40,15 @@ class Project extends Item implements App_Xml_XmlGenerator
     public $diaryCount;
     public $mediaCount;
     
+    public function init()
+    {
+        $db = Zend_Registry::get('db');
+        $sql = "SET collation_connection = utf8_unicode_ci;";
+		  $db->query($sql, 2);
+		  $sql = "SET NAMES utf8;";
+		  $db->query($sql, 2);
+    }
+    
     function Project($_data) //where $_data is a "ResultRowObject"
     {
         //echo 'outputting projectID...<br />';
@@ -79,6 +88,7 @@ class Project extends Item implements App_Xml_XmlGenerator
      */
     public function setFileSummaryInformation($dataTableName=null)
     {
+        
         //get all of the tables associated with this project that have not already been processed:
         Zend_Loader::loadClass('Table_FileSummary');
         $fileSummary        = new Table_FileSummary();

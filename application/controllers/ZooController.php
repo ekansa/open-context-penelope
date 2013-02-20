@@ -26,17 +26,21 @@ class ZooController extends Zend_Controller_Action {
         
         //get selected root item then add it and all children to database
         $baseURL = "http://opencontext/subjects/";
-        $rootUUID = "63431873-B6CB-4F38-5EB2-F667EA2BAF76";
+		  $baseMediaURL = "http://opencontext/media/";
+        $rootUUID = "1_DT_Spatial";
 		  
 		  Zend_Loader::loadClass('PublishedData_Hierarchy');
         Zend_Loader::loadClass('PublishedData_Space');
         Zend_Loader::loadClass('PublishedData_Observe');
 		  Zend_Loader::loadClass('PublishedData_Properties');
 		  Zend_Loader::loadClass('PublishedData_Links');
+		  Zend_Loader::loadClass('PublishedData_Resource');
 		  Zend_Loader::loadClass('dbXML_xmlSpace');
+		  Zend_Loader::loadClass('dbXML_xmlMedia');
 		  
 		  $hierarchyObj = new PublishedData_Hierarchy;
 		  $hierarchyObj->baseSpaceURI = $baseURL;
+		  $hierarchyObj->baseMediaURI = $baseMediaURL;
 		  $hierarchyObj->addHierarchy($rootUUID);
 		  header('Content-Type: application/json; charset=utf8');
 		  echo Zend_Json::encode(array("done" => $hierarchyObj->doneURIs, "errors" => $hierarchyObj->errors));
@@ -51,7 +55,7 @@ class ZooController extends Zend_Controller_Action {
         $this->_helper->viewRenderer->setNoRender();        
         
         //get selected root item then add it and all children to database
-        $tableID = "z_6_ebfdbcce8";
+        $tableID = "OpenContext";
         
 		  Zend_Loader::loadClass('LinkedData_BoneMeasurement');
 		  
@@ -104,6 +108,52 @@ class ZooController extends Zend_Controller_Action {
 		 
 		  header('Content-Type: application/json; charset=utf8');
 		  echo Zend_Json::encode($output);
+	 }
+	 
+	 
+	 
+	 function alterPropLinksAction(){
+		  
+		  $this->_helper->viewRenderer->setNoRender();     
+		  
+		  $labelPrefix = "Bone ";
+		  $changeArray = array(
+		   'bone label' => ' uri '
+		 );
+		  
+		  Zend_Loader::loadClass('LinkedData_PropSplitLink');
+		  $propSplitObj = new LinkedData_PropSplitLink ;
+		  $propSplitObj->projectUUID = '';
+		  $propSplitObj->classUUID = '881CEDA3-C445-4C9C-4D4B-634BD2963892'; //animal bones
+		  $propSplitObj->predicateURI = 'http://opencontext.org/vocabularies/open-context-zooarch/zoo-0079'; //has anatomical id
+		  $propSplitObj->getVarUUIDfromPredicateURI();
+		  
+		  $output = array("varUUID" => $propSplitObj->actVarUUID);
+		  foreach($changeArray as $itemLabel => $newURI){
+				$propSplitObj->resetForLoop();
+				$itemLabel = $labelPrefix.trim($itemLabel);
+				$propSplitObj->newLinkURI = trim($newURI);
+				$subjectUUID =  $propSplitObj->getSpaceUUIDfromLabel($itemLabel);
+				$propSplitObj->subjectUUID = $subjectUUID;
+				$oldPropUUID =  $propSplitObj->getPropertyUUIDfromObsVarUUID();
+				$propSplitObj->oldPropUUID = $oldPropUUID;
+				$oldPropertyUpdated = $propSplitObj->oldPropertyLinkURIUpToDate();
+				$propSplitObj->alterObsNewLinkingProperty();
+				
+				$output["props"][] = array(
+										  "itemLabel" => $itemLabel,
+										  "subjectUUID" => $subjectUUID,
+										  "link" => "http://penelope.oc/preview/space?UUID=".$subjectUUID,
+										"oldPropUUID" => $oldPropUUID,
+										"oldPropUpdated" => $oldPropertyUpdated,
+									   "newPropUUID" => $propSplitObj->newPropUUID,
+										"newLinkURI" => $propSplitObj->newLinkURI
+				);
+		  }
+		  $output["errors"] = $propSplitObj->errors;
+		  header('Content-Type: application/json; charset=utf8');
+		  echo Zend_Json::encode($output);
+		  
 	 }
 	 
 	 

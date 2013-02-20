@@ -110,6 +110,8 @@ class App_Controller_PenelopeController extends Zend_Controller_Action
             //echo $projectUUID . '<br />';
             //$projectUUID = 'D3E2EEB4-7561-42BF-0AA8-33EBCA6A6729'; //'5339364E-E954-42AE-0245-DFF5B3EFDC88';
             //echo $projectUUID . '<br />';
+            
+            
             $this->project = Project::getProjectByUUID($projectUUID);
             if(isset($dataTableName))
                 $this->project->setFileSummaryInformation($dataTableName);

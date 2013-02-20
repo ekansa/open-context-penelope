@@ -46,22 +46,23 @@ class PublishedData_Observe  {
 			  }
 		  }
 		  else{
-			  foreach ($itemXML->xpath("//arch:property") as $act_prop){
-					 $actObsData = array();
-					 $actObsData["project_id"] = $projectUUID;
-					 $actObsData["source_id"] = $sourceID;
-					 $actObsData["subject_type"] = $originType;
-					 $actObsData["subject_uuid"] = $originUUID;
-					 $actObsData["obs_num"] = $obsCount;
+				$obsCount = 1;
+				foreach ($itemXML->xpath("//arch:property") as $act_prop){
+					  $actObsData = array();
+					  $actObsData["project_id"] = $projectUUID;
+					  $actObsData["source_id"] = $sourceID;
+					  $actObsData["subject_type"] = $originType;
+					  $actObsData["subject_uuid"] = $originUUID;
+					  $actObsData["obs_num"] = $obsCount;
+						
+					  foreach($act_prop->xpath("oc:propid") as $act_prop_id){
+						  $actObsData["property_uuid"] = $act_prop_id."";
+					  }
+					  $actObsData["hash_obs"] = md5($projectUUID . "_" . $actObsData["subject_uuid"] . "_" . $actObsData["obs_num"] . "_" . $actObsData["property_uuid"]);
 					  
-					 foreach($act_prop->xpath("oc:propid") as $act_prop_id){
-						 $actObsData["property_uuid"] = $act_prop_id."";
-					 }
-					 $actObsData["hash_obs"] = md5($projectUUID . "_" . $actObsData["subject_uuid"] . "_" . $actObsData["obs_num"] . "_" . $actObsData["property_uuid"]);
-					 
-					 $obsData[] = $actObsData;
-					 unset($actObsData);
-			  }
+					  $obsData[] = $actObsData;
+					  unset($actObsData);
+				}
 		  }
 		
 		  $db = $this->startDB();

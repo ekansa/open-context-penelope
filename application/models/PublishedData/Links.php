@@ -2,6 +2,7 @@
 
 class PublishedData_Links {
     
+	 public $baseMediaURI;
 	 public $originUUID;
     public $projectUUID;
     public $sourceID;
@@ -14,6 +15,9 @@ class PublishedData_Links {
 		  $projectUUID = $this->projectUUID;
 		  $sourceID = $this->sourceID;
 		  $originUUID = $this->originUUID;
+		  $db = $this->startDB();
+		  $mediaObj = new PublishedData_Resource;
+		  $mediaObj->db = $db;
 		  
 		  $linksData = array();
 		  foreach ($itemXML->xpath("//arch:links/arch:docID") as $links_result){
@@ -33,6 +37,26 @@ class PublishedData_Links {
 				}
 				$actLink["targ_obs"] = 1;
 				$actLink["hash_link"]= md5($originUUID . '_' . 1 . '_' . $actLink["targ_uuid"]  . '_' . $actLink["link_type"]);
+				if((stristr($actLink["targ_type"], "media") || stristr($actLink["targ_type"], "resource")) && !stristr($actLink["targ_uuid"], "dairy")){
+					 //echo "media fouund (".$actLink["targ_uuid"].") ";
+					 @$mediaXMLstring = file_get_contents($this->baseMediaURI.$actLink["targ_uuid"].".xml");
+					 if($mediaXMLstring){
+						  @$mediaXML = simplexml_load_string($mediaXMLstring);
+						  if($mediaXML){
+								//echo " adding media.. ";
+								$mediaObj->addFullMedia($mediaXML);
+						  }
+						  else{
+								$errors[] = "Bad media XML ".$this->baseMediaURI.$actLink["targ_uuid"].".xml";
+						  }
+					 }
+					 else{
+						  $errors[] = "Cannot get ".$this->baseMediaURI.$actLink["targ_uuid"].".xml";
+						  //echo "Cannot get ".$this->baseMediaURI.$actLink["targ_uuid"].".xml";
+						  //die;
+					 }
+				}
+				
 				$linksData[] = $actLink;
 				unset($actLink);
 		  }

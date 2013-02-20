@@ -10,43 +10,54 @@ class dbXML_xmlMedia  {
     const NSocItem = "http://opencontext.org/schema/resource_schema_v1.xsd";
     const NSdc = "http://purl.org/dc/elements/1.1/";
     const NSgml = "http://www.opengis.net/gml";
-    const NSxmhtml = "";
+    const NSxhtml = "http://www.w3.org/1999/xhtml";
     
     const classIconRoot = "http://opencontext.org/database/ui_images/med_oc_icons/";
     const spaceRootURI = "http://opencontext.org/subjects/";
     const mediaRootURI = "http://opencontext.org/media/";
     
+	 public function nameSpaces(){
+		  $nameSpaceArray = array("oc" => self::NSocItem,
+					  "dc" =>	self::NSdc,
+					  "arch" => self::NSarchaeoML,
+					  "gml" =>  self::NSgml,
+					  "xhtml" =>  self::NSxhtml);
+		  
+		  return $nameSpaceArray;
+    }
+	 
+	 
     public function initialize(){
-	$itemObj = $this->itemObj;
-	$doc = new DOMDocument("1.0", "utf-8");
-	$doc->formatOutput = true;
-	$root = $doc->createElement("arch:resource");
-	$root->setAttribute("xmlns:arch", self::NSarchaeoML);
-	$root->setAttribute("xmlns:oc", self::NSocItem);
-	$root->setAttribute("xmlns:dc", self::NSdc);
-	$root->setAttribute("xmlns:gml", self::NSgml);
-	$root->setAttribute("UUID", $itemObj->itemUUID);
-	$root->setAttribute("ownedBy", $itemObj->projectUUID);
-	$root->setAttribute("type", $itemObj->archaeoMLtype);
-	$doc->appendChild($root);
-	$this->doc = $doc;
-	$this->root = $root;
+		  $itemObj = $this->itemObj;
+		  $doc = new DOMDocument("1.0", "utf-8");
+		  $doc->formatOutput = true;
+		  $root = $doc->createElement("arch:resource");
+		  $root->setAttribute("xmlns:arch", self::NSarchaeoML);
+		  $root->setAttribute("xmlns:oc", self::NSocItem);
+		  $root->setAttribute("xmlns:dc", self::NSdc);
+		  $root->setAttribute("xmlns:gml", self::NSgml);
+		  $root->setAttribute("UUID", $itemObj->itemUUID);
+		  $root->setAttribute("ownedBy", $itemObj->projectUUID);
+		  $root->setAttribute("type", $itemObj->archaeoMLtype);
+		  $doc->appendChild($root);
+		  $this->doc = $doc;
+		  $this->root = $root;
     }
     
     public function addName(){
         
         $doc = $this->doc;
-	$root = $this->root;
-	$itemObj = $this->itemObj;
-	
-	//name construction
-	$element = $doc->createElement("arch:name");
-	$elementB = $doc->createElement("arch:string");
-	$elementBtext = $doc->createTextNode($itemObj->label);
-	$elementB->appendChild($elementBtext);
-	$element->appendChild($elementB);
-	$root->appendChild($element);
-		
+		  $root = $this->root;
+		  $itemObj = $this->itemObj;
+		  
+		  //name construction
+		  $element = $doc->createElement("arch:name");
+		  $elementB = $doc->createElement("arch:string");
+		  $elementBtext = $doc->createTextNode($itemObj->label);
+		  $elementB->appendChild($elementBtext);
+		  $element->appendChild($elementB);
+		  $root->appendChild($element);
+			  
     }
 
     

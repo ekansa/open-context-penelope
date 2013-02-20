@@ -11,7 +11,12 @@ class TabOut_Table  {
 	 
 	 public $maxContextFields; //number of context depth
 	 
+	 public $showSourceFields = true;
+	 public $showLinkedFields = true;
 	 public $showFieldURIs = false; //show the URIs of fields for linked data
+	 public $showUnitTypeURIs = false; //show the URIs of fields for unit-type linked data
+	 public $showLDSourceValues = false; //show original / source values for linked data?
+	 
 	 public $linkedFields; //standard fields from ontology links
 	 public $LFtypeCount = 0; //count of linked fields of type type
 	 public $LFunitTypeCount = 0; //count of linked fields of type unit-type
@@ -21,6 +26,8 @@ class TabOut_Table  {
 	 public $page;
 	 public $recStart;
 	 public $setSize;
+	 
+	 public $limitingProjArray = false; //make an array of project UUIDs to limit the results to
 	 
 	 const OCspatialURIbase = "http://opencontext.org/subjects/";
 	 const OCprojectURIbase = "http://opencontext.org/projects/";
@@ -91,8 +98,13 @@ class TabOut_Table  {
 				
 					 $actRecord["Context URI"] = $parentURI;
 					 
-					 $actRecord = $this->tableAddLinkedFields($itemUUID, $actRecord); //add the linked data fields
-					 $actRecord = $this->tableAddSourceFields($itemUUID, $actRecord); //add the source data fields
+					 if($this->showLinkedFields){
+						  $actRecord = $this->tableAddLinkedFields($itemUUID, $actRecord); //add the linked data fields
+					 }
+					 if($this->showSourceFields){
+						  $actRecord = $this->tableAddSourceFields($itemUUID, $actRecord); //add the source data fields
+					 }
+					 
 					 
 					 $tabArray[$uuidKey] = $actRecord;
 				}
@@ -132,30 +144,41 @@ class TabOut_Table  {
 					 }
 					 
 					 foreach($actLF as $lf){
-						  $linkedObject = $this->itemLinkedTypeValues($itemUUID, $lf["varIDs"], $lf["cond"]);
 						  
+						  $newFields = array();
 						  if($this->showFieldURIs){
-								$propKeyA = "URI: ".$lf["linkedLabel"]." (".$lf["linkedURI"].")";
-								$propKeyB = "Label: ".$lf["linkedLabel"]." (".$lf["linkedURI"].")";
+								$newFields["linkedURI"] = "URI: ".$lf["linkedLabel"]." (".$lf["linkedURI"].")";
+								$newFields["linkedLabel"] = "Label: ".$lf["linkedLabel"]." (".$lf["linkedURI"].")";
+								$newFields["val_text"] = "Source value: ".$lf["linkedLabel"]." (".$lf["linkedURI"].")";
 						  }
 						  else{
-								$propKeyA = $lf["linkedLabel"]." [URI]";
-								$propKeyB = $lf["linkedLabel"]." [Label]";
+								$newFields["linkedURI"] = $lf["linkedLabel"]." [URI]";
+								$newFields["linkedLabel"] = $lf["linkedLabel"]." [Label]";
+								$newFields["val_text"] = $lf["linkedLabel"]." [Source value]";
 						  }
-						  if(!$linkedObject){
-								$actRecord[$propKeyA] = "";
-								$actRecord[$propKeyB] = "";
+						  
+						  if($this->showLDSourceValues){
+								$linkedObject = $this->itemLinkedTypeValuesPlusSourceVals($itemUUID, $lf["varIDs"], $lf["cond"]);
 						  }
 						  else{
-								$actRecord[$propKeyA] = $linkedObject[0]["linkedURI"];
-								$actRecord[$propKeyB] = $linkedObject[0]["linkedLabel"];
+								$linkedObject = $this->itemLinkedTypeValues($itemUUID, $lf["varIDs"], $lf["cond"]);
+								unset($newFields["val_text"]);
 						  }
+						  
+						  foreach($newFields as $fieldKey => $fieldLabel){
+								if(!$linkedObject){
+									 $actRecord[$fieldLabel] = "";
+								}
+								else{
+									  $actRecord[$fieldLabel] = $linkedObject[0][$fieldKey]; //add the value returned from the database for a given field key
+								}
+						  }//end loop through field keys
 					 }
 					 
 				}
 				elseif($linkedField["linkedType"] == "unit-type"){
 					 $linkedVal= $this->itemLinkedUnitTypeValues($itemUUID, $linkedField["varIDs"]);
-					 if($this->showFieldURIs){
+					 if($this->showFieldURIs || $this->showUnitTypeURIs){
 						  $propKeyA = $linkedField["linkedLabel"]." (".$linkedField["linkedURI"].")";
 					 }
 					 else{
@@ -208,6 +231,26 @@ class TabOut_Table  {
 		  return $result;
 		  
 	 }
+	 
+	 function itemLinkedTypeValuesPlusSourceVals($itemUUID, $actVarIDs, $optCondition = ""){
+		  $db = $this->startDB();
+		  
+		  $varCondition = $this->makeORcondition($actVarIDs, "variable_uuid", "properties");
+		  
+		  $sql = "SELECT properties.property_uuid, linked_data.linkedLabel, linked_data.linkedURI, val_tab.val_text
+		  FROM observe
+		  JOIN properties ON observe.property_uuid = properties.property_uuid
+		  JOIN val_tab ON properties.value_uuid = val_tab.value_uuid
+		  JOIN linked_data ON properties.property_uuid = linked_data.itemUUID
+		  WHERE observe.subject_uuid = '$itemUUID' AND ($varCondition) $optCondition
+		  ORDER BY linked_data.linkedLabel
+		  ";
+		  
+		  $result = $db->fetchAll($sql);
+		  return $result;
+		  
+	 }
+	 
 	 
 	 
 	 function itemLinkedUnitTypeValues($itemUUID, $actVarIDs){
@@ -275,11 +318,17 @@ class TabOut_Table  {
 		  $errors = array();
 		  $db = $this->startDB();
 		  
+		  $projCondition = "";
+		  if(is_array($this->limitingProjArray)){
+				$projCondition = $this->makeORcondition($this->limitingProjArray, "project_id");
+				$projCondition = " AND (". $projCondition .") ";
+		  }
+		  
 		  $this->recStart = ($this->page - 1) * $this->setSize;
 		  
 		  $sql = "SELECT uuid, project_id, space_label, full_context
 		  FROM space
-		  WHERE class_uuid = '$classUUID'
+		  WHERE class_uuid = '$classUUID'  $projCondition
 		  ORDER BY project_id, full_context
 		  LIMIT ".($this->recStart ).",".($this->setSize)."
 		  ;
@@ -301,12 +350,18 @@ class TabOut_Table  {
 		  if(!is_array($this->actVarIDs)){
 				$db = $this->startDB();
 				
+				$projCondition = "";
+				if(is_array($this->limitingProjArray)){
+					 $projCondition = $this->makeORcondition($this->limitingProjArray, "project_id", "space");
+					 $projCondition = " AND (". $projCondition .") ";
+				}
+				
 				$sql = "SELECT round(COUNT(observe.subject_uuid)/10,0) as sCount, var_tab.variable_uuid, var_tab.var_label, var_tab.sort_order
 				FROM space
 				JOIN observe ON observe.subject_uuid = space.uuid
 				JOIN properties ON observe.property_uuid = properties.property_uuid
 				JOIN var_tab ON properties.variable_uuid = var_tab.variable_uuid
-				WHERE space.class_uuid = '$classUUID'
+				WHERE space.class_uuid = '$classUUID' $projCondition
 				GROUP BY var_tab.variable_uuid
 				ORDER BY sCount DESC, var_tab.sort_order, var_tab.var_label
 				";
@@ -491,9 +546,15 @@ class TabOut_Table  {
 	 function getMaxContextDepth($classUUID){
 		  $db = $this->startDB();
 		  
+		  $projCondition = "";
+		  if(is_array($this->limitingProjArray)){
+				$projCondition = $this->makeORcondition($this->limitingProjArray, "project_id");
+				$projCondition = " AND (". $projCondition .") ";
+		  }
+		  
 		  $sql = "SELECT (LENGTH(full_context) - LENGTH(REPLACE(full_context, '".self::contextDelim."', ''))) / LENGTH('".self::contextDelim."') AS cnt
 		  FROM space
-		  WHERE class_uuid = '$classUUID'
+		  WHERE class_uuid = '$classUUID' $projCondition
 		  ORDER BY cnt DESC
 		  LIMIT 1;
 		  ";
@@ -513,11 +574,18 @@ class TabOut_Table  {
 		  if(!is_array($this->actProjectIDs)){
 				$db = $this->startDB();
 				
+				$projCondition = "";
+				if(is_array($this->limitingProjArray)){
+					 $projCondition = $this->makeORcondition($this->limitingProjArray, "project_id", "project_list");
+					 $projCondition = " AND (". $projCondition .") ";
+				}
+				
+				
 				
 				$sql = "SELECT DISTINCT space.project_id, project_list.project_name
 				FROM space
 				JOIN project_list ON space.project_id = project_list.project_id
-				WHERE space.class_uuid = '$classUUID' AND space.project_id != '0' ";
+				WHERE space.class_uuid = '$classUUID' AND space.project_id != '0' $projCondition ";
 				
 				$result =  $db->fetchAll($sql);
 				if($result){

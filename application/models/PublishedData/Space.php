@@ -18,6 +18,8 @@ class PublishedData_Space  {
 	 public $contextPath; 
     public $children; //array of child items
    
+	 public $baseMediaURI;
+	
     public $db;
     public $errors;
 	 
@@ -58,6 +60,7 @@ class PublishedData_Space  {
 		  
 		  $linksObj = new PublishedData_Links;
 		  $linksObj->db = $db;
+		  $linksObj->baseMediaURI = $this->baseMediaURI;
 		  $linksObj->originUUID = $this->itemUUID;
 		  $linksObj->projectUUID = $this->projectUUID;
 		  $linksObj->sourceID = $this->sourceID;

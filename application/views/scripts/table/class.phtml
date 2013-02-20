@@ -1,0 +1,62 @@
+<?php  $tableArray = $this->tableArray; ?>
+<html>
+    <head>
+        <title>Table Output</title>
+        <style type="text/css">
+            table, th, td {
+                border:1px solid #C1CDCD;
+                border-collapse:collapse;
+                font-size:0.8em;
+                font-family:Arial,Helvetica,sans-serif;
+                padding: 2px;
+            }
+            th{
+                background-color:#E0EEEE;
+            }
+        </style>
+    </head>
+    <body>
+        <table>
+            <thead>
+                <tr>
+                <?php
+                foreach($tableArray as $recordkey => $fieldVals){
+                        
+                        ?>
+                        <th>Record URI</th>
+                        <?php
+                        foreach($fieldVals as $fieldKey => $value){
+                        ?> 
+                            <th><?php echo $fieldKey; ?></th>
+                        <?php     
+                        }//end loop through the fields and values
+                    break; //no need to do the whole array, we're setting up the heading
+                }//end loop through the table array  
+                ?>
+                </tr>
+            </thead>
+            <tbody>
+                
+            <?php 
+            $i = 1;
+            foreach($tableArray as $recordkey => $fieldVals){
+            ?>
+                <tr id="<?php echo "rec-".$i;?>" >
+                    <td><?php echo $recordkey; ?></td>
+                    <?php
+                    foreach($fieldVals as $fieldKey => $value){
+                    ?> 
+                    <td><?php echo $value; ?></td>
+                    <?php     
+                    }//end loop through the fields and values
+                    ?>
+                </tr>
+            <?php
+                $i++;
+            }//end loop through the table array 
+            ?>
+        
+            </tbody>
+        </table>
+    </body>
+</html>

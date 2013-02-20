@@ -110,13 +110,19 @@ class EditDatasetController extends Zend_Controller_Action
     }
     
     
-    
+    private function setUTFconnection($db){
+		  $sql = "SET collation_connection = utf8_unicode_ci;";
+		  $db->query($sql, 2);
+		  $sql = "SET NAMES utf8;";
+		  $db->query($sql, 2);
+    }
     
     
     //this function makes values of a given variable the basis of links
     function variableLinkAction(){
         $this->_helper->viewRenderer->setNoRender();
         $db = Zend_Registry::get('db');
+		  $this->setUTFconnection($db);
         
         $projectUUID = $_REQUEST['projectUUID'];
         
@@ -180,7 +186,15 @@ class EditDatasetController extends Zend_Controller_Action
             $propUUID = $row['property_uuid'];
             $rawText = $row['val_text'];
             $allText = $this->parse_multi_item($rawText);
-            
+				/*
+            if(strstr($rawText, ",")){
+					 $allText = explode(",", $rawText);
+				}
+				else{
+					 $allText = array($rawText);
+				}
+				*/
+				
             echo "<br/><strong>".$rawText."</strong>";
             if($allText != false){
                 
@@ -193,32 +207,35 @@ class EditDatasetController extends Zend_Controller_Action
                 
                 $obsResult = $db->fetchAll($sql, 2);
                 foreach($obsResult as $obsRow){
-		    $originUUID = $obsRow['subject_uuid'];
-		    $ObsNumber = $obsRow['obs_num'];
-		    $source_id = $obsRow['source_id'];
-		    $source_id = "link-from-prop";
-                
-		    $sql = "SELECT parent_uuid FROM space_contain WHERE child_uuid = '$originUUID' LIMIT 1";
+						  $originUUID = $obsRow['subject_uuid'];
+						  $ObsNumber = $obsRow['obs_num'];
+						  $source_id = $obsRow['source_id'];
+						  $source_id = "link-from-prop";
+								  
+						  $sql = "SELECT parent_uuid FROM space_contain WHERE child_uuid = '$originUUID' LIMIT 1";
 		
-		    $parResult = $db->fetchAll($sql, 2);
-		    if($parResult){
+						  $parResult = $db->fetchAll($sql, 2);
+						  if($parResult){
 			
-			$parentUUID = $parResult[0]["parent_uuid"];
-		
-			foreach($allText as $actText){
-			    $itemFind = $this->find_uuid($actText, $gPrefix, $bPrefix, $targType, $projectUUID, $db, $parentUUID);
-			    echo "<br/>".$itemFind["item"]." :UUID ".$itemFind["uuid"];
-			    if($itemFind["uuid"] != false){
-				$targUUID = $itemFind["uuid"];
-				$newLinkID = $this->addLinkingRel($originUUID, $originType, $targUUID, $targType, $linkRel, $projectUUID, $source_id, $ObsNumber);
-				$linkCount++;
-			    }
-		    
-			}//end loop through array of multiple labels, comma seperated.
-		    }
-		}//end loop through "origin items"
-		
-                
+								$parentUUID = $parResult[0]["parent_uuid"];
+							
+								foreach($allText as $actText){
+									 $actText = trim($actText);
+									 $itemFind = $this->find_uuid($actText, $gPrefix, $bPrefix, $targType, $projectUUID, $db, $parentUUID);
+									 if(!$itemFind["uuid"]){
+										  echo "<br/>";
+									 }
+									 echo "<br/>".$itemFind["item"]." :UUID ".$itemFind["uuid"];
+									 
+									 if($itemFind["uuid"] != false){
+										  $targUUID = $itemFind["uuid"];
+										  $newLinkID = $this->addLinkingRel($originUUID, $originType, $targUUID, $targType, $linkRel, $projectUUID, $source_id, $ObsNumber);
+										  $linkCount++;
+									 }
+								 
+								}//end loop through array of multiple labels, comma seperated.
+						  }
+					 }//end loop through "origin items"   
             }
             
         }
@@ -256,18 +273,18 @@ class EditDatasetController extends Zend_Controller_Action
             LIMIT 1
             ";
         }
-	elseif($itemType == "Locations or Objects" && $parentUUID != false){
-            
-	    //use this query to insure that the found spatial item has a certain parent context
-	    $sql = "SELECT space.uuid as itemUUID
-            FROM space
-	    JOIN space_contain ON space.uuid = space_contain.child_uuid
-            WHERE space.project_id = '$projectUUID'
-            AND space.space_label = '$itemLabel'
-	    AND space_contain.parent_uuid = '$parentUUID'
-            LIMIT 1
-            ";
-        }
+		  elseif($itemType == "Locations or Objects" && $parentUUID != false){
+					  
+				//use this query to insure that the found spatial item has a certain parent context
+				$sql = "SELECT space.uuid as itemUUID
+					  FROM space
+				JOIN space_contain ON space.uuid = space_contain.child_uuid
+					  WHERE space.project_id = '$projectUUID'
+					  AND space.space_label = '$itemLabel'
+				AND space_contain.parent_uuid = '$parentUUID'
+					  LIMIT 1
+					  ";
+				 }
         elseif($itemType == "Resource"){
             $sql = "SELECT uuid as itemUUID
             FROM resource
@@ -280,9 +297,11 @@ class EditDatasetController extends Zend_Controller_Action
            $sql = "SELECT uuid as itemUUID
             FROM persons
             WHERE project_id = '$projectUUID'
-            AND (combined_name = '$itemLabel'
-            OR
-            initials = '$itemLabel')
+            AND (
+					 (combined_name LIKE '%$itemLabel%' AND CHAR_LENGTH('$itemLabel')>3)
+					 OR combined_name = '$itemLabel'
+					 OR initials = '$itemLabel'
+				)
             LIMIT 1
             "; 
         }
@@ -309,21 +328,30 @@ class EditDatasetController extends Zend_Controller_Action
     $preArray = array("/", "-");
 
     if($rawItem != null){
+		  
+		  $rawItem = mb_ereg_replace('\([^)]*\)', '', $rawItem); //get rid of parentheses text
+		  $rawItem = mb_ereg_replace('\[[^)]*\]', '', $rawItem); //get rid of [] text
+        $rawItem = mb_ereg_replace(@"[\d-]", '', $rawItem); //get rid of [] text
+		  //$rawItem  = trim( preg_replace('#\([a-z0-9]*\)#i', '', $rawItem)); "/[0-9]/"
+		  
         $itemArray = array();
         $itemArray[] = $rawItem;
         
         $delimiters = array(",",
                             "&",
                             ";",
-                            " ",
-                            "and");
+									 "/",
+									 ".",
+									 "+",
+                            //" ",
+                            " and ");
         
         $deleteText = array("(",
                             ")",
                             "?",
                             "`");
-        
-        
+       
+		  
         foreach($delimiters as $delim){
             $newItems = array();
             foreach($itemArray as $actItem){

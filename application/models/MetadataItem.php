@@ -13,4 +13,13 @@ class MetadataItem
         $this->dcField      = $_data->dc_field;
         $this->dcValue      = $_data->dc_value;
     }
+    
+    public function init()
+    {
+        $db = Zend_Registry::get('db');
+        $sql = "SET collation_connection = utf8_unicode_ci;";
+		  $db->query($sql, 2);
+		  $sql = "SET NAMES utf8;";
+		  $db->query($sql, 2);
+    }
 }

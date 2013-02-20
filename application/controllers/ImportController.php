@@ -5,12 +5,14 @@ class ImportController extends Zend_Controller_Action
     function init()
     {
         $this->view->baseUrl = $this->_request->getBaseUrl();
+        
         Zend_Loader::loadClass('User'); //defined in User.php
         Zend_Loader::loadClass('Form_Login'); //defined in User.php
         Zend_Loader::loadClass('Table_Project');
         Zend_Loader::loadClass('Zend_Debug');
         Zend_Loader::loadClass('Zend_Dojo_Data');
         Zend_Loader::loadClass('Form_Upload');
+        
     }
     
     //redirect to login page if not logged in:

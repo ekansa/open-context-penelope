@@ -41,6 +41,8 @@ $db = Zend_Db::factory($config->db->adapter,
 $config->db->config->toArray());
 Zend_Db_Table::setDefaultAdapter($db); 
 Zend_Registry::set('db', $db);
+
+        
 //$authUsers = new ArrayObject();
 //$authUsers->append
 Zend_Registry::set('authUsers', new ArrayObject()); 

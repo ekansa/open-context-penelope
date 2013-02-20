@@ -3,6 +3,7 @@
 class PublishedData_Hierarchy {
     
 	 public $baseSpaceURI;
+	 public $baseMediaURI;
 	 public $db;
 	 public $errors;
 	 public $doneURIs = array();
@@ -21,6 +22,7 @@ class PublishedData_Hierarchy {
 					 
 					 $spaceObj = new PublishedData_Space;
 					 $spaceObj->db = $db;
+					 $spaceObj->baseMediaURI = $this->baseMediaURI;
 					 $spaceObj->addFullSpace($itemXML);
 					 if(is_array($spaceObj->errors)){
 						 $errors[] =  $spaceObj->errors;
