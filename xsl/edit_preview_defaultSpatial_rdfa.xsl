@@ -570,11 +570,11 @@ Code for showing the database-like content
 		<br/>
 		<br/>
 		<a>
-				<xsl:attribute name="href">http://penelope2.oc/publish/publishdoc?projectUUID=<xsl:value-of select="//arch:spatialUnit/@ownedBy"/>&amp;itemUUID=<xsl:value-of select="//arch:spatialUnit/@UUID"/>&amp;itemType=space</xsl:attribute>New Publish on Local Server
+				<xsl:attribute name="href">../publish/publishdoc?projectUUID=<xsl:value-of select="//arch:spatialUnit/@ownedBy"/>&amp;itemUUID=<xsl:value-of select="//arch:spatialUnit/@UUID"/>&amp;itemType=space</xsl:attribute>New Publish on Local Server
 		</a>
 		<br/>
 		<a>
-				<xsl:attribute name="href">http://penelope2.oc/publish/publishdoc?projectUUID=<xsl:value-of select="//arch:spatialUnit/@ownedBy"/>&amp;itemUUID=<xsl:value-of select="//arch:spatialUnit/@UUID"/>&amp;itemType=space&amp;doUpdate=true</xsl:attribute>Update Publish on Local Server
+				<xsl:attribute name="href">../publish/publishdoc?projectUUID=<xsl:value-of select="//arch:spatialUnit/@ownedBy"/>&amp;itemUUID=<xsl:value-of select="//arch:spatialUnit/@UUID"/>&amp;itemType=space&amp;doUpdate=true</xsl:attribute>Update Publish on Local Server
 		</a>
 		<br/>
 		<a>
@@ -584,11 +584,11 @@ Code for showing the database-like content
 		<br/>
 		<br/>
 		<a>
-				<xsl:attribute name="href">http://penelope2.oc/publish/publishdoc?projectUUID=<xsl:value-of select="//arch:spatialUnit/@ownedBy"/>&amp;itemUUID=<xsl:value-of select="//arch:spatialUnit/@UUID"/>&amp;itemType=space&amp;pubURI=http://opencontext.org/publish/itempublish</xsl:attribute>New Publish on Open Context
+				<xsl:attribute name="href">../publish/publishdoc?projectUUID=<xsl:value-of select="//arch:spatialUnit/@ownedBy"/>&amp;itemUUID=<xsl:value-of select="//arch:spatialUnit/@UUID"/>&amp;itemType=space&amp;pubURI=http://opencontext.org/publish/itempublish</xsl:attribute>New Publish on Open Context
 		</a>
 		<br/>
 		<a>
-				<xsl:attribute name="href">http://penelope2.oc/publish/publishdoc?projectUUID=<xsl:value-of select="//arch:spatialUnit/@ownedBy"/>&amp;itemUUID=<xsl:value-of select="//arch:spatialUnit/@UUID"/>&amp;itemType=space&amp;doUpdate=true&amp;pubURI=http://opencontext.org/publish/itempublish</xsl:attribute>Update Publish on Open Context
+				<xsl:attribute name="href">../publish/publishdoc?projectUUID=<xsl:value-of select="//arch:spatialUnit/@ownedBy"/>&amp;itemUUID=<xsl:value-of select="//arch:spatialUnit/@UUID"/>&amp;itemType=space&amp;doUpdate=true&amp;pubURI=http://opencontext.org/publish/itempublish</xsl:attribute>Update Publish on Open Context
 		</a>
 		<br/>
 		<a>
@@ -598,18 +598,18 @@ Code for showing the database-like content
 		<br/>
 		<br/>
 		<a>
-				<xsl:attribute name="href">http://penelope2.oc/edit-dataset/set-prop-change?projectUUID=<xsl:value-of select="//arch:spatialUnit/@ownedBy"/>&amp;itemUUID=<xsl:value-of select="//arch:spatialUnit/@UUID"/></xsl:attribute>Edit Properties, Notes, Etc.
+				<xsl:attribute name="href">../edit-dataset/set-prop-change?projectUUID=<xsl:value-of select="//arch:spatialUnit/@ownedBy"/>&amp;itemUUID=<xsl:value-of select="//arch:spatialUnit/@UUID"/></xsl:attribute>Edit Properties, Notes, Etc.
 		</a>
 		<br/>
 		<br/>
 		<a>
-				<xsl:attribute name="href">http://penelope2.oc/publish/?projectUUID=<xsl:value-of select="//arch:spatialUnit/@ownedBy"/></xsl:attribute>Go to Project Publishing Page 
+				<xsl:attribute name="href">../publish/?projectUUID=<xsl:value-of select="//arch:spatialUnit/@ownedBy"/></xsl:attribute>Go to Project Publishing Page 
 		</a>
 		<br/>
 		<br/>
 		<br/>
 		<a>
-				<xsl:attribute name="href">../importer/edit-dataset/var-order?projectUUID=<xsl:value-of select="atom:feed/atom:entry/arch:spatialUnit/@ownedBy"/></xsl:attribute>
+				<xsl:attribute name="href">../edit-dataset/var-order?projectUUID=<xsl:value-of select="atom:feed/atom:entry/arch:spatialUnit/@ownedBy"/></xsl:attribute>
 											Reorder Properties to Import Order
 		</a>
 		
