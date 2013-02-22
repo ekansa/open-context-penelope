@@ -4,6 +4,7 @@ class LinkedData_BoneMeasurement  {
 	 
 	 public $projectUUID;
 	 public $ontology; //ontology object
+	 public $doShortVariableLabels = true;
 	 
 	 public $termDelims = array("/", "#", "");
 	 
@@ -14,13 +15,22 @@ class LinkedData_BoneMeasurement  {
 	 function getVarTableList($tableID){
 		  
 		  $db = $this->startDB();
-		  $sql = "SELECT variable_uuid, var_label, project_id
-		  FROM var_tab
-		  WHERE source_id = '$tableID'
-		  AND var_type = 'Decimal'
-		  AND CHAR_LENGTH(var_label) <= 4
-		  ";
 		  
+		  if($this->doShortVariableLabels){
+				$sql = "SELECT variable_uuid, var_label, project_id
+				FROM var_tab
+				WHERE source_id = '$tableID'
+				AND var_type = 'Decimal'
+				AND CHAR_LENGTH(var_label) <= 4
+				";
+		  }
+		  else{
+				$sql = "SELECT variable_uuid, var_label, project_id
+				FROM var_tab
+				WHERE source_id = '$tableID'
+				AND var_type = 'Decimal'
+				";
+		  }
 		  
 		  $result =  $db->fetchAll($sql);
 		  if($result){
@@ -125,7 +135,20 @@ class LinkedData_BoneMeasurement  {
 					 foreach($annos as $annoKey => $value){
 						  //echo "<br> $annoKey : $value".chr(13).chr(13);
 						  $checkVal = strtolower($value);
-						  $checkLabel = strtolower($varLabel);
+						  
+						  if(stristr($varLabel, "::")){
+								$varEx = explode("::", $varLabel);
+								if(stristr($varEx[1],"standard")){
+									 $checkLabel = strtolower(trim($varEx[0]));
+								}
+								else{
+									 $checkLabel = "We're not gona take it!";
+								}
+						  }
+						  else{
+								$checkLabel = strtolower($varLabel);
+						  }
+					 
 						  
 						  //if($annoKey == "rdfs:label" && $value == $varLabel){
 						  if($annoKey == "rdfs:label" && $checkVal == $checkLabel){

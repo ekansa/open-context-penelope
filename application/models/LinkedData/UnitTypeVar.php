@@ -37,6 +37,7 @@ function getDecimalVariables(){
 		  LEFT JOIN linked_data ON (var_tab.variable_uuid = linked_data.itemUUID AND linked_data.linkedType = 'unit')
 		  LEFT JOIN linked_data AS ld ON (var_tab.variable_uuid = ld.itemUUID AND ld.linkedType = 'unit-type')
 		  WHERE var_tab.var_type = 'Decimal' AND var_tab.project_id = '".$this->projUUID."'
+		  ORDER BY var_tab.var_label
 		  ";
 	 
 	 $result =  $db->fetchAll($sql);

@@ -33,7 +33,9 @@ class dbXML_dbMedia  {
 				   ".tiff" => array("archaeoML" => "image",
 						   "mime" => "image/tiff"),
 				   ".pdf" => array("archaeoML" => "acrobat pdf",
-						   "mime" => "application/pdf")
+						   "mime" => "application/pdf"),
+					".gif" => array("archaeoML" => "image",
+						   "mime" => "image/gif")
 				  );
     
     
