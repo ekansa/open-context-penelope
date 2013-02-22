@@ -55,11 +55,12 @@ class ZooController extends Zend_Controller_Action {
         $this->_helper->viewRenderer->setNoRender();        
         
         //get selected root item then add it and all children to database
-        $tableID = "OpenContext";
+        $tableID = "z_13_457009575";
         
 		  Zend_Loader::loadClass('LinkedData_BoneMeasurement');
 		  
 		  $linkingObj = new LinkedData_BoneMeasurement;
+		  $linkingObj->doShortVariableLabels = false;
 		  $varList = $linkingObj->getVarTableList($tableID);
 		  $doneList = $linkingObj->processVars($varList);
 		 
@@ -158,6 +159,81 @@ class ZooController extends Zend_Controller_Action {
 	 
 	 
 
+	 function catalAction(){
+		 
+		  $this->_helper->viewRenderer->setNoRender();
+		  Zend_Loader::loadClass('ProjEdits_Catal');
+		  
+		  $catalObj = New ProjEdits_Catal;
+		  $catalObj->workbookFile =  "http://penelope.oc/public/xml/catal-c-use.fods";
+		  $catalObj->importTableName = "z_13_457009575";
+		  //$catalObj->importTableName = false;
+		  $catalObj->doCommentUpdate = true;
+		  $records = $catalObj->loadParseSaveXML();
+		  header('Content-Type: application/json; charset=utf8');
+		  echo Zend_Json::encode($records);
+	 }
+	 
+	 
+	 function spaceSortAction(){
+		 
+		  $this->_helper->viewRenderer->setNoRender();
+		  Zend_Loader::loadClass('ProjEdits_Space');
+		  
+		  $sortObj = New ProjEdits_Space;
+		  $records = $sortObj->spaceLabelSorting();
+		  header('Content-Type: application/json; charset=utf8');
+		  echo Zend_Json::encode($records);
+	 }
 
+	 
+	 function mediaFindLinkAction(){
+		 
+		  $this->_helper->viewRenderer->setNoRender();
+		  Zend_Loader::loadClass('ProjEdits_Media');
+		  Zend_Loader::loadClass('dbXML_dbMedia');
+		  
+		  $dbMedia = New dbXML_dbMedia;
+		  
+		  
+		  $mediaObj = New ProjEdits_Media;
+		  $mediaObj->mediaTypeArray = $dbMedia->mediaTypeArray;
+		  $mediaObj->spaceLabelPrefix = "UNE ";
+		  $mediaObj->projectUUID = "4B16F48E-6F5D-41E0-F568-FCE64BE6D3FA";
+		  $mediaObj->mediaFileBaseURL = "http://artiraq.org/static/opencontext/stoneware-media/";
+		  $mediaObj->mediaSearchDir = "C:\\Users\\Eric C. Kansa\\Documents\\OC Imports\\Peter Grave Data\\stoneware-media\\full\\";
+		  //$directory = "C:\\about_opencontext\\kenan\\thumbs\\";
+		 
+		  $output = $mediaObj->findLinkCreateMedia();
+		  
+		  
+		  header('Content-Type: application/json; charset=utf8');
+		  echo Zend_Json::encode($output);
+	 }
+	 
+	 function mediaCheckAction(){
+		 
+		  $this->_helper->viewRenderer->setNoRender();
+		  Zend_Loader::loadClass('ProjEdits_Media');
+		  Zend_Loader::loadClass('dbXML_dbMedia');
+		  
+		  $dbMedia = New dbXML_dbMedia;
+		  
+		  
+		  $mediaObj = New ProjEdits_Media;
+		  $mediaObj->mediaTypeArray = $dbMedia->mediaTypeArray;
+		  $mediaObj->spaceLabelPrefix = "UNE ";
+		  $mediaObj->projectUUID = "4B16F48E-6F5D-41E0-F568-FCE64BE6D3FA";
+		  $mediaObj->mediaFileBaseURL = "http://artiraq.org/static/opencontext/stoneware-media/";
+		  $mediaObj->mediaSearchDir = "C:\\Users\\Eric C. Kansa\\Documents\\OC Imports\\Peter Grave Data\\stoneware-media\\full\\";
+		  //$directory = "C:\\about_opencontext\\kenan\\thumbs\\";
+		 
+		  $output = $mediaObj->imageXMLCheck();
+		  
+		  
+		  header('Content-Type: application/json; charset=utf8');
+		  echo Zend_Json::encode($output);
+	 }
+	 
 
 }//end class
