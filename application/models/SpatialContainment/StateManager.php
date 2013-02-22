@@ -690,16 +690,18 @@ class SpatialContainment_StateManager extends Zend_Db_Table
             $hashTxt    = md5($projectUUID . "_" . $fullContextCurrent);
     
             //check to see if the parent record exists in the space table:
-            $spaceRow = $space->fetchRow("hash_fcntxt = '" . $hashTxt . "'");
+            //$spaceRow = $space->fetchRow("hash_fcntxt = '" . $hashTxt . "' "); //original
+            $spaceRow = $space->fetchRow("hash_fcntxt = '" . $hashTxt . "' OR (project_id = '0' AND space_label = '".trim($parentDataItem)."')");
+            
             //Zend_Debug::dump($projectUUID . "_" . $fullContextCurrent);
     
     
             //eric's edit to make sure duplicate contexts are not created.   
             if($spaceRow == null)
             {
-                $spaceRow = $space->fetchRow("full_context LIKE '" . trim($proj_root_name.$fullContextCurrent) . "'");
+                $spaceRow = $space->fetchRow("full_context LIKE '" . trim($proj_root_name.$fullContextCurrent) . "' OR (project_id = '0' AND space_label = '".trim($parentDataItem)."')");
                 if($twoLocs){
-                    $spaceRow = $space->fetchRow("project_id = '$projectUUID' AND full_context LIKE '%" . trim($fullContextCurrent) . "'");
+                    $spaceRow = $space->fetchRow("(project_id = '$projectUUID' AND full_context LIKE '%" . trim($fullContextCurrent) . "') OR (project_id = '0' AND space_label = '".trim($parentDataItem)."')");
                 } 
             }
             
