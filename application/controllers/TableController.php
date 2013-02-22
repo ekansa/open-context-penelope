@@ -25,8 +25,10 @@ class TableController extends Zend_Controller_Action {
         
         //class of items to export in a table
         $classUUID = "881CEDA3-C445-4C9C-4D4B-634BD2963892"; //animal bone
+		  $classUUID = "A2017643-0086-4D98-4932-E4AD3884E99D"; //pottery
+		  
 		  $page = 1;
-		  $setSize = 500;
+		  $setSize = 1500;
 		  
         if(isset($_REQUEST["classUUID"])){
 				$classUUID = $_REQUEST["classUUID"];
@@ -46,13 +48,16 @@ class TableController extends Zend_Controller_Action {
 		  $tableArray = false;
 		  $linkedFields = false;
 		  $limitingProjArray = array("731B0670-CE2A-414A-8EF6-9C050A1C60F5");
+		  $limitingProjArray = array("1B426F7C-99EC-4322-4069-E8DBD927CCF1");
 		  
 		  $tableObj = new TabOut_Table;
 		  $tableObj->setSize = $setSize;
 		  $tableObj->page = $page;
-		  $tableObj->limitingProjArray = $limitingProjArray;
-		  $tableObj->showSourceFields = false;
+		  //$tableObj->limitingProjArray = $limitingProjArray;
+		  $tableObj->showSourceFields = true;
+		  $tableObj->showBP = false;
 		  $tableObj->showLDSourceValues = true;
+		  $tableObj->sortForSourceVars = " var_tab.sort_order, sCount DESC, var_tab.var_label ";
 		  $linkedFields = $tableObj->getLinkedVariables($classUUID);
 		  $tableArray = $tableObj->makeTableArray($classUUID);
 		  

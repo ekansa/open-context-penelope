@@ -13,9 +13,13 @@ class TabOut_Table  {
 	 
 	 public $showSourceFields = true;
 	 public $showLinkedFields = true;
+	 public $showBCE = true;
+	 public $showBP = true;
+	 
 	 public $showFieldURIs = false; //show the URIs of fields for linked data
 	 public $showUnitTypeURIs = false; //show the URIs of fields for unit-type linked data
 	 public $showLDSourceValues = false; //show original / source values for linked data?
+	 public $sortForSourceVars = "sCount DESC, var_tab.sort_order, var_tab.var_label";
 	 
 	 public $linkedFields; //standard fields from ontology links
 	 public $LFtypeCount = 0; //count of linked fields of type type
@@ -28,6 +32,8 @@ class TabOut_Table  {
 	 public $setSize;
 	 
 	 public $limitingProjArray = false; //make an array of project UUIDs to limit the results to
+	 
+	 public $geoTimeArray; //array of lat / lon and start / end values for different projects and containment paths
 	 
 	 const OCspatialURIbase = "http://opencontext.org/subjects/";
 	 const OCprojectURIbase = "http://opencontext.org/projects/";
@@ -43,6 +49,13 @@ class TabOut_Table  {
 												  );
 	 
 	 
+	 public $outputGT = array("Latitude (WGS84)" => "",
+								"Longitude (WGS84)" => "",
+								"Early (Cal. CE/BCE)" => "",
+								"Late (Cal. CE/BCE)" => "",
+								"Early (Cal. BP)" => "",
+								"Late (Cal. BP)" => ""
+								);
 	 
 	 function makeTableArray($classUUID){
 		  
@@ -50,6 +63,7 @@ class TabOut_Table  {
 		  $this->getProjects($classUUID);
 		  $projectNames = $this->projectNames;
 		  $this->getLinkedVariables($classUUID);
+		  $this->getGeoTime(); //make an array of geo and time metadata
 		  
 		  $result = $this->getClass($classUUID); //get the list of items, their labels, and their context
 		  if($result){
@@ -79,7 +93,7 @@ class TabOut_Table  {
 					 $rawContext = $row["full_context"];
 					 $rawContextArray = explode(self::contextDelim, $rawContext);
 					 $i = 0;
-					 while($i < $this->maxContextFields){
+					 while($i <= $this->maxContextFields){
 						  $contextLabelKey = "Context (".($i + 1).")";
 						  if(isset($rawContextArray[$i])){
 								if($rawContextArray[$i] != $label){
@@ -97,6 +111,7 @@ class TabOut_Table  {
 					 
 				
 					 $actRecord["Context URI"] = $parentURI;
+					 $actRecord = $this->tableAddGeoTimeFields($row["uuid"], $rawContext, $projectUUID, $actRecord);
 					 
 					 if($this->showLinkedFields){
 						  $actRecord = $this->tableAddLinkedFields($itemUUID, $actRecord); //add the linked data fields
@@ -117,78 +132,207 @@ class TabOut_Table  {
 		  
 	 }
 	 
+	 //this puts geographic and chronology fields into a record
+	 function tableAddGeoTimeFields($itemUUID, $itemContext, $projectUUID, $actRecord){
+		  $outputGT = $this->outputGT;
+		  $geoFound = false;
+		  $timeFound = false;
+		  if(is_array($this->geoTimeArray)){
+				$geoTime = $this->geoTimeArray;
+				if(isset($geoTime[$projectUUID])){
+					 if(is_array($geoTime[$projectUUID]["geo"])){
+						  foreach($geoTime[$projectUUID]["geo"] as $contextKey => $coords){
+								$keyLen = strlen($contextKey);
+								$searchContext = substr($itemContext, 0, $keyLen); // check to see if the context key is in the first part of the item's context
+								if($searchContext == $contextKey){
+									 $outputGT["Latitude (WGS84)"] = $coords["latitude"];
+									 $outputGT["Longitude (WGS84)"] = $coords["longitude"];
+									 $geoFound = true;
+									 break; //no need to keep on through the loop
+								}
+						  }
+					 }
+					 if(is_array($geoTime[$projectUUID]["time"])){
+						  foreach($geoTime[$projectUUID]["time"] as $contextKey => $time){
+								$keyLen = strlen($contextKey);
+								$searchContext = substr($itemContext, 0, $keyLen); // check to see if the context key is in the first part of the item's context
+								if($searchContext == $contextKey){
+									 $outputGT["Early (Cal. CE/BCE)"] = $time["start_time"];
+									 $outputGT["Late (Cal. CE/BCE)"] = $time["end_time"];
+									 if($time["start_time"]<0){
+										  $outputGT["Early (Cal. BP)"] = abs($time["start_time"]) + 1950 ;
+									 }
+									 else{
+										  $outputGT["Early (Cal. BP)"] = 1950 - $time["start_time"];
+									 }
+									 if($time["end_time"]<0){
+										  $outputGT["Late (Cal. BP)"] = abs($time["end_time"]) + 1950 ;
+									 }
+									 else{
+										  $outputGT["Late (Cal. BP)"] = 1950 - $time["end_time"];
+									 }
+									 $timeFound = true;
+									 break; //no need to keep on through the loop
+								}
+						  }
+					 }
+				}
+		  }
+		  
+		  foreach($outputGT as $fieldKey => $value){
+				$actRecord[$fieldKey] = $value;
+		  }
+		  
+		  if(!$geoFound){
+				//didn't find it through context matching, try via contain relations
+				$actRecord = $this->containRelationGeo($itemUUID, $actRecord);
+		  }
+		  if(!$timeFound){
+				$actRecord = $this->containRelationTime($itemUUID, $actRecord);
+		  }
+	 
+		  if(!$this->showBCE){
+				unset($actRecord["Early (Cal. CE/BCE)"]);
+				unset($actRecord["Late (Cal. CE/BCE)"]);
+		  }
+		  if(!$this->showBP){
+				unset($actRecord["Early (Cal. BP)"]);
+				unset($actRecord["Late (Cal. BP)"]);
+		  }
+	 
+		  return $actRecord;
+	 }
+	 
+	 
+	 //uses recurssive containment relations to find the parent geo coordinates, used if edits disrupted containment paths
+	 function containRelationTime($itemUUID, $actRecord){
+		  
+		  $db = $this->startDB();
+		  $sql = "SELECT start_time, end_time FROM initial_chrono_tag WHERE uuid = '$itemUUID' LIMIT 1; ";
+		  $result = $db->fetchAll($sql);
+		  if($result){
+				$actRecord["Early (Cal. CE/BCE)"] = $result[0]["start_time"];
+				$actRecord["Late (Cal. CE/BCE)"] = $result[0]["end_time"];
+				if($result[0]["start_time"]<0){
+					 $actRecord["Early (Cal. BP)"] = abs($result[0]["start_time"]) + 1950 ;
+				}
+				else{
+					 $actRecord["Early (Cal. BP)"] = 1950 - $result[0]["start_time"];
+				}
+				if($result[0]["end_time"]<0){
+					 $actRecord["Late (Cal. BP)"] = abs($result[0]["end_time"]) + 1950 ;
+				}
+				else{
+					 $actRecord["Late (Cal. BP)"] = 1950 - $result[0]["end_time"];
+				}
+		  }
+		  else{
+				$parent = $this->getParentID($itemUUID);
+				if($parent != false){
+					 $actRecord = $this->containRelationTime($parent["uuid"], $actRecord);
+				}
+		  }
+		  return $actRecord;
+	 }
+	 
+	 
+	 //uses recurssive containment relations to find the parent time spans, used if edits disrupted containment paths
+	 function containRelationGeo($itemUUID, $actRecord){
+		  $db = $this->startDB();
+		  $sql = "SELECT latitude, longitude FROM geo_space WHERE uuid = '$itemUUID' LIMIT 1; ";
+		  $result = $db->fetchAll($sql);
+		  if($result){
+				$actRecord["Latitude (WGS84)"] = $result[0]["latitude"];
+				$actRecord["Longitude (WGS84)"] = $result[0]["longitude"];
+		  }
+		  else{
+				$parent = $this->getParentID($itemUUID);
+				if($parent != false){
+					 $actRecord = $this->containRelationGeo($parent["uuid"], $actRecord);
+				}
+		  }
+		  return $actRecord;
+	 }
+	 
+	 
+	 
+	 
+	 
+	 
+	 
 	 
 	 //this adds linked data to a table record. 
 	 function tableAddLinkedFields($itemUUID, $actRecord){
 		  $linkedTypeConfigs = $this->linkedTypeConfigs;
 		  $linkedFields = $this->linkedFields;
 		  
-		  foreach($linkedFields as $linkedField){
-				
-				if($linkedField["linkedType"] == "type"){
-					 if(array_key_exists($linkedField["linkedURI"], $linkedTypeConfigs)){
-						  //there's some special configuration for this linkeduri field!
-						  $actLF = array();
-						  foreach($linkedTypeConfigs[$linkedField["linkedURI"]] as $config){
+		  if(is_array($linkedFields)){
+				foreach($linkedFields as $linkedField){
+					 
+					 if($linkedField["linkedType"] == "type"){
+						  if(array_key_exists($linkedField["linkedURI"], $linkedTypeConfigs)){
+								//there's some special configuration for this linkeduri field!
+								$actLF = array();
+								foreach($linkedTypeConfigs[$linkedField["linkedURI"]] as $config){
+									 $actConfig = $linkedField;
+									 $actConfig["linkedLabel"] = $actConfig["linkedLabel"].$config["labeling"];
+									 $actConfig["cond"] = $config["cond"];
+									 $actLF[] = $actConfig;
+								}
+						  }
+						  else{
+								$actLF = array();
 								$actConfig = $linkedField;
-								$actConfig["linkedLabel"] = $actConfig["linkedLabel"].$config["labeling"];
-								$actConfig["cond"] = $config["cond"];
+								$actConfig["cond"] = "";
 								$actLF[] = $actConfig;
 						  }
-					 }
-					 else{
-						  $actLF = array();
-						  $actConfig = $linkedField;
-						  $actConfig["cond"] = "";
-						  $actLF[] = $actConfig;
-					 }
-					 
-					 foreach($actLF as $lf){
 						  
-						  $newFields = array();
-						  if($this->showFieldURIs){
-								$newFields["linkedURI"] = "URI: ".$lf["linkedLabel"]." (".$lf["linkedURI"].")";
-								$newFields["linkedLabel"] = "Label: ".$lf["linkedLabel"]." (".$lf["linkedURI"].")";
-								$newFields["val_text"] = "Source value: ".$lf["linkedLabel"]." (".$lf["linkedURI"].")";
-						  }
-						  else{
-								$newFields["linkedURI"] = $lf["linkedLabel"]." [URI]";
-								$newFields["linkedLabel"] = $lf["linkedLabel"]." [Label]";
-								$newFields["val_text"] = $lf["linkedLabel"]." [Source value]";
-						  }
-						  
-						  if($this->showLDSourceValues){
-								$linkedObject = $this->itemLinkedTypeValuesPlusSourceVals($itemUUID, $lf["varIDs"], $lf["cond"]);
-						  }
-						  else{
-								$linkedObject = $this->itemLinkedTypeValues($itemUUID, $lf["varIDs"], $lf["cond"]);
-								unset($newFields["val_text"]);
-						  }
-						  
-						  foreach($newFields as $fieldKey => $fieldLabel){
-								if(!$linkedObject){
-									 $actRecord[$fieldLabel] = "";
+						  foreach($actLF as $lf){
+								
+								$newFields = array();
+								if($this->showFieldURIs){
+									 $newFields["linkedURI"] = "URI: ".$lf["linkedLabel"]." (".$lf["linkedURI"].")";
+									 $newFields["linkedLabel"] = "Label: ".$lf["linkedLabel"]." (".$lf["linkedURI"].")";
+									 $newFields["val_text"] = "Source value: ".$lf["linkedLabel"]." (".$lf["linkedURI"].")";
 								}
 								else{
-									  $actRecord[$fieldLabel] = $linkedObject[0][$fieldKey]; //add the value returned from the database for a given field key
+									 $newFields["linkedURI"] = $lf["linkedLabel"]." [URI]";
+									 $newFields["linkedLabel"] = $lf["linkedLabel"]." [Label]";
+									 $newFields["val_text"] = $lf["linkedLabel"]." [Source value]";
 								}
-						  }//end loop through field keys
+								
+								if($this->showLDSourceValues){
+									 $linkedObject = $this->itemLinkedTypeValuesPlusSourceVals($itemUUID, $lf["varIDs"], $lf["cond"]);
+								}
+								else{
+									 $linkedObject = $this->itemLinkedTypeValues($itemUUID, $lf["varIDs"], $lf["cond"]);
+									 unset($newFields["val_text"]);
+								}
+								
+								foreach($newFields as $fieldKey => $fieldLabel){
+									 if(!$linkedObject){
+										  $actRecord[$fieldLabel] = "";
+									 }
+									 else{
+											$actRecord[$fieldLabel] = $linkedObject[0][$fieldKey]; //add the value returned from the database for a given field key
+									 }
+								}//end loop through field keys
+						  }
+						  
+					 }
+					 elseif($linkedField["linkedType"] == "unit-type"){
+						  $linkedVal= $this->itemLinkedUnitTypeValues($itemUUID, $linkedField["varIDs"]);
+						  if($this->showFieldURIs || $this->showUnitTypeURIs){
+								$propKeyA = $linkedField["linkedLabel"]." (".$linkedField["linkedURI"].")";
+						  }
+						  else{
+								$propKeyA = $linkedField["linkedLabel"];
+						  }
+						  $actRecord[$propKeyA] = $linkedVal;
 					 }
 					 
 				}
-				elseif($linkedField["linkedType"] == "unit-type"){
-					 $linkedVal= $this->itemLinkedUnitTypeValues($itemUUID, $linkedField["varIDs"]);
-					 if($this->showFieldURIs || $this->showUnitTypeURIs){
-						  $propKeyA = $linkedField["linkedLabel"]." (".$linkedField["linkedURI"].")";
-					 }
-					 else{
-						  $propKeyA = $linkedField["linkedLabel"];
-					 }
-					 $actRecord[$propKeyA] = $linkedVal;
-				}
-				
 		  }
-		  
 		  return $actRecord;
 	 }
 	 
@@ -312,6 +456,10 @@ class TabOut_Table  {
 	 
 	 
 	 
+	 
+	 
+	 
+	 
 	 //get a list of items in a class
 	 function getClass($classUUID){
 		  
@@ -329,7 +477,7 @@ class TabOut_Table  {
 		  $sql = "SELECT uuid, project_id, space_label, full_context
 		  FROM space
 		  WHERE class_uuid = '$classUUID'  $projCondition
-		  ORDER BY project_id, full_context
+		  ORDER BY project_id, label_sort, full_context
 		  LIMIT ".($this->recStart ).",".($this->setSize)."
 		  ;
 		  ";
@@ -364,6 +512,16 @@ class TabOut_Table  {
 				WHERE space.class_uuid = '$classUUID' $projCondition
 				GROUP BY var_tab.variable_uuid
 				ORDER BY sCount DESC, var_tab.sort_order, var_tab.var_label
+				";
+				
+				$sql = "SELECT round(COUNT(observe.subject_uuid)/10,0) as sCount, var_tab.variable_uuid, var_tab.var_label, var_tab.sort_order
+				FROM space
+				JOIN observe ON observe.subject_uuid = space.uuid
+				JOIN properties ON observe.property_uuid = properties.property_uuid
+				JOIN var_tab ON properties.variable_uuid = var_tab.variable_uuid
+				WHERE space.class_uuid = '$classUUID' $projCondition
+				GROUP BY var_tab.variable_uuid
+				ORDER BY ".$this->sortForSourceVars."
 				";
 				
 				$result =  $db->fetchAll($sql);
@@ -608,6 +766,66 @@ class TabOut_Table  {
 				return $this->actProjectIDs;
 		  }
 	 }
+	 
+	 
+	 //this function gets geo-coordinates, uuids, and context-paths for all space items having coordinates in each a project
+	 function getGeoTime(){
+		  
+		  if(is_array($this->actProjectIDs)){
+				$db = $this->startDB();
+				$geoTime = array();
+				foreach($this->actProjectIDs as $projectID){
+					 
+					 $sql = "SELECT space.uuid, space.space_label, space.full_context, geo_space.latitude, geo_space.longitude,
+					 (LENGTH(space.full_context) - LENGTH(REPLACE(space.full_context, '".self::contextDelim."', ''))) / LENGTH('".self::contextDelim."') AS cnt
+					 FROM space
+					 JOIN geo_space ON geo_space.uuid = space.uuid
+					 WHERE space.project_id = '$projectID'
+					 ORDER BY cnt DESC
+					 LIMIT 500
+					 ";
+					 
+					 $result =  $db->fetchAll($sql);
+					 if($result){
+						  foreach($result as $row){
+								$context = $row["full_context"];
+								$geoTime[$projectID]["geo"][$context] = array("latitude" => $row["latitude"], "longitude" => $row["longitude"]);
+						  }
+						  
+					 }
+					 else{
+						  $geoTime[$projectID]["geo"] = false;
+					 }
+					 
+					 
+					 $sql = "SELECT space.uuid, space.space_label, space.full_context, initial_chrono_tag.start_time, initial_chrono_tag.end_time,
+					 (LENGTH(space.full_context) - LENGTH(REPLACE(space.full_context, '".self::contextDelim."', ''))) / LENGTH('".self::contextDelim."') AS cnt
+					 FROM space
+					 JOIN initial_chrono_tag ON initial_chrono_tag.uuid = space.uuid
+					 WHERE space.project_id = '$projectID'
+					 ORDER BY cnt DESC
+					 LIMIT 500
+					 ";
+					 
+					 $result =  $db->fetchAll($sql);
+					 if($result){
+						  foreach($result as $row){
+								$context = $row["full_context"];
+								$geoTime[$projectID]["time"][$context] = array("start_time" => $row["start_time"], "end_time" => $row["end_time"]);
+						  }
+						  
+					 }
+					 else{
+						  $geoTime[$projectID]["time"] = false;
+					 } 
+				}
+				
+				$this->geoTimeArray = $geoTime;
+		  }
+
+	 }
+	 
+	 
 	 
 	 
 	 
