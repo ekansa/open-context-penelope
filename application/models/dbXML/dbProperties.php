@@ -234,7 +234,7 @@ class dbXML_dbProperties  {
 			
 					 //get linked data relations for the variable and the property
 					 $varUnitsData = $this->pen_getUnitData($varUUID);
-					 $unitTypeData = $this->pen_getUnitTypeData($varUUID);
+					 $varAnnotationData = $this->pen_getVarAnnotationData($varUUID);
 					 $linkedDataVar = $this->pen_getLinkedData($varUUID);
 					 $linkedDataProp = $this->pen_getLinkedData($propertyUUID, true);
 					 
@@ -251,7 +251,7 @@ class dbXML_dbProperties  {
 									"validXHTML" => $validXHTML,
 									"varLinkedData" => $linkedDataVar,
 									"varUnitsData" => $varUnitsData,
-									"varUnitTypeData" => $unitTypeData,
+									"varAnnotationData" => $varAnnotationData,
 									"propLinkedData" => $linkedDataProp,
 									"hideLink" => $hideLink
 									);
@@ -310,25 +310,29 @@ class dbXML_dbProperties  {
 		return $output;
 	 }
 	 
-	 public function pen_getUnitTypeData($itemUUID){
+	
+	 public function pen_getVarAnnotationData($itemUUID){
 		$db = $this->db;
 		
 		$output = false;
-		$sql = "SELECT linked_data.linkedLabel, linked_data.linkedURI
+		$sql = "SELECT linked_data.linkedLabel, linked_data.linkedURI, linked_data.linkedType,
+		linked_data.linkedAbrv, linked_data.vocabulary, 	linked_data.vocabURI
 		FROM linked_data
-		WHERE linked_data.itemUUID = '$itemUUID' AND linked_data.linkedType = 'unit-type' ";
+		WHERE linked_data.itemUUID = '$itemUUID'
+		AND
+		(linked_data.linkedType != 'unit' AND linked_data.linkedType != 'type')
+		";
 		
 		$result = $db->fetchAll($sql, 2);
 		if($result){
 			$output = array();
-			$output = $result[0];
+			$output = $result;
 		}
 		
 		return $output;
 	 }
-	
-	
-	
+	 
+
 	 
 	 
 	 

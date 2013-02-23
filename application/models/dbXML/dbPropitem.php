@@ -41,8 +41,7 @@ class dbXML_dbPropitem  {
 	 public $varUnitName; //name of the measurement unit
 	 public $varUnitAbrv; //abreviation for the measurement unit
 	 
-	 public $varUnitTypeURI; //uri for the measurement type
-	 public $varUnitTypeName; //name of the measurement type
+	 public $varAnnotationData; //array of variable annotations
 	
     public $valUUID;
     public $value;
@@ -182,10 +181,9 @@ class dbXML_dbPropitem  {
 					$this->varUnitAbrv = $unitData["linkedAbrv"];
 				}
 				
-				$unitTypeData = $this->pen_getUnitTypeData($this->varUUID);
-				if(is_array($unitTypeData)){
-					$this->varUnitTypeURI = $unitData["linkedURI"];
-					$this->varUnitTypeName = $unitData["linkedLabel"];
+				$varAnnotationData = $this->pen_getVarAnnotationData($this->varUUID);
+				if(is_array($varAnnotationData)){
+					$this->varAnnotationData = $varAnnotationData;
 				}
 		
 				$linkedData = $this->pen_getLinkedData($this->varUUID);
@@ -280,23 +278,24 @@ class dbXML_dbPropitem  {
     }
 	
 	
-	 public function pen_getUnitTypeData($itemUUID){
+	 public function pen_getVarAnnotationData($itemUUID){
 		$db = $this->db;
 		
 		$output = false;
-		$sql = "SELECT linked_data.linkedLabel, linked_data.linkedURI
+		$sql = "SELECT linked_data.linkedType, linked_data.linkedLabel, linked_data.linkedURI,
+		linked_data.linkedAbrv, linked_data.vocabulary, 	linked_data.vocabURI
 		FROM linked_data
-		WHERE linked_data.itemUUID = '$itemUUID' AND linked_data.linkedType = 'unit-type' ";
+		WHERE linked_data.itemUUID = '$itemUUID' AND
+		(linked_data.linkedType != 'unit' AND linked_data.linkedType != 'type') ";
 		
 		$result = $db->fetchAll($sql, 2);
 		if($result){
 			$output = array();
-			$output = $result[0];
+			$output = $result;
 		}
 		
 		return $output;
 	 }
-	
 	
     
     public function pen_getVarDescription(){

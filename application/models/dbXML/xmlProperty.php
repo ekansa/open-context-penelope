@@ -207,6 +207,29 @@ class dbXML_xmlProperty  {
 	    }
 	}
 	
+		  if(is_array($itemObj->varAnnotationData)){
+				$elementC = $doc->createElement("oc:annotations");
+				$elementC->setAttribute("about", $itemObj->varUUID);
+				$elementC->setAttribute("aboutType", "variable");
+				foreach($itemObj->varAnnotationData as $varAnnote){
+					 $elementD = $doc->createElement("oc:annotation");
+					 $elementE = $doc->createElement("oc:relationLink");
+					 $elementE->setAttribute("type", $varAnnote["linkedType"]);
+					 $elementD->appendChild($elementE);
+					 $elementE = $doc->createElement("oc:targetLink");
+					 $elementE->setAttribute("href", $varAnnote["linkedURI"]);
+					 $elementE->setAttribute("name", $varAnnote["linkedLabel"]);
+					 $elementE->setAttribute("abrv", $varAnnote["linkedAbrv"]);
+					 $elementF = $doc->createElement("oc:vocabulary");
+					 $elementF->setAttribute("href", $varAnnote["vocabURI"]);
+					 $elementFtext = $doc->createTextNode($varAnnote["vocabulary"]);
+					 $elementF->appendChild($elementFtext);
+					 $elementE->appendChild($elementF);
+					 $elementD->appendChild($elementE);
+					 $elementC->appendChild($elementD);
+				}
+				$element->appendChild($elementC);
+		  }
 	
 		  if($itemObj->varLinkURI || $itemObj->propLinkURI){
 				$elementB = $doc->createElement("oc:linkedData");

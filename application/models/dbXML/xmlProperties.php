@@ -33,6 +33,32 @@ class dbXML_xmlProperties  {
 		$elementC->appendChild($elementCtext); 
 		$elementB->appendChild($elementC);
 		
+		if(is_array($property["varAnnotationData"])){
+		  $elementC = $doc->createElement("oc:annotations");
+		  $elementC->setAttribute("about", $property["varUUID"]);
+		  $elementC->setAttribute("aboutType", "variable");
+		  foreach($property["varAnnotationData"] as $varAnnote){
+				$elementD = $doc->createElement("oc:annotation");
+				$elementE = $doc->createElement("oc:relationLink");
+				$elementE->setAttribute("type", $varAnnote["linkedType"]);
+				$elementD->appendChild($elementE);
+				$elementE = $doc->createElement("oc:targetLink");
+				$elementE->setAttribute("href", $varAnnote["linkedURI"]);
+				$elementE->setAttribute("name", $varAnnote["linkedLabel"]);
+				$elementE->setAttribute("abrv", $varAnnote["linkedAbrv"]);
+				$elementF = $doc->createElement("oc:vocabulary");
+				$elementF->setAttribute("href", $varAnnote["vocabURI"]);
+				$elementFtext = $doc->createTextNode($varAnnote["vocabulary"]);
+				$elementF->appendChild($elementFtext);
+				$elementE->appendChild($elementF);
+				$elementD->appendChild($elementE);
+				$elementC->appendChild($elementD);
+		  }
+		  $elementB->appendChild($elementC);
+		}
+		
+		
+		
 		//value ID
 		if(!$property["valueNum"] && $property["varType"] != "integer" && $property["varType"] != "decimal"){
 		    $elementC = $doc->createElement("arch:valueID");
@@ -64,11 +90,6 @@ class dbXML_xmlProperties  {
 			$elementC->setAttribute("href", $property["varUnitsData"]["linkedURI"]);
 			$elementC->setAttribute("name", $property["varUnitsData"]["linkedLabel"]);
 			$elementC->setAttribute("abrv", $property["varUnitsData"]["linkedAbrv"]);
-		}
-		if(is_array($property["varUnitTypeData"])){
-			//add standard units of measurement linking data
-			$elementC->setAttribute("unitTypeHref", $property["varUnitTypeData"]["linkedURI"]);
-			$elementC->setAttribute("unitTypeName", $property["varUnitTypeData"]["linkedLabel"]);
 		}
 		
 		

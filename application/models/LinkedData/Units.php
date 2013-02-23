@@ -32,7 +32,7 @@ class LinkedData_Units  {
                                 array(
                                 "sType" => "Length",
                                 "units" => array(
-                                     array("name" => "micrometer / micron", "abrv" => "�m",
+                                     array("name" => "micrometer / micron", "abrv" => "µm",
                                           "uri" => "http://www.freebase.com/view/en/micrometer",
                                           "reqType" => "float"),
                                     array("name" => "millimeter", "abrv" => "mm",
@@ -97,6 +97,23 @@ class LinkedData_Units  {
                                           "uri" =>"http://www.freebase.com/view/en/kilogram_per_cubic_metre",
                                           "reqType" => "float")
                                     )
+                                ),
+								
+								array(
+                                "sType" => "Mass Concentration",
+                                "units" => array(
+                                    array("name" => "concentration (microgram per milliliter)", "abrv" => "µg/mL",
+                                          "uri" => "http://www.freebase.com/view/en/microgram_per_milliliter",
+                                          "reqType" => "float")
+                                    ),
+												array("name" => "concentration (parts per million, mg/kg)", "abrv" => "ppm",
+                                          "uri" => "http://dbpedia.org/resource/Parts_per_million",
+                                          "reqType" => "float")
+                                    )
+												array("name" => "concentration (parts per hundred)", "abrv" => "%",
+																		"uri" => "http://dbpedia.org/resource/Parts_per_hundred",
+																		"reqType" => "float")
+																)
                                 ),
 								
 								
