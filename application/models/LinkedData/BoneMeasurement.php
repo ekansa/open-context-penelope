@@ -49,6 +49,26 @@ class LinkedData_BoneMeasurement  {
 	 }
 	 
 	 
+	 function getExampleLink($varUUID){
+		  $db = $this->startDB();
+		  
+		  $sql = "SELECT observe.subject_uuid
+		  FROM observe
+		  JOIN properties ON observe.property_uuid = properties.property_uuid
+		  WHERE properties.variable_uuid = '$varUUID'
+		  LIMIT 1;
+		  ";
+		  
+		  $result =  $db->fetchAll($sql);
+		  if($result){
+				return "http://penelope.oc/preview/space?UUID=".$result[0]["subject_uuid"];
+		  }
+		  else{
+				return false;
+		  }
+	 }
+	 
+	 
 	 function processVars($varList){
 		  $doneVars = false;
 		  if(is_array($varList)){
@@ -59,7 +79,10 @@ class LinkedData_BoneMeasurement  {
 						  $doneVars = array();
 						  foreach($varList as $varUUID => $varLabel){
 								$okURL = $this->checkAddTerm($varUUID, $varLabel);
-								$doneVars[] = array("varUUID" => $varUUID, "label"=> $varLabel, "linkURI" => $okURL);
+								$doneVars[] = array("varUUID" => $varUUID,
+														  "label"=> $varLabel,
+														  "var-use-example" => $this->getExampleLink($varUUID),
+														  "linkURI" => $okURL);
 						  }
 					 }
 					 else{
@@ -135,11 +158,18 @@ class LinkedData_BoneMeasurement  {
 					 foreach($annos as $annoKey => $value){
 						  //echo "<br> $annoKey : $value".chr(13).chr(13);
 						  $checkVal = strtolower($value);
+						  if($checkVal == "dd"){
+								$checkVal = $value; //kludge so DD and Dd aren't done the same way
+						  }
+						  
 						  
 						  if(stristr($varLabel, "::")){
 								$varEx = explode("::", $varLabel);
 								if(stristr($varEx[1],"standard")){
 									 $checkLabel = strtolower(trim($varEx[0]));
+									 if($checkLabel == "dd"){
+										  $checkLabel = trim($varEx[0]); //kludge so DD and Dd aren't done the same way
+									 }
 								}
 								else{
 									 $checkLabel = "We're not gona take it!";
@@ -147,6 +177,9 @@ class LinkedData_BoneMeasurement  {
 						  }
 						  else{
 								$checkLabel = strtolower($varLabel);
+								if($checkLabel == "dd"){
+									 $checkLabel = $varLabel; //kludge so DD and Dd aren't done the same way
+								}
 						  }
 					 
 						  
@@ -163,6 +196,7 @@ class LinkedData_BoneMeasurement  {
 								$label = $value;
 								$db = $this->startDB();
 								$output = $url;
+								$insertOK = false;
 								$hash = md5($varUUID."_".$url);
 								$data = array('hashID' => $hash,
 												  'fk_project_uuid' =>  $this->projectUUID,
@@ -177,22 +211,87 @@ class LinkedData_BoneMeasurement  {
 												  );
 								try{
 									 $db->insert('linked_data', $data);
-									 }
-								catch (Exception $e) {
-	 
+									 $insertOK = true;
 								}
+								catch (Exception $e) {
+									 $insertOK = false;
+								}
+								
+								if($insertOK){
+									 $this->deleteAssociatedPublishedRecords($varUUID);
+								}
+								
 						  }//case where the concept label matches the variable label
 					 }//loop through an annotation
 				}//loop through annotations of a concept
 		  }//loop through all class concepts
+		  $this->addLinkedMetadata();
 		  return $output;
 	 }
 	 
 	 
 	 
+	 //this gets rid of the record of publication for items with new variable annotations
+	 function deleteAssociatedPublishedRecords($varUUID){
+		  $db = $this->startDB();
+		  $sql = "SELECT DISTINCT observe.subject_uuid
+		  FROM observe
+		  JOIN properties ON properties.property_uuid = observe.property_uuid
+		  WHERE properties.variable_uuid = '$varUUID';
+		  ";
+		  
+		  $result =  $db->fetchAll($sql);
+		  if($result){
+				foreach($result as $row){
+					 $itemUUID = $row["subject_uuid"];
+					 $where = "item_uuid = '$itemUUID' ";
+					 $db->delete("published_docs", $where);
+				}
+		  }
+	 }
 	 
-	 
-	 
+	 function addLinkedMetadata(){
+		  $db = $this->startDB();
+		  $sql = "UPDATE linked_data
+					 JOIN linked_data as ld ON (linked_data.linkedURI = ld.linkedURI
+					 AND ld.linkedLabel != '')
+					 SET linked_data.linkedLabel = ld.linkedLabel
+					 WHERE linked_data.linkedLabel = '' ;
+					 
+					 UPDATE linked_data
+					 JOIN linked_data as ld ON (linked_data.linkedURI = ld.linkedURI
+					 AND ld.vocabURI != '')
+					 SET linked_data.vocabURI = ld.vocabURI
+					 WHERE linked_data.vocabURI = '' ;
+					 
+					 UPDATE linked_data
+					 JOIN linked_data as ld ON (linked_data.linkedURI = ld.linkedURI
+					 AND ld.vocabulary != '')
+					 SET linked_data.vocabulary = ld.vocabulary
+					 WHERE linked_data.vocabulary = '' ;
+					 
+					 
+					 UPDATE linked_data
+					 JOIN linked_data as ld ON (LEFT(linked_data.linkedURI,19) = LEFT(ld.linkedURI, 19)
+					 AND ld.vocabURI != '')
+					 SET linked_data.vocabURI = ld.vocabURI
+					 WHERE linked_data.vocabURI = '' ;
+					 
+					 
+					 UPDATE linked_data
+					 JOIN linked_data as ld ON (LEFT(linked_data.linkedURI,19) = LEFT(ld.linkedURI, 19)
+					 AND ld.vocabulary != '')
+					 SET linked_data.vocabulary = ld.vocabulary
+					 WHERE linked_data.vocabulary = '' ;
+					 
+					 UPDATE linked_data
+					 SET linkedType = 'Measurement type'
+					 WHERE linkedType = 'unit-type';
+					 
+					 ";
+					 
+		  $db->query($sql, 2);
+	 }
 	 
 	 
 	 function startDB(){

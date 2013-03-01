@@ -35,7 +35,7 @@ function getDecimalVariables(){
 		  ld.linkedLabel AS unitType, ld.linkedURI AS unitTypeURI
 		  FROM var_tab
 		  LEFT JOIN linked_data ON (var_tab.variable_uuid = linked_data.itemUUID AND linked_data.linkedType = 'unit')
-		  LEFT JOIN linked_data AS ld ON (var_tab.variable_uuid = ld.itemUUID AND ld.linkedType = 'unit-type')
+		  LEFT JOIN linked_data AS ld ON (var_tab.variable_uuid = ld.itemUUID AND (ld.linkedType = 'unit-type' OR ld.linkedType = 'Measurement type'))
 		  WHERE var_tab.var_type = 'Decimal' AND var_tab.project_id = '".$this->projUUID."'
 		  ORDER BY var_tab.var_label
 		  ";
@@ -79,7 +79,7 @@ function addUnitType($params){
 				$dataU[$dbField] = $params[$paramKey];
 		  }
 		  
-		  $dataUT["linkedType"] = "unit-type";
+		  $dataUT["linkedType"] = "Measurement type";
 		  $dataU["linkedType"] = "unit";
 		  
 		  foreach($UTkeys as $paramKey => $dbField){
@@ -94,20 +94,32 @@ function addUnitType($params){
 		  
 		  $dataU["hashID"] = md5($dataU["itemUUID"]."_".$dataU["linkedURI"]);
 		  
+		  $insertOK = false;
 		  try{
 				$db->insert("linked_data", $dataUT); //add the unit-type
+				$insertOK = true;
 		  }
         catch (Exception $e) {
- 
+				$insertOK = false;
         }
 		  
+		  if($insertOK){
+				$this->deleteAssociatedPublishedRecords($dataUT["itemUUID"]);
+		  }
+		  
+		  $insertOK = false;
 		  try{
 				$db->insert("linked_data", $dataU); //add the unit
 		  }
         catch (Exception $e) {
-		  
+				$insertOK = false;
         }
 		  
+		  if($insertOK){
+				$this->deleteAssociatedPublishedRecords($dataU["itemUUID"]);
+		  }
+		  
+		  $this->addLinkedMetadata(); //add the linking metadata to the data we just created
 	 }
 	 
 	 
@@ -115,8 +127,67 @@ function addUnitType($params){
 	 
 }
 
+//this gets rid of the record of publication for items with new variable annotations
+function deleteAssociatedPublishedRecords($varUUID){
+	 $db = $this->startDB();
+	 $sql = "SELECT DISTINCT observe.subject_uuid
+	 FROM observe
+	 JOIN properties ON properties.property_uuid = observe.property_uuid
+	 WHERE properties.variable_uuid = '$varUUID';
+	 ";
+	 
+	 $result =  $db->fetchAll($sql);
+	 if($result){
+		  foreach($result as $row){
+				$itemUUID = $row["subject_uuid"];
+				$where = "item_uuid = '$itemUUID' ";
+				$db->delete("published_docs", $where);
+		  }
+	 }
+}
 
-
+	 function addLinkedMetadata(){
+		  $db = $this->startDB();
+		  $sql = "UPDATE linked_data
+					 JOIN linked_data as ld ON (linked_data.linkedURI = ld.linkedURI
+					 AND ld.linkedLabel != '')
+					 SET linked_data.linkedLabel = ld.linkedLabel
+					 WHERE linked_data.linkedLabel = '' ;
+					 
+					 UPDATE linked_data
+					 JOIN linked_data as ld ON (linked_data.linkedURI = ld.linkedURI
+					 AND ld.vocabURI != '')
+					 SET linked_data.vocabURI = ld.vocabURI
+					 WHERE linked_data.vocabURI = '' ;
+					 
+					 UPDATE linked_data
+					 JOIN linked_data as ld ON (linked_data.linkedURI = ld.linkedURI
+					 AND ld.vocabulary != '')
+					 SET linked_data.vocabulary = ld.vocabulary
+					 WHERE linked_data.vocabulary = '' ;
+					 
+					 
+					 UPDATE linked_data
+					 JOIN linked_data as ld ON (LEFT(linked_data.linkedURI,19) = LEFT(ld.linkedURI, 19)
+					 AND ld.vocabURI != '')
+					 SET linked_data.vocabURI = ld.vocabURI
+					 WHERE linked_data.vocabURI = '' ;
+					 
+					 
+					 UPDATE linked_data
+					 JOIN linked_data as ld ON (LEFT(linked_data.linkedURI,19) = LEFT(ld.linkedURI, 19)
+					 AND ld.vocabulary != '')
+					 SET linked_data.vocabulary = ld.vocabulary
+					 WHERE linked_data.vocabulary = '' ;
+					 
+					 
+					 UPDATE linked_data
+					 SET linkedType = 'Measurement type'
+					 WHERE linkedType = 'unit-type';
+					 ";
+					 
+		  $db->query($sql, 2);
+	 }
 
 //startup the database
 function startDB(){

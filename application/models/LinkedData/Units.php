@@ -87,7 +87,7 @@ class LinkedData_Units  {
                                     array("name" => "number density (count / liter)", "abrv" => "count per liter",
                                           "uri" => "http://www.freebase.com/view/en/number_density",
                                           "reqType" => "float"),
-									array("name" => "density (grams per liter)", "abrv" => "grams per liter",
+												array("name" => "density (grams per liter)", "abrv" => "grams per liter",
                                           "uri" => "http://sw.opencyc.org/2008/06/10/concept/Mx4rHs7hMuxiQdaeRI29oZztbw",
                                           "reqType" => "float"),
                                     array("name" => "density (grams per cubic centimeter)", "abrv" => "g / cm<sup>3</sup>",
@@ -104,20 +104,17 @@ class LinkedData_Units  {
                                 "units" => array(
                                     array("name" => "concentration (microgram per milliliter)", "abrv" => "µg/mL",
                                           "uri" => "http://www.freebase.com/view/en/microgram_per_milliliter",
-                                          "reqType" => "float")
-                                    ),
+                                          "reqType" => "float"),
 												array("name" => "concentration (parts per million, mg/kg)", "abrv" => "ppm",
                                           "uri" => "http://dbpedia.org/resource/Parts_per_million",
-                                          "reqType" => "float")
-                                    )
+                                          "reqType" => "float"),
 												array("name" => "concentration (parts per hundred)", "abrv" => "%",
-																		"uri" => "http://dbpedia.org/resource/Parts_per_hundred",
-																		"reqType" => "float")
-																)
-                                ),
+														  "uri" => "http://dbpedia.org/resource/Parts_per_hundred",
+														  "reqType" => "float")
+												)
+									 ),
 								
-								
-                                array(
+                        array(
                                 "sType" => "Geospatial",
                                 "units" => array(
                                     array("name" => "latitude (WGS84)", "abrv" => "lat",
@@ -131,9 +128,7 @@ class LinkedData_Units  {
                                           "reqType" => "float")
                                     )
                                 ),
-                                
-                                
-                                array(
+                        array(
                                 "sType" => "Chronology",
                                 "units" => array(
                                     array("name" => "calendar year", "abrv" => "year",
@@ -145,7 +140,7 @@ class LinkedData_Units  {
                                     )
                                 )
                             )
-                       );
+								);
 	
     
 	public function get_unit_from_abrev($abrv){
