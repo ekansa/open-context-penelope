@@ -21,7 +21,9 @@ class dbXML_xmlMetadata  {
     public $rootNode;
     public $doSocial = true; //make a social usage node, set to false if project
     
+	 public $doi = false; //doi identifier?
     
+	 const doiHrefRoot = "http://dx.doi.org/";
     const spaceRootURI = "http://opencontext.org/subjects/";
     const mediaRootURI = "http://opencontext.org/media/";
     const personRootURI = "http://opencontext.org/persons/";
@@ -144,6 +146,20 @@ class dbXML_xmlMetadata  {
 	    $element->appendChild($elementB);
 	    $coinsArray[] = "rft.identifier=".urlencode($this->getIdentifierLink().$this->itemUUID);
 	}
+	if($this->doi != false ){
+		  $doi = str_replace("DOI:", "", $this->doi);
+		  $doi = str_replace("doi:", "", $doi);
+		  $doi = trim($doi);
+		  $doiHref = self::doiHrefRoot.$doi;
+		  $elementB = $doc->createElement("dc:identifier");
+		  $elementB->setAttribute("type", "doi");
+		  $elementB->setAttribute("href", $doiHref);
+		  $elementBtext = $doc->createTextNode($doi);
+		  $elementB->appendChild($elementBtext);
+		  $element->appendChild($elementB);
+		  $coinsArray[] = "rft.identifier=".urlencode("DOI:".$doi);
+	}
+	
 	
 	$elementB = $doc->createElement("oc:project_name");
 	$elementB->setAttribute("href", self::projRootURI.$metadata->projectUUID);

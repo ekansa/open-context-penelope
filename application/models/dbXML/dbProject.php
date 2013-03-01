@@ -4,6 +4,7 @@ class dbXML_dbProject {
     
     public $itemUUID;
     public $projectUUID;
+	 public $doi;
     
     public $projectName;
     public $subProjectID;
@@ -73,7 +74,7 @@ class dbXML_dbProject {
 		  
 		  $this->projCreatedXML = false;
 		  $this->projCreatedHuman = false;
-	
+		  $this->doi = false;
     }
     
     public function getByID($projectUUID){
@@ -93,7 +94,7 @@ class dbXML_dbProject {
 	
 	if($this->dbPenelope){
 	    
-	    $sql = "SELECT project_name,
+	    $sql = "SELECT project_name, doi,
 		DATE_FORMAT(created, '%M %e, %Y') as HumanPubDate, 
 		DATE_FORMAT(created, '%Y-%m-%d') as XMLPubDate,
 		abstract,
@@ -127,6 +128,12 @@ class dbXML_dbProject {
 				$this->projectName = $result[0]["project_name"];
 				$this->projCreatedXML = $result[0]["XMLPubDate"];
 				$this->projCreatedHuman = $result[0]["HumanPubDate"];    
+				
+				if(isset($result[0]["doi"])){
+					 if(strlen($result[0]["doi"]) > 1){
+						  $this->doi = $result[0]["doi"];
+					 }
+				}
 				
 				$shortDes = $result[0]["short_des"];
 				$xmlTest = "<div>".$shortDes."</div>";
