@@ -2,6 +2,7 @@
 
 class TabOut_Table  {
     
+	 public $tableID;
     public $tabArray;
 	 public $projectNames; //array of project names
 	 public $actProjectIDs; //array of active projects
@@ -30,6 +31,7 @@ class TabOut_Table  {
 	 public $page;
 	 public $recStart;
 	 public $setSize;
+	 public $ExcelSanitize = false;
 	 
 	 public $limitingProjArray = false; //make an array of project UUIDs to limit the results to
 	 
@@ -39,6 +41,8 @@ class TabOut_Table  {
 	 const OCprojectURIbase = "http://opencontext.org/projects/";
 	 const contextDelim = "|xx|";
 	 
+	 public $queries = array();
+	 public $recordQueries = false;
 	 
 	 public $linkedTypeConfigs = array("http://opencontext.org/vocabularies/open-context-zooarch/zoo-0077" =>
 												  array(0 => array(	"labeling" => " (distal)",
@@ -85,10 +89,14 @@ class TabOut_Table  {
 						  $parentURI = "";
 					 }
 					 
+					 $this->addTableContainRecord($itemUUID , $projectUUID); //add record to a table that notes the space-uuid and project-id and table-id assocation
+					 
+					 
 					 $actRecord["Item label"] = $label;
 					 $actRecord["Project URI"] = $projectURI;
 					 $actRecord["Project name"] = $projectName;
-					 
+					 $names = $this->getLinkedPeople($itemUUID);
+					 $actRecord["Related person(s)"] = implode(", ", $names);
 					 
 					 $rawContext = $row["full_context"];
 					 $rawContextArray = explode(self::contextDelim, $rawContext);
@@ -131,6 +139,55 @@ class TabOut_Table  {
 		  }
 		  
 	 }
+	 
+	 
+	 
+	 
+	 function getLinkedPeople($itemUUID, $namesOnly = true){
+		  
+		  $db = $this->startDB();
+		  
+		  $sql = "SELECT links.targ_uuid, persons.combined_name AS name
+		  FROM links
+		  JOIN persons ON persons.uuid = links.targ_uuid
+		  WHERE links.origin_uuid = '$itemUUID'
+		  AND links.targ_type = 'person'
+		  
+		  UNION
+		  
+		  SELECT links.targ_uuid, users.combined_name AS name
+		  FROM links
+		  JOIN users ON users.uuid = links.targ_uuid
+		  WHERE links.origin_uuid = '$itemUUID'
+		  AND links.targ_type = 'person'
+		  ";
+		  
+		  $result = $db->fetchAll($sql);
+		  $output = array();
+		  $names = array();
+		  foreach($result as $row){
+				$personUUID = $row["targ_uuid"];
+				$output[$personUUID] = $row["name"];
+				if(!in_array($row["name"], $names)){
+					 $names[] = $row["name"];
+				}
+		  }
+		  
+		  if($namesOnly){
+				$output = $names;
+		  }
+		  
+		  return $output;
+	 }
+	 
+	 
+	 
+	 
+	 
+	 
+	 
+	 
+	 
 	 
 	 //this puts geographic and chronology fields into a record
 	 function tableAddGeoTimeFields($itemUUID, $itemContext, $projectUUID, $actRecord){
@@ -235,6 +292,27 @@ class TabOut_Table  {
 		  return $actRecord;
 	 }
 	 
+	 function addTableContainRecord($spaceUUID, $projectUUID){ 
+		  if($this->tableID){
+				$db = $this->startDB();
+				$hashID = sha1($spaceUUID."_".$this->tableID);
+				$data = array("hashID" => $hashID,
+								  "space_uuid" => $spaceUUID,
+								  "project_uuid" => $projectUUID,
+								  "table_id" => $this->tableID
+								  );
+				
+				try{
+					 $db->insert('tablecontents', $data);
+					
+				}
+				catch (Exception $e) {
+					 
+				}
+		  }
+	 }
+	 
+	 
 	 
 	 //uses recurssive containment relations to find the parent time spans, used if edits disrupted containment paths
 	 function containRelationGeo($itemUUID, $actRecord){
@@ -320,7 +398,7 @@ class TabOut_Table  {
 						  }
 						  
 					 }
-					 elseif($linkedField["linkedType"] == "unit-type"){
+					 elseif(strtolower($linkedField["linkedType"]) == "unit-type" || strtolower($linkedField["linkedType"]) == "measurement type"){
 						  $linkedVal= $this->itemLinkedUnitTypeValues($itemUUID, $linkedField["varIDs"]);
 						  if($this->showFieldURIs || $this->showUnitTypeURIs){
 								$propKeyA = $linkedField["linkedLabel"]." (".$linkedField["linkedURI"].")";
@@ -524,6 +602,7 @@ class TabOut_Table  {
 				ORDER BY ".$this->sortForSourceVars."
 				";
 				
+				$this->recordQuery($sql);
 				$result =  $db->fetchAll($sql);
 				$actVarLabels = array();
 				if($result){
@@ -574,6 +653,7 @@ class TabOut_Table  {
 				ORDER BY fSort
 				";
 		  
+				$this->recordQuery($sql);
 				$result =  $db->fetchAll($sql);
 				if($result){
 					 $linkedFields = array();
@@ -717,6 +797,7 @@ class TabOut_Table  {
 		  LIMIT 1;
 		  ";
 		  
+		  $this->recordQuery($sql);
 		  $result =  $db->fetchAll($sql);
 		  if($result){
 				$this->maxContextFields = $result[0]["cnt"] - 1; //the minus one is there because the last is the item label
@@ -738,13 +819,12 @@ class TabOut_Table  {
 					 $projCondition = " AND (". $projCondition .") ";
 				}
 				
-				
-				
 				$sql = "SELECT DISTINCT space.project_id, project_list.project_name
 				FROM space
 				JOIN project_list ON space.project_id = project_list.project_id
 				WHERE space.class_uuid = '$classUUID' AND space.project_id != '0' $projCondition ";
 				
+				$this->recordQuery($sql);
 				$result =  $db->fetchAll($sql);
 				if($result){
 					 $actProjectIDs = array();
@@ -784,7 +864,7 @@ class TabOut_Table  {
 					 ORDER BY cnt DESC
 					 LIMIT 500
 					 ";
-					 
+					 $this->recordQuery($sql);
 					 $result =  $db->fetchAll($sql);
 					 if($result){
 						  foreach($result as $row){
@@ -806,7 +886,7 @@ class TabOut_Table  {
 					 ORDER BY cnt DESC
 					 LIMIT 500
 					 ";
-					 
+					 $this->recordQuery($sql);
 					 $result =  $db->fetchAll($sql);
 					 if($result){
 						  foreach($result as $row){
@@ -825,7 +905,101 @@ class TabOut_Table  {
 
 	 }
 	 
+	 //for debugging
+	 function recordQuery($sql){
+		  if($this->recordQueries){
+				$queries = $this->queries;
+				$queries[] = $sql;
+				$this->queries = $queries;
+		  }
+	 }
 	 
+	 
+	 
+	 function makeHTML($tableArray){
+		  
+		  $output = '
+		  <html>
+    <head>
+        <meta charset="UTF-8" />
+        <title>Table Output</title>
+        <style type="text/css">
+            table, th, td {
+                border:1px solid #C1CDCD;
+                border-collapse:collapse;
+                font-size:0.8em;
+                font-family:Arial,Helvetica,sans-serif;
+                padding: 2px;
+            }
+            th{
+                background-color:#E0EEEE;
+            }
+        </style>
+    </head>
+    <body>
+        <table>
+            <thead>
+                <tr>';
+					 
+		  foreach($tableArray as $recordkey => $fieldVals){
+				$output .= "<th>Record URI</th>".chr(13);
+				foreach($fieldVals as $fieldKey => $value){
+					 if($this->ExcelSanitize){
+						  $output .= "<th>=\"".$fieldKey."\"</th>".chr(13);
+					 }
+					 else{
+						  $output .= "<th>$fieldKey</th>".chr(13);
+					 }
+				}
+            break; //no need to do the whole array, we're setting up the heading
+        }//end loop through the table array  
+		  
+		  $output .= "</tr>
+					 </thead>
+					 <tbody>";
+        
+		  $i = 1;
+        foreach($tableArray as $recordkey => $fieldVals){
+				
+            $output .= '<tr id="rec-'.$i.'" >'.chr(13);
+            $output .= '<td>'.$recordkey.'</td>';
+            foreach($fieldVals as $fieldKey => $value){
+					 if($this->ExcelSanitize){
+						  $output .= "<td>=\"".$value."\"</td>";
+					 }
+					 else{
+						  $output .= "<td>".$value."</td>";
+					 }
+            }//end loop through the fields and values
+            $output .= '</tr>'.chr(13);
+				$i++;
+        }//end loop through the table array 
+       
+		   $output .= "
+						  </tbody>
+					 </table>
+				</body>
+		  </html>";
+	 
+	 return $output;  
+	 }
+	 
+	 //save the file
+	 function saveFile($itemDirFile, $text){
+		  $success = false; //save failure
+		  try{
+			  iconv_set_encoding("internal_encoding", "UTF-8");
+			  iconv_set_encoding("output_encoding", "UTF-8");
+			  $fp = fopen($itemDirFile, 'w');
+			  fwrite($fp, $text);
+			  fclose($fp);
+			  $success = true;
+		  }
+		  catch (Zend_Exception $e){
+			  $success = false; //save failure
+		  }
+		  return $success;
+	 }
 	 
 	 
 	 
