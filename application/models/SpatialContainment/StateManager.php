@@ -251,6 +251,7 @@ class SpatialContainment_StateManager extends Zend_Db_Table
                     "fk_field_parent NOT IN (" . join(',', $parameterList) . ")");    
         $stmt = $db->query($select);
         return $stmt->fetchAll();
+    
     }
     
     /*private function addSpaceRecord()
@@ -688,13 +689,13 @@ class SpatialContainment_StateManager extends Zend_Db_Table
             }
             
             $hashTxt    = md5($projectUUID . "_" . $fullContextCurrent);
-    
+  
             //check to see if the parent record exists in the space table:
             //$spaceRow = $space->fetchRow("hash_fcntxt = '" . $hashTxt . "' "); //original
             $spaceRow = $space->fetchRow("hash_fcntxt = '" . $hashTxt . "' OR (project_id = '0' AND space_label = '".trim($parentDataItem)."')");
             
             //Zend_Debug::dump($projectUUID . "_" . $fullContextCurrent);
-    
+
     
             //eric's edit to make sure duplicate contexts are not created.   
             if($spaceRow == null)
@@ -818,7 +819,7 @@ class SpatialContainment_StateManager extends Zend_Db_Table
                 }
                 //Zend_Debug::dump($data);
             }
-        
+       
             //  -------------------------------------------------------
             //  Step 3.(b):  Child Logic 
             //  -------------------------------------------------------
@@ -851,15 +852,16 @@ class SpatialContainment_StateManager extends Zend_Db_Table
                 $hashTxt            = md5($projectUUID . "_" . $fullContextChild);
                 $spaceRow           = $space->fetchRow("hash_fcntxt = '" . $hashTxt . "'");
             }
-            
+           
             if($spaceRow == null && strlen($fullContextChild)>0){
                 //echo $fullContextChild."<br/>";
                 $qItem = substr($fullContextChild,0,200);
                 $qItem = addslashes($qItem);
+                $qChildLabel = addslashes($labelChildItem);
                 //echo $fullContextChild."<br/>full_context LIKE '" . $qItem  . "%' AND space_label LIKE '$labelChildItem'";
-                $spaceRow = $space->fetchRow("full_context LIKE '" . $qItem  . "%' AND space_label LIKE '$labelChildItem'" );
+                $spaceRow = $space->fetchRow("full_context LIKE '" . $qItem  . "%' AND space_label LIKE '$qChildLabel'" );
             }
-            
+           
             
             $childUUID = null;
             
