@@ -344,7 +344,111 @@ class ProjEdits_Catal  {
 		  }
 	 }
 	 
+	 //get parent uuids for items of a given class, project
+	 function parentContextSelect($childClassUUID, $projectUUID){
+		  $db = $this->startDB();
+		  
+		  $sql = "SELECT DISTINCT space_contain.parent_uuid
+		  FROM space_contain
+		  JOIN space ON space_contain.child_uuid = space.uuid
+		  WHERE space.project_id = '$projectUUID'
+		  AND space.class_uuid = '$childClassUUID'
+		  ";
+		  
+		  $output = array();
+		  $result = $db->fetchAll($sql, 2);
+        if($result){
+				foreach($result as $row){
+					 $parentUUID = $row["parent_uuid"];
+					 $parentPersonLinks = $this->getPersonLinks($parentUUID);
+					 $childItems = $this->getChildItems($parentUUID);
+					 foreach($childItems as $childUUID){
+						  foreach($parentPersonLinks as $personLink){
+								$originUUID = $childUUID;
+								$originType = $personLink["origin_type"];
+								$targetUUID = $personLink["targ_uuid"];
+								$targetType = $personLink["targ_type"];
+								$linkFieldValue = $personLink["link_type"];
+								$dataTableName = "contain-infered";
+								$newLink = $this->addLinkingRel($originUUID, $originType, $targetUUID, $targetType, $linkFieldValue, $projectUUID, $dataTableName);
+								$output[$parentUUID][] = array("childUUID" => $originUUID, "personUUID"=> $targetUUID, "linkUUID" => $newLink);
+						  }
+					 }
+				}
+		  }
+		  
+		  return $output;
+	 }
 	 
+	 
+	 //add a link
+	 function addLinkingRel($originUUID, $originType, $targetUUID, $targetType, $linkFieldValue, $projectUUID, $dataTableName = 'manual', $obsNum = 1){
+                
+		  $db = $this->startDB();
+        
+        //add origin and targget for this resource
+        $hashLink       = md5($originUUID . '_' . $obsNum . '_' . $targetUUID . '_' . $linkFieldValue);
+        
+        $sql = "SELECT links.link_uuid
+        FROM links
+        WHERE links.project_id = '$projectUUID'
+        AND links.hash_link = '$hashLink '
+        ";
+        
+        $linkRows = $db->fetchAll($sql, 2);
+        if($linkRows ){
+            $linkUUID = $linkRows [0]["link_uuid"];
+        }
+        else{
+            $linkUUID       = GenericFunctions::generateUUID();                            
+            $data = array(
+                        'project_id'   => $projectUUID,
+                        'source_id'          => $dataTableName,
+                        'hash_link'         => $hashLink,
+                        'link_type'         => $linkFieldValue,
+                        'link_uuid'         => $linkUUID,
+                        'origin_type'       => $originType,         
+                        'origin_uuid'       => $originUUID,              
+                        'origin_obs'        => $obsNum,
+                        'targ_type'         => $targetType,        
+                        'targ_uuid'         => $targetUUID,         
+                        'targ_obs'          => $obsNum 
+                    );
+                    //Zend_Debug::dump($data);
+            $db->insert("links", $data);
+                   
+        }//end addition of new object linking
+        
+        return $linkUUID;
+    }
+	 
+	 
+	 //get links to persons from a spatial unit
+	 function getPersonLinks($spaceUUID){
+		  $db = $this->startDB();
+		  $sql = "SELECT * FROM links WHERE origin_uuid = '$spaceUUID' AND targ_type = 'person' ";
+		  $result = $db->fetchAll($sql, 2);
+		  return $result;
+	 }
+	 
+	 //get links to child items
+	 function getChildItems($parentUUID){
+		  $db = $this->startDB();
+		  
+		  $sql = "SELECT DISTINCT space_contain.child_uuid
+		  FROM space_contain
+		  WHERE space_contain.parent_uuid = '$parentUUID'
+		  ";
+		  
+		  $output = array();
+		  $result = $db->fetchAll($sql, 2);
+        if($result){
+				foreach($result as $row){
+					 $output[] = $row["child_uuid"];
+				}
+		  }
+		  return $output;
+	 }
 	 
 	 
 	 

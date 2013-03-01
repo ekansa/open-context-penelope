@@ -169,10 +169,44 @@ class ZooController extends Zend_Controller_Action {
 		  $catalObj->importTableName = "z_13_457009575";
 		  //$catalObj->importTableName = false;
 		  $catalObj->doCommentUpdate = true;
-		  $records = $catalObj->loadParseSaveXML();
+		  //$records = $catalObj->loadParseSaveXML();
 		  header('Content-Type: application/json; charset=utf8');
 		  echo Zend_Json::encode($records);
 	 }
+	 
+	 function catalLinkAction(){
+		 
+		  $this->_helper->viewRenderer->setNoRender();
+		  Zend_Loader::loadClass('ProjEdits_Catal');
+		  $classUUID = "881CEDA3-C445-4C9C-4D4B-634BD2963892"; //animal bones
+		  $projectUUID = "1B426F7C-99EC-4322-4069-E8DBD927CCF1"; //catal project id
+		  $catalObj = New ProjEdits_Catal;
+		  //$records = $catalObj->parentContextSelect( $classUUID, $projectUUID);
+		  header('Content-Type: application/json; charset=utf8');
+		  echo Zend_Json::encode($records);
+	 }
+	 
+	 
+	 function splitProjAction(){
+		 
+		  $this->_helper->viewRenderer->setNoRender();
+		  Zend_Loader::loadClass('ProjEdits_SplitProject');
+		  
+		  $projObj = New ProjEdits_SplitProject;
+		  $projObj->oldProjectUUID = "731B0670-CE2A-414A-8EF6-9C050A1C60F5";
+		  $projObj->newProjectUUID = "8894EEC0-DC96-4304-1EFC-4572FD91717A";
+		  $projObj->oldContainText = "Turkey|xx|Okuzini Cave";
+		  $projObj->newContainText = "Turkey|xx|Öküzini Cave";
+		  
+		  $projObj->getDistinctProperties("Turkey|xx|Okuzini Cave");
+		  $records = $projObj->updateSpaceObs("Turkey|xx|Okuzini Cave");
+		  $output = array("queries" => $projObj->queries, "recs" => $records);
+		  header('Content-Type: application/json; charset=utf8');
+		  echo Zend_Json::encode($output);
+	 }
+	 
+	 
+	 
 	 
 	 
 	 function spaceSortAction(){

@@ -28,6 +28,10 @@ class MetadataController extends App_Controller_PenelopeController
         //return;
         $projectID = $_REQUEST['projectUUID'];
         $db = Zend_Registry::get('db');
+        $sql = "SET collation_connection = utf8_unicode_ci;";
+		  $db->query($sql, 2);
+		  $sql = "SET NAMES utf8;";
+		  $db->query($sql, 2);
         $sql = 'SELECT * FROM project_list WHERE project_id = "'.$projectID.'"';
         $results = $db->fetchAll($sql, 2);
         
@@ -93,6 +97,10 @@ class MetadataController extends App_Controller_PenelopeController
         }
         
         $db = Zend_Registry::get('db');
+        $sql = "SET collation_connection = utf8_unicode_ci;";
+		  $db->query($sql, 2);
+		  $sql = "SET NAMES utf8;";
+		  $db->query($sql, 2);
         
         if(count($data)>=1)
         {
