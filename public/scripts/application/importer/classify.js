@@ -292,10 +292,19 @@ function getNumFieldsToClassify()
             var item = items[i];
             //alert(theRecordStore.getValues(item, "field_type"));
             //alert(theRecordStore.getValues(item, "prop_desc"));
-            if(theRecordStore.getValues(item, "field_type") == null || theRecordStore.getValues(item, "field_type")[0].length == 0)
-                ++classCount;
-            if(theRecordStore.getValues(item, "prop_desc") == doubleclickText)
+            if(!!theRecordStore.getValues(item, "field_type")){
+                if(theRecordStore.getValues(item, "field_type") == null){
+                    ++classCount;
+                }
+                else{
+                    if(theRecordStore.getValues(item, "field_type")[0].length == 0){
+                        ++classCount;
+                    }
+                }
+            }
+            if(theRecordStore.getValues(item, "prop_desc") == doubleclickText){
                 ++descCount;
+            }
         }
     }
     var request = theRecordStore.fetch({onComplete: updateClassifyCounter });
