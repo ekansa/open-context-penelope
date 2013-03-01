@@ -514,7 +514,7 @@ function postPublish(response){
     
     var itemResponse = dojo.fromJson(response.responseText);
     
-    var statusUpdate = "<p class='bodyText'>" + itemResponse.itemUUID + " (" + itemResponse.type + ") Status: "+itemResponse.pubStatus+", "+itemResponse.error+"</p>";
+    var statusUpdate = "<p class='bodyText'>" + itemResponse.itemUUID + " (" + itemResponse.itemType + ") Status: "+itemResponse.pubStatus+", "+itemResponse.error+"</p>";
     //statusUpdate += "<p class='bodyText'><a href='" + itemResponse.req_uri + "'>" + itemResponse.req_uri + "</a></p>";
     dojo.byId('lastItem').innerHTML = statusUpdate;
     

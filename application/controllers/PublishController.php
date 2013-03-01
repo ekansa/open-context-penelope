@@ -72,10 +72,10 @@ class PublishController extends Zend_Controller_Action
     function publishdocAction(){
         
         $this->_helper->viewRenderer->setNoRender();
-        
+        $host = "http://".$_SERVER['SERVER_NAME'];
         $projectUUID = $_REQUEST["projectUUID"];
         $itemUUID = $_REQUEST["itemUUID"];
-        $type = $_REQUEST["itemType"];
+        $itemType = $_REQUEST["itemType"];
         
         $useURI = false;
         $getXML = true;
@@ -98,6 +98,9 @@ class PublishController extends Zend_Controller_Action
             $clientURI = self::defDest;
         }
         
+        $doClientURI = str_replace("itempublish", "item-publish", $clientURI);
+        
+        
         if(isset($_REQUEST["doUpdate"])){
             $doUpdate = $_REQUEST["doUpdate"];
             if($doUpdate == "false"){
@@ -113,11 +116,9 @@ class PublishController extends Zend_Controller_Action
         }
         
         
-        if($type == "upSpace" || $type == "linkedSpace"){
-            $type = "space";
+        if($itemType == "upSpace" || $itemType == "linkedSpace"){
+            $itemType = "space";
             $doUpdate = true;
-            
-            //$doUpdate = false;
         }
         
         
@@ -130,96 +131,57 @@ class PublishController extends Zend_Controller_Action
         
         
         if($getXML){
-            /*
-            This is the standard option, where XML is sent to the Open Context server
-            if getXML is false, only a URI is sent, and the Open Context server
-            follows that URI to get the XML data to index
-            */
-            
-            /*
-            $frontendOptions = array(
-                    'lifetime' => 180000, // cache lifetime, measured in seconds, 7200 = 2 hours
-                    'automatic_serialization' => true
-                    );
-                    
-            $backendOptions = array(
-                    'cache_dir' => './cache/' // Directory where to put the cache files
-                    );
-                    
-            $cache = Zend_Cache::factory('Core',
-                                 'File',
-                                 $frontendOptions,
-                                 $backendOptions);
-            
-            //$cache_id = md5($request_hasher); not needed, id is unique
-            $cache_id = md5($itemUUID.$type);
-            */
-            
             $db = Zend_Registry::get('db');
             $xmlGenURL = false;
-            
-            //if(!$cache_result = $cache->load($cache_id)) {
-            if(true) {
-                if($type == "space"){
-                    $xmlGenURL = "http://".$_SERVER['SERVER_NAME']."/xml/space?xml=1&id=".$itemUUID."&limitList=".$limitList;
-                    $xmlData = file_get_contents($xmlGenURL);
-                }
-                if($type == "person"){
-                    $xmlGenURL = "http://".$_SERVER['SERVER_NAME']."/xml/person?xml=1&id=".$itemUUID;
-                    $xmlData = file_get_contents($xmlGenURL);
-                }
-                if($type == "NCprop"){
-                    $xmlGenURL = "http://".$_SERVER['SERVER_NAME']."/xml/property?xml=1&id=".$itemUUID."&limitList=".$limitList;
-                    //$xmlData = file_get_contents($xmlGenURL);
-                    $xmlData = false;
-                }
-                if($type == "prop"){
-                    $xmlGenURL = "http://".$_SERVER['SERVER_NAME']."/xml/property?xml=1&id=".$itemUUID."&limitList=".$limitList;
-                    $xmlData = file_get_contents($xmlGenURL);
-                }
-                if($type == "media"){
-                    $xmlGenURL = "http://".$_SERVER['SERVER_NAME']."/xml/media?xml=1&id=".$itemUUID;
-                    $xmlData = file_get_contents($xmlGenURL);
-                }
-                if($type == "proj"){
-                    $xmlGenURL = "http://".$_SERVER['SERVER_NAME']."/xml/project?xml=1&id=".$itemUUID;
-                    $xmlData = file_get_contents($xmlGenURL);
-                }
-                if($type == "doc"){
-                    $xmlGenURL = "http://".$_SERVER['SERVER_NAME']."/xml/document?xml=1&id=".$itemUUID;
-                    $xmlData = file_get_contents($xmlGenURL);
-                }
-                
-                @$xml = simplexml_load_string($xmlData);
-            
-                if(!$xml){
-                    //do noting
-                }
-                else{
-                    //$cache->save($xmlData, $cache_id);
-                }
+            if($itemType == "space"){
+                $xmlGenURL = "http://".$_SERVER['SERVER_NAME']."/xml/space?xml=1&id=".$itemUUID."&limitList=".$limitList;
+                $xmlData = file_get_contents($xmlGenURL);
             }
-            else{
-                $xmlData = $cache_result;
+            if($itemType == "person"){
+                $xmlGenURL = "http://".$_SERVER['SERVER_NAME']."/xml/person?xml=1&id=".$itemUUID;
+                $xmlData = file_get_contents($xmlGenURL);
             }
+            if($itemType == "NCprop"){
+                $xmlGenURL = "http://".$_SERVER['SERVER_NAME']."/xml/property?xml=1&id=".$itemUUID."&limitList=".$limitList;
+                //$xmlData = file_get_contents($xmlGenURL);
+                $xmlData = false;
+            }
+            if($itemType == "prop"){
+                $xmlGenURL = "http://".$_SERVER['SERVER_NAME']."/xml/property?xml=1&id=".$itemUUID."&limitList=".$limitList;
+                $xmlData = file_get_contents($xmlGenURL);
+            }
+            if($itemType == "media"){
+                $xmlGenURL = "http://".$_SERVER['SERVER_NAME']."/xml/media?xml=1&id=".$itemUUID;
+                $xmlData = file_get_contents($xmlGenURL);
+            }
+            if($itemType == "proj"){
+                $xmlGenURL = "http://".$_SERVER['SERVER_NAME']."/xml/project?xml=1&id=".$itemUUID;
+                $xmlData = file_get_contents($xmlGenURL);
+            }
+            if($itemType == "doc"){
+                $xmlGenURL = "http://".$_SERVER['SERVER_NAME']."/xml/document?xml=1&id=".$itemUUID;
+                $xmlData = file_get_contents($xmlGenURL);
+            }
+            
+            @$xml = simplexml_load_string($xmlData);
         }//end case where XML is send in request
         
         
-        $client = new Zend_Http_Client($clientURI, array(
+        $client = new Zend_Http_Client($doClientURI, array(
                 'maxredirects' => 0,
                 'timeout'      => 20));
         
         if($getXML){
             $clientParams = array(
                 'xml'  => $xmlData,
-                'type'   => $type,
+                'itemType'   => $itemType,
                 'itemUUID' => $itemUUID
             );
         }
         else{
             $clientParams = array(
                 'useURI'  => $useURI,
-                'type'   => $type,
+                'itemType'   => $itemType,
                 'itemUUID' => $itemUUID
             );
         }
@@ -230,84 +192,87 @@ class PublishController extends Zend_Controller_Action
         }
         
         $client->setParameterPost($clientParams);
-        
-        
+        $data = false;
+        $output = array(    "itemUUID" => $itemUUID,
+                            "itemType" => $itemType);
+         
         @$response = $client->request('POST');
-        
         if(!$response->isError()){
             $responseJSON = $response->getBody();
-            $responseObj = Zend_Json::decode($responseJSON);
-            $db = Zend_Registry::get('db');
-            
-            $hashKey = md5($clientURI.$itemUUID);
-            
-            $data = array("hash_key" => $hashKey,
-                          "pubdest" => $clientURI,
-                          "project_id" => $projectUUID,
-                              "item_uuid" => $itemUUID,
-                              "item_type" => $type);
-            
-            if($responseObj["pubOK"]){
-                $responseObj["pubStatus"] = "OK message";
-                $data["status"] = "published";
+            @$responseObj = Zend_Json::decode($responseJSON);
+            $output["serverResp"] = $responseObj;
+            if(!$responseObj){
+                $output["OKserverJSON"] = false;
             }
-            else{//case where publishing worked
-                $responseObj["pubStatus"] = " Open Context sends warning. ";
-                if(isset($responseObj["error"])){
-                    $data["status"] = "unclear- ".$responseObj["error"];
+            else{
+                $output["OKserverJSON"] = true;
+                
+                $db = Zend_Registry::get('db');
+                $hashKey = md5($clientURI.$itemUUID);
+                
+                $data = array(  "hash_key" => $hashKey,
+                                "pubdest" => $clientURI,
+                                "project_id" => $projectUUID,
+                                "item_uuid" => $itemUUID,
+                                "item_type" => $itemType);
+                
+                if($responseObj["pubOK"]){
+                    $output["pubStatus"] = "OK message";
+                    $output["error"] = "No errors";
+                    $data["status"] = "published";
                 }
-                else{
-                    $data["status"] = "Not sure what happened";
+                else{//case where publishing worked
+                    $output["pubStatus"] = "Open Context sends error.";
+                    if(isset($responseObj["errors"])){
+                        if(is_array($responseObj["errors"])){
+                            if(count($responseObj["errors"])>0){
+                                $output["status"] = "Errors: ".implode(", ", $responseObj["errors"]);
+                                $output["error"] = "Errors: ".implode(", ", $responseObj["errors"]);
+                            }
+                        }
+                    }
+                    $data["status"] = "Error adding data";
                 }
-            }
-            
-            if(isset($responseObj["solr_main"]["solrIndex"])){
-                $responseObj["pubStatus"] .= " Solr Index updated";
-            }
-            if(isset($responseObj["solr_main"]["error"])){
-               $responseObj["pubStatus"] .= " Solr Index error";
+               
             }
             
         }//end case with response
         else{
+            $output["serverResp"] = "HTTP error!";
             $hashKey = md5($clientURI.$itemUUID);
             $data = array("hash_key" => $hashKey,
                           "pubdest" => $clientURI,
                           "project_id" => $projectUUID,
                               "item_uuid" => $itemUUID,
                               "item_type" => $type);
-            $data["status"] = "failed, no response";
-            $responseObj["error"] = "no response";
-            $responseObj["pubStatus"] = "no response";
-            $responseObj["itemUUID"] = $itemUUID;
-            $responseObj["type"] = $type;
-            $responseObj["body"] = $response->getBody();
+            $data["status"] = "Error HTTP bad response";
+            $output["error"] = "Error HTTP bad response";
+            $output["pubStatus"] = "Error HTTP bad response";
         }
         
-        try{
-            $db->insert('published_docs', $data);
-        }
-        catch (Exception $e) {
-            $responseObj["pubStatus"] = $responseObj["pubStatus"] . "Bad insert in penelope";
-        }
-        
-        
-        if(is_array($responseObj)){
-            if(array_key_exists("error", $responseObj)){
-                if($responseObj["error"] == null){
-                    $responseObj["error"] = "(no error note).";
-                }
+        if(is_array($data)){
+            try{
+                $db->insert('published_docs', $data);
+            }
+            catch (Exception $e) {
+                $output["pubStatus"] =  $output["pubStatus"] . " Penelope already thinks this is published.";
             }
         }
-        $responseObj["type"] = $type;
-        //$responseObj["uri"] = $this->_request->getRequestUri();
-        $host = self::hostRoot;
-        $responseObj["req_uri"] = $host.$_SERVER['REQUEST_URI'];
-        $responseObj["xml_gen_uri"] = $xmlGenURL;
+        else{
+            if(isset($output["error"])){
+                $output["error"] = $output["error"]. "; no data to add!";
+            }
+            else{
+                $output["error"] = "No data to add!";
+                $output["pubStatus"] = "Horrible things happened.";
+            }
+        }
         
+        $output["req_uri"] = $host.$_SERVER['REQUEST_URI'];
+        $output["xml_gen_uri"] = $xmlGenURL;
         
         header('Content-Type: application/json; charset=utf8');
-        echo Zend_Json::encode($responseObj) ;
+        echo Zend_Json::encode($output) ;
     }
 
 
@@ -663,15 +628,6 @@ class PublishController extends Zend_Controller_Action
         }
         
         $itemCounts["queries"] = $queries;
-        /*
-        $sql = "SELECT DISTINCT observe.subject_uuid
-                FROM linked_data
-                JOIN observe ON observe.property_uuid = linked_data.itemUUID
-                WHERE linked_data.project_id = '".$projectUUID."'  ";
-        
-        $result = $db->fetchAll($sql, 2);
-        $itemCounts["linkedSpace"] = count($result);
-        */
         
         header('Content-Type: application/json; charset=utf8');
         echo Zend_Json::encode($itemCounts);
