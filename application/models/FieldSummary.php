@@ -20,6 +20,27 @@ class FieldSummary
     public $fieldKeywords;
     public $geoType;
     
+    public function init()
+    {
+        $db = Zend_Registry::get('db');
+        $sql = "SET collation_connection = utf8_unicode_ci;";
+		  $db->query($sql, 2);
+		  $sql = "SET NAMES utf8;";
+		  $db->query($sql, 2);
+        $sql = "
+        UPDATE field_summary
+        SET field_type = ''
+        WHERE field_type IS NULL;
+        
+        UPDATE field_summary
+        SET prop_type = ''
+        WHERE prop_type IS NULL;
+        
+        ";
+        $db->query($sql, 2);
+        
+    }
+    
     function FieldSummary($_data) //where $_data is a "ResultRowObject"
     {
         $this->id                   = $_data->id;
