@@ -14,7 +14,8 @@ class EditDatasetController extends Zend_Controller_Action
 	 
 	 public $counter = 0;
     function init()
-    {  
+    {
+		  $this->host = "http://".$_SERVER['SERVER_NAME'];
         $this->view->baseUrl = $this->_request->getBaseUrl();
         require_once 'App/Util/GenericFunctions.php';
         Zend_Loader::loadClass('Zend_Debug');

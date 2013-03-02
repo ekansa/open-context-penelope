@@ -11,11 +11,12 @@ class PublishController extends Zend_Controller_Action
     
     const xmlRoot = "http://about.oc/oc_xmlgen/";
     const defDest = "http://opencontext/publish/itempublish";
-    const hostRoot = "http://penelope.oc";
+    public $hostRoot = "http://penelope.oc";
     const mediaOnly = false;
     
     function init()
     {
+        $this->hostRoot = "http://".$_SERVER['SERVER_NAME'];
         $this->view->baseUrl = $this->_request->getBaseUrl();
         Zend_Loader::loadClass('User'); //defined in User.php
         Zend_Loader::loadClass('Form_Login'); //defined in User.php
@@ -31,7 +32,7 @@ class PublishController extends Zend_Controller_Action
         $projectUUID = $_REQUEST["projectUUID"];
        
        
-        $this->view->host = self::hostRoot;       
+        $this->view->host = $this->hostRoot;       
         $this->view->publishURI = self::defDest;
 
         $this->view->projectUUID = $projectUUID;
@@ -203,6 +204,10 @@ class PublishController extends Zend_Controller_Action
             $output["serverResp"] = $responseObj;
             if(!$responseObj){
                 $output["OKserverJSON"] = false;
+                $output["serverError"] = $response->getStatus().": ".$response->getMessage();
+                $output["serverURI"] = $doClientURI;
+                $output["sentParams"] = $clientParams;
+                $output["respBody"] = $response->getBody();
             }
             else{
                 $output["OKserverJSON"] = true;
@@ -236,8 +241,20 @@ class PublishController extends Zend_Controller_Action
                
             }
             
+            
+            if(is_array($data)){
+                try{
+                    $db->insert('published_docs', $data);
+                }
+                catch (Exception $e) {
+                    $output["pubStatus"] =  $output["pubStatus"] . " Penelope already thinks this is published.";
+                }
+            }
+            
         }//end case with response
         else{
+            $output["serverError"] = $response->getStatus().": ".$response->getMessage();
+            $output["serverURI"] = $doClientURI;
             $output["serverResp"] = "HTTP error!";
             $hashKey = md5($clientURI.$itemUUID);
             $data = array("hash_key" => $hashKey,
@@ -248,24 +265,6 @@ class PublishController extends Zend_Controller_Action
             $data["status"] = "Error HTTP bad response";
             $output["error"] = "Error HTTP bad response";
             $output["pubStatus"] = "Error HTTP bad response";
-        }
-        
-        if(is_array($data)){
-            try{
-                $db->insert('published_docs', $data);
-            }
-            catch (Exception $e) {
-                $output["pubStatus"] =  $output["pubStatus"] . " Penelope already thinks this is published.";
-            }
-        }
-        else{
-            if(isset($output["error"])){
-                $output["error"] = $output["error"]. "; no data to add!";
-            }
-            else{
-                $output["error"] = "No data to add!";
-                $output["pubStatus"] = "Horrible things happened.";
-            }
         }
         
         $output["req_uri"] = $host.$_SERVER['REQUEST_URI'];

@@ -12,7 +12,7 @@ class PreviewEditController extends Zend_Controller_Action
     
     function init()
     {
-        
+        $this->baseURL = "http://".$_SERVER['SERVER_NAME'];
         $this->view->baseUrl = $this->_request->getBaseUrl();
         Zend_Loader::loadClass('User'); //defined in User.php
         Zend_Loader::loadClass('Form_Login'); //defined in User.php

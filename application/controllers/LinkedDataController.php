@@ -208,7 +208,7 @@ class LinkedDataController extends Zend_Controller_Action
     
     //interface to update open context with linked data
     function indexAction(){
-	$this->view->host = $_SERVER['SERVER_NAME']."/";
+		  $this->view->host = $_SERVER['SERVER_NAME']."/";
 	
 	
     }//end function
@@ -217,34 +217,34 @@ class LinkedDataController extends Zend_Controller_Action
     //get list of properties from OpenContext
     function getPropertyListAction(){
 	
-	$this->_helper->viewRenderer->setNoRender();
-	$baseURI = $_REQUEST["baseURI"];
-	
-	header('Content-Type: application/json; charset=utf8');
-	echo file_get_contents($baseURI."/link/get-links");
+		  $this->_helper->viewRenderer->setNoRender();
+		  $baseURI = $_REQUEST["baseURI"];
+		  
+		  header('Content-Type: application/json; charset=utf8');
+		  echo file_get_contents($baseURI."/link/get-links");
 	
     }
     
      //get list of not done properties from OpenContext
     function notDoneLinksAction(){
 	
-	$this->_helper->viewRenderer->setNoRender();
-	$baseURI = $_REQUEST["baseURI"];
-	
-	header('Content-Type: application/json; charset=utf8');
-	echo file_get_contents($baseURI."/link/not-done-links");
+		  $this->_helper->viewRenderer->setNoRender();
+		  $baseURI = $_REQUEST["baseURI"];
+		  
+		  header('Content-Type: application/json; charset=utf8');
+		  echo file_get_contents($baseURI."/link/not-done-links");
 	
     }
     
     //prepare a property in OpenContext for linking
     function prepPropertyAction(){
 	
-	$this->_helper->viewRenderer->setNoRender();
-	$baseURI = $_REQUEST["baseURI"];
-	$id = $_REQUEST["id"];
-	
-	header('Content-Type: application/json; charset=utf8');
-	echo file_get_contents($baseURI."/link/prep-prop?id=".$id);
+		  $this->_helper->viewRenderer->setNoRender();
+		  $baseURI = $_REQUEST["baseURI"];
+		  $id = $_REQUEST["id"];
+		  
+		  header('Content-Type: application/json; charset=utf8');
+		  echo file_get_contents($baseURI."/link/prep-prop?id=".$id);
 	
     }
     
