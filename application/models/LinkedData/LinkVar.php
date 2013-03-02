@@ -30,8 +30,7 @@ const BMrequestDelay = 1; //delay in loop for making british museum requests
 function getProperties($varID){
 	 
 	 $this->varUUID = $varID;
-	 $db = Zend_Registry::get('db');
-    $this->setUTFconnection($db);
+	 $db = $this->startDB();
 	 
 	 $sql = "SELECT var_tab.project_id, var_tab.var_label, linked_data.linkedLabel, linked_data.linkedURI
 		  FROM var_tab
@@ -97,8 +96,7 @@ function getProperties($varID){
 
 function BM_link_types(){
 	 if(is_array($this->propData)){
-		  $db = Zend_Registry::get('db');
-		  $this->setUTFconnection($db);
+		  $db = $this->startDB();
 		  foreach($this->propData as $row){
 				if(strlen($row["linkedURI"])<2){
 					 //no linked data, so make a request
@@ -161,8 +159,7 @@ function BM_link_types(){
 
 function BM_link_materials(){
 	 if(is_array($this->propData)){
-		  $db = Zend_Registry::get('db');
-		  $this->setUTFconnection($db);
+		  $db = $this->startDB();
 		  foreach($this->propData as $row){
 				if(strlen($row["linkedURI"])<2){
 					 //no linked data, so make a request
@@ -221,18 +218,47 @@ function BM_link_materials(){
 }
 
 
+function makeExampleLink($propertyUUID){
+	 $db = $this->startDB();
+	 $sql = "SELECT subject_uuid FROM observe WHERE property_uuid = '$propertyUUID' LIMIT 1; ";
+	 $result =  $db->fetchAll($sql);
+	 if($result){
+		  return "http://".$_SERVER['SERVER_NAME']."/preview/space?UUID=".$result[0]["subject_uuid"];
+	 }
+	 else{
+		  return false;
+	 }
+}
+
+
 
 
 
 //updates a lable to a link
 function link_label_Update($label, $linkURI, $projectUUID, $db){
-	
+	 $db = $this->startDB();
 	 $where = array();
 	 $where[] = "linkedURI = '$linkURI' ";
 	 $where[] = "fk_project_uuid = '$projectUUID' ";
 	 $data = array("linkedLabel" => $label);
 	 $db->update("linked_data", $data, $where);
 }
+
+
+	 function startDB(){
+		  if(!$this->db){
+				$db = Zend_Registry::get('db');
+				$this->setUTFconnection($db);
+				$this->db = $db;
+		  }
+		  else{
+				$db = $this->db;
+		  }
+		  
+		  return $db;
+	 }
+
+
 
 //preps for utf8
 function setUTFconnection($db){

@@ -40,6 +40,7 @@ class LinkedData_BoneMeasurement  {
 					 $uuidKey = $row["variable_uuid"];
 					 $output[$uuidKey] = $row["var_label"];
 				}
+				
 				return $output;
 		  }
 		  else{
@@ -96,6 +97,7 @@ class LinkedData_BoneMeasurement  {
 		  else{
 				$doneVars["errors"][] = "No list to process";
 		  }
+		  $this->addLinkedMetadata();
 		  return $doneVars;
 	 }
 	 
@@ -225,7 +227,7 @@ class LinkedData_BoneMeasurement  {
 					 }//loop through an annotation
 				}//loop through annotations of a concept
 		  }//loop through all class concepts
-		  $this->addLinkedMetadata();
+		  
 		  return $output;
 	 }
 	 

@@ -55,7 +55,7 @@ class ZooController extends Zend_Controller_Action {
         $this->_helper->viewRenderer->setNoRender();        
         
         //get selected root item then add it and all children to database
-        $tableID = "z_13_457009575";
+        $tableID = "z_14_318b59136";
         
 		  Zend_Loader::loadClass('LinkedData_BoneMeasurement');
 		  
@@ -76,15 +76,15 @@ class ZooController extends Zend_Controller_Action {
         $this->_helper->viewRenderer->setNoRender();        
         
         //get selected root item then add it and all children to database
-        $projUUID = "BC90D462-6639-4087-8527-6BB9E528E07D";
+        $projUUID = "";
         
 		  Zend_Loader::loadClass('dataEdit_SpaceIdentity');
 		  
 		  $editObj = new dataEdit_SpaceIdentity;
 		  $editObj->projUUID = $projUUID;
-		  //$editObj->storeIDsWithDuplicatingVars();
+		  $editObj->storeIDsWithDuplicatingVars();
 		  $sourceIDs = $editObj->getSourceDataIDs();
-		  //$output = $editObj->fixIdentities();
+		  $output = $editObj->fixIdentities();
 		 
 		  header('Content-Type: application/json; charset=utf8');
 		  echo Zend_Json::encode($sourceIDs);
@@ -97,7 +97,7 @@ class ZooController extends Zend_Controller_Action {
         $this->_helper->viewRenderer->setNoRender();        
         
         //get selected root item then add it and all children to database
-        $projUUID = "731B0670-CE2A-414A-8EF6-9C050A1C60F5";
+        //$projUUID = "D297CD29-50CA-4B2C-4A07-498ADF3AF487";
         
 		  Zend_Loader::loadClass('dataEdit_SpaceIdentity');
 		  

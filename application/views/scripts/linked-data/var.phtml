@@ -54,6 +54,7 @@
                     <td><?php echo $row["val_text"]; ?>
                     <br/>
                     <span style="font-size:xx-small;"><?php echo $row["property_uuid"]; ?></span>
+                    <span style="font-size:xx-small;"><a href="<?php echo $linkVarObj->makeExampleLink($row["property_uuid"]); ?>">Use Example</a></span>
                     <br/>
                     <?php
                     if(stristr($linkVarObj->varLinkURI, "P45F.consists_of")){
