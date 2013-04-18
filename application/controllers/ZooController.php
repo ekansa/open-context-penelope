@@ -27,7 +27,7 @@ class ZooController extends Zend_Controller_Action {
         //get selected root item then add it and all children to database
         $baseURL = "http://opencontext/subjects/";
 		  $baseMediaURL = "http://opencontext/media/";
-        $rootUUID = "1_DT_Spatial";
+        $rootUUID = "ROOTPRJ0000000006";
 		  
 		  Zend_Loader::loadClass('PublishedData_Hierarchy');
         Zend_Loader::loadClass('PublishedData_Space');
@@ -55,7 +55,7 @@ class ZooController extends Zend_Controller_Action {
         $this->_helper->viewRenderer->setNoRender();        
         
         //get selected root item then add it and all children to database
-        $tableID = "z_14_318b59136";
+        $tableID = "z_21_df38a0fd9";
         
 		  Zend_Loader::loadClass('LinkedData_BoneMeasurement');
 		  
@@ -256,13 +256,8 @@ class ZooController extends Zend_Controller_Action {
 		  
 		  $mediaObj = New ProjEdits_Media;
 		  $mediaObj->mediaTypeArray = $dbMedia->mediaTypeArray;
-		  $mediaObj->spaceLabelPrefix = "UNE ";
-		  $mediaObj->projectUUID = "4B16F48E-6F5D-41E0-F568-FCE64BE6D3FA";
-		  $mediaObj->mediaFileBaseURL = "http://artiraq.org/static/opencontext/stoneware-media/";
-		  $mediaObj->mediaSearchDir = "C:\\Users\\Eric C. Kansa\\Documents\\OC Imports\\Peter Grave Data\\stoneware-media\\full\\";
-		  //$directory = "C:\\about_opencontext\\kenan\\thumbs\\";
-		 
-		  $output = $mediaObj->imageXMLCheck();
+		  $mediaObj->imageFileCheckLimit = " resource.project_id = 'CF6E1364-D6EF-4042-B726-82CFB73F7C9D' ";
+		  $output = $mediaObj->imageFileCheck();
 		  
 		  
 		  header('Content-Type: application/json; charset=utf8');

@@ -231,6 +231,12 @@ function makeExampleLink($propertyUUID){
 }
 
 
+function makeDeleteLink($propertyUUID, $linkURI){
+
+	 return "http://".$_SERVER['SERVER_NAME']."/linked-data/delete-prop-link?propertyUUID=".$propertyUUID."&uri=".urlencode($linkURI);
+	
+}
+
 
 
 

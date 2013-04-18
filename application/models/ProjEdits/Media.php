@@ -294,6 +294,9 @@ class ProjEdits_Media  {
 	 function altCapsFiles($url, $urlType, $data){
 		  sleep(.1);
 		  
+		  $url = str_replace(" ", "", $url);
+		  $url = str_replace("%20", "", $url);
+		  
 		  $urlTest = strtolower($url);
 		  $urlOK = $this->checkFileOK($urlTest);
 		  

@@ -170,7 +170,7 @@ class PublishController extends Zend_Controller_Action
         
         $client = new Zend_Http_Client($doClientURI, array(
                 'maxredirects' => 0,
-                'timeout'      => 20));
+                'timeout'      => 30));
         
         if($getXML){
             $clientParams = array(
@@ -196,64 +196,82 @@ class PublishController extends Zend_Controller_Action
         $data = false;
         $output = array(    "itemUUID" => $itemUUID,
                             "itemType" => $itemType);
-         
+        
+        $anyResponse = false;
         @$response = $client->request('POST');
-        if(!$response->isError()){
-            $responseJSON = $response->getBody();
-            @$responseObj = Zend_Json::decode($responseJSON);
-            $output["serverResp"] = $responseObj;
-            if(!$responseObj){
-                $output["OKserverJSON"] = false;
-                $output["serverError"] = $response->getStatus().": ".$response->getMessage();
-                $output["serverURI"] = $doClientURI;
-                $output["sentParams"] = $clientParams;
-                $output["respBody"] = $response->getBody();
-            }
-            else{
-                $output["OKserverJSON"] = true;
-                
-                $db = Zend_Registry::get('db');
-                $hashKey = md5($clientURI.$itemUUID);
-                
-                $data = array(  "hash_key" => $hashKey,
-                                "pubdest" => $clientURI,
-                                "project_id" => $projectUUID,
-                                "item_uuid" => $itemUUID,
-                                "item_type" => $itemType);
-                
-                if($responseObj["pubOK"]){
-                    $output["pubStatus"] = "OK message";
-                    $output["error"] = "No errors";
-                    $data["status"] = "published";
+        if($response){
+            $anyResponse = true;
+            if(!$response->isError()){
+                $responseJSON = $response->getBody();
+                @$responseObj = Zend_Json::decode($responseJSON);
+                $output["serverResp"] = $responseObj;
+                if(!$responseObj){
+                    $output["OKserverJSON"] = false;
+                    $output["serverError"] = $response->getStatus().": ".$response->getMessage();
+                    $output["serverURI"] = $doClientURI;
+                    $output["sentParams"] = $clientParams;
+                    $output["respBody"] = $response->getBody();
                 }
-                else{//case where publishing worked
-                    $output["pubStatus"] = "Open Context sends error.";
-                    if(isset($responseObj["errors"])){
-                        if(is_array($responseObj["errors"])){
-                            if(count($responseObj["errors"])>0){
-                                $output["status"] = "Errors: ".implode(", ", $responseObj["errors"]);
-                                $output["error"] = "Errors: ".implode(", ", $responseObj["errors"]);
+                else{
+                    $output["OKserverJSON"] = true;
+                    
+                    $db = Zend_Registry::get('db');
+                    $hashKey = md5($clientURI.$itemUUID);
+                    
+                    $data = array(  "hash_key" => $hashKey,
+                                    "pubdest" => $clientURI,
+                                    "project_id" => $projectUUID,
+                                    "item_uuid" => $itemUUID,
+                                    "item_type" => $itemType);
+                    
+                    if($responseObj["pubOK"]){
+                        $output["pubStatus"] = "OK message";
+                        $output["error"] = "No errors";
+                        $data["status"] = "published";
+                    }
+                    else{//case where publishing worked
+                        $output["pubStatus"] = "Open Context sends error.";
+                        if(isset($responseObj["errors"])){
+                            if(is_array($responseObj["errors"])){
+                                if(count($responseObj["errors"])>0){
+                                    $output["status"] = "Errors: ".implode(", ", $responseObj["errors"]);
+                                    $output["error"] = "Errors: ".implode(", ", $responseObj["errors"]);
+                                }
                             }
                         }
+                        $data["status"] = "Error adding data";
                     }
-                    $data["status"] = "Error adding data";
+                   
                 }
-               
+                
+                
+                if(is_array($data)){
+                    try{
+                        $db->insert('published_docs', $data);
+                    }
+                    catch (Exception $e) {
+                        $output["pubStatus"] =  $output["pubStatus"] . " Penelope already thinks this is published.";
+                    }
+                }
+                
+            }//end case with response
+            else{
+                $output["serverError"] = $response->getStatus().": ".$response->getMessage();
+                $output["serverURI"] = $doClientURI;
+                $output["serverResp"] = "HTTP error!";
+                $hashKey = md5($clientURI.$itemUUID);
+                $data = array("hash_key" => $hashKey,
+                              "pubdest" => $clientURI,
+                              "project_id" => $projectUUID,
+                                  "item_uuid" => $itemUUID,
+                                  "item_type" => $type);
+                $data["status"] = "Error HTTP bad response";
+                $output["error"] = "Error HTTP bad response";
+                $output["pubStatus"] = "Error HTTP bad response";
             }
-            
-            
-            if(is_array($data)){
-                try{
-                    $db->insert('published_docs', $data);
-                }
-                catch (Exception $e) {
-                    $output["pubStatus"] =  $output["pubStatus"] . " Penelope already thinks this is published.";
-                }
-            }
-            
-        }//end case with response
+        }
         else{
-            $output["serverError"] = $response->getStatus().": ".$response->getMessage();
+            $output["serverError"] = "Total failure, no response at all.";
             $output["serverURI"] = $doClientURI;
             $output["serverResp"] = "HTTP error!";
             $hashKey = md5($clientURI.$itemUUID);
@@ -262,9 +280,9 @@ class PublishController extends Zend_Controller_Action
                           "project_id" => $projectUUID,
                               "item_uuid" => $itemUUID,
                               "item_type" => $type);
-            $data["status"] = "Error HTTP bad response";
-            $output["error"] = "Error HTTP bad response";
-            $output["pubStatus"] = "Error HTTP bad response";
+            $data["status"] = "Error Network or HTTP bad response";
+            $output["error"] = "Error Network or HTTP bad response";
+            $output["pubStatus"] = "Error Network or HTTP bad response";
         }
         
         $output["req_uri"] = $host.$_SERVER['REQUEST_URI'];

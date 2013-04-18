@@ -7,6 +7,7 @@ class dbXML_dbSpace  {
     public $projectUUID;
     public $sourceID;
     
+	 public $notParentRoot = false; //true or false to limit parent UUIDs by excluding "root" in uuids (an artifact of penelope)
     /*
     Location / object specific
     */
@@ -498,19 +499,22 @@ class dbXML_dbSpace  {
     public function getNextParent($actChild){
         $db = $this->db;
         
-        if($this->dbPenelope){
-            $sql = "SELECT parent_uuid
-            FROM space_contain
-            WHERE child_uuid = '".$actChild."'
-	    AND parent_uuid NOT LIKE '%root%'
-            ";
-        }
+      
+		  if($this->notParentRoot ){
+				$sql = "SELECT parent_uuid
+				FROM space_contain
+				WHERE child_uuid = '".$actChild."'
+				AND parent_uuid NOT LIKE '%root%'
+				ORDER BY last_modified_timestamp ASC
+				";
+		  }
         else{
-            $sql = "SELECT parent_uuid
-            FROM space_contain
-            WHERE child_uuid = '".$actChild."'
-	    AND parent_uuid NOT LIKE '%root%'
-            ";
+				
+				$sql = "SELECT parent_uuid
+				FROM space_contain
+				WHERE child_uuid = '".$actChild."'
+				ORDER BY last_modified_timestamp ASC
+				";
         }
         
         $result = $db->fetchAll($sql, 2);
@@ -521,7 +525,7 @@ class dbXML_dbSpace  {
             foreach($result as $row){
                 $newParent = $row["parent_uuid"];
                 
-                if(!stristr($newParent, "root")){ //no root items in tree
+                if(!stristr($newParent, "root") || !$this->notParentRoot){ //no root items in tree
                     if(is_array($oldContain)){
                         foreach($oldContain as $treeName => $treeItems){
                             $newContain[$treeName][] =  $newParent; //add the new parent, it's at index 0, the first in list

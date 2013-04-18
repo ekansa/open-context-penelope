@@ -204,6 +204,23 @@ class LinkedDataController extends Zend_Controller_Action
 		  header("Location: $headerLink");
     }
     
+	 
+	 function deletePropLinkAction(){
+        $this->_helper->viewRenderer->setNoRender();
+        $db = Zend_Registry::get('db');
+		  $this->setUTFconnection($db);
+		  $propertyUUID = $_REQUEST['propertyUUID'];
+		  $linkURI = $_REQUEST['uri'];
+		  
+		  $hash = md5($propertyUUID."_".$linkURI);
+		  
+		  $where = array();
+		  $where[] = "hashID = '$hash' ";
+		  $db->delete("linked_data", $where);
+		  
+		  echo "Link $linkURI deleted for $propertyUUID ";
+    }
+	 
     
     
     //interface to update open context with linked data

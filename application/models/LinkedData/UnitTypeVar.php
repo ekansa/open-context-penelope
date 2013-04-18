@@ -180,6 +180,15 @@ function deleteAssociatedPublishedRecords($varUUID){
 					 SET linked_data.vocabulary = ld.vocabulary
 					 WHERE linked_data.vocabulary = '' ;
 					 
+					 UPDATE linked_data
+					 SET linkedURI = TRIM(linkedURI);
+					 UPDATE linked_data
+					 SET linkedLabel = TRIM(linkedLabel);
+					 UPDATE linked_data
+					 SET vocabulary = TRIM(vocabulary);
+					 UPDATE linked_data
+					 SET vocabURI = TRIM(vocabURI);
+
 					 
 					 UPDATE linked_data
 					 SET linkedType = 'Measurement type'

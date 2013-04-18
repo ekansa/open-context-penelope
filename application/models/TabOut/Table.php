@@ -2,6 +2,7 @@
 
 class TabOut_Table  {
     
+	 public $DBtableID; //tableID for the database saved output
 	 public $tableID;
     public $tabArray;
 	 public $projectNames; //array of project names
@@ -12,8 +13,11 @@ class TabOut_Table  {
 	 
 	 public $maxContextFields; //number of context depth
 	 
-	 public $showSourceFields = true;
-	 public $showLinkedFields = true;
+	 public $showTable = true; //show the output table?
+	 public $showSourceFields = true;   //show the original fields and values from the source data
+	 public $showLinkedFields = true;   //show linked data annotating the record
+	 public $showUnitTypeFields = true;  //show standards-annotated measuresuments (with "Measurement type")
+	 public $limitUnitTypeFields = false;  //limit records for export to those that have standards-annotated measurements
 	 public $showBCE = true;
 	 public $showBP = true;
 	 
@@ -34,6 +38,8 @@ class TabOut_Table  {
 	 public $ExcelSanitize = false;
 	 
 	 public $limitingProjArray = false; //make an array of project UUIDs to limit the results to
+	 public $limitingVarArray = false; //an array of variables that limit the output
+	 public $limitingTypeURIs = false; //an array of URIs (for certain taxa, elements say) to limit the output
 	 
 	 public $geoTimeArray; //array of lat / lon and start / end values for different projects and containment paths
 	 
@@ -65,71 +71,42 @@ class TabOut_Table  {
 		  
 		  $this->getMaxContextDepth($classUUID); //get the maximum context depth
 		  $this->getProjects($classUUID);
-		  $projectNames = $this->projectNames;
 		  $this->getLinkedVariables($classUUID);
 		  $this->getGeoTime(); //make an array of geo and time metadata
 		  
-		  $result = $this->getClass($classUUID); //get the list of items, their labels, and their context
+		  if(!$this->limitUnitTypeFields && !$this->limitingVarArray){
+				$result = $this->getClass($classUUID); //get the list of items, their labels, and their context
+		  }
+		  elseif($this->limitUnitTypeFields && !$this->limitingVarArray && !$this->limitingTypeURIs){
+				$result = $this->getClassLinkedMeasurements($classUUID); //get list of items that have standard measurements, annotated with "measurment type"
+		  }
+		  elseif(is_array($this->limitingVarArray && !$this->limitingTypeURIs)){
+				$result = $this->getClassVarLimited($classUUID); //get list of items that have standard measurements, annotated with "measurment type"
+		  }
+		  elseif(is_array($this->limitingTypeURIs)){
+				$result = $this->getClassLinkTypeLimited($classUUID); //get list of items that are linked to certain type URIs
+		  }
 		  if($result){
+				
+				if($this->DBtableID){
+					 $row = $result[0];
+					 $firstRecord = $this->makeTableArrayRecord($row);
+					 $this->createExportTable($firstRecord);
+				}
+				
 				$tabArray = array();
 				foreach($result as $row){
-					 $actRecord = array();
+					 
 					 $itemUUID = $row["uuid"];
 					 $uuidKey = self::OCspatialURIbase.$row["uuid"];
-					 $projectUUID = $row["project_id"];
-					 $projectURI = self::OCprojectURIbase.$projectUUID;
-					 $projectName = $projectNames[$projectUUID];
-					 
-					 $label = $row["space_label"];
-					 $parent = $this->getParentID($row["uuid"]); 
-					 if($parent != false){
-						  $parentURI = self::OCspatialURIbase.$parent["uuid"];
+					 $actRecord = $this->makeTableArrayRecord($row);
+					 if($this->DBtableID){
+						  $this->saveActRecord($itemUUID, $actRecord);
 					 }
-					 else{
-						  $parentURI = "";
+					 if($this->showTable){
+						  $tabArray[$uuidKey] = $actRecord;
 					 }
-					 
-					 $this->addTableContainRecord($itemUUID , $projectUUID); //add record to a table that notes the space-uuid and project-id and table-id assocation
-					 
-					 
-					 $actRecord["Item label"] = $label;
-					 $actRecord["Project URI"] = $projectURI;
-					 $actRecord["Project name"] = $projectName;
-					 $names = $this->getLinkedPeople($itemUUID);
-					 $actRecord["Related person(s)"] = implode(", ", $names);
-					 
-					 $rawContext = $row["full_context"];
-					 $rawContextArray = explode(self::contextDelim, $rawContext);
-					 $i = 0;
-					 while($i <= $this->maxContextFields){
-						  $contextLabelKey = "Context (".($i + 1).")";
-						  if(isset($rawContextArray[$i])){
-								if($rawContextArray[$i] != $label){
-									 $actRecord[$contextLabelKey] = $rawContextArray[$i];
-								}
-								else{
-									 $actRecord[$contextLabelKey] = "";
-								}
-						  }
-						  else{
-								$actRecord[$contextLabelKey] = "";
-						  }
-					 $i++;
-					 }
-					 
-				
-					 $actRecord["Context URI"] = $parentURI;
-					 $actRecord = $this->tableAddGeoTimeFields($row["uuid"], $rawContext, $projectUUID, $actRecord);
-					 
-					 if($this->showLinkedFields){
-						  $actRecord = $this->tableAddLinkedFields($itemUUID, $actRecord); //add the linked data fields
-					 }
-					 if($this->showSourceFields){
-						  $actRecord = $this->tableAddSourceFields($itemUUID, $actRecord); //add the source data fields
-					 }
-					 
-					 
-					 $tabArray[$uuidKey] = $actRecord;
+					 unset($actRecord);
 				}
 				
 				return $tabArray;
@@ -138,6 +115,67 @@ class TabOut_Table  {
 				return false;
 		  }
 		  
+	 }
+	 
+	 
+	 //make a record to populate the output table
+	 function makeTableArrayRecord($row){
+		  $projectNames = $this->projectNames;
+		  $actRecord = array();
+		  $itemUUID = $row["uuid"];
+		  $projectUUID = $row["project_id"];
+		  $projectURI = self::OCprojectURIbase.$projectUUID;
+		  $projectName = $projectNames[$projectUUID];
+		  
+		  $label = $row["space_label"];
+		  $parent = $this->getParentID($row["uuid"]); 
+		  if($parent != false){
+				$parentURI = self::OCspatialURIbase.$parent["uuid"];
+		  }
+		  else{
+				$parentURI = "";
+		  }
+		  
+		  $this->addTableContainRecord($itemUUID , $projectUUID); //add record to a table that notes the space-uuid and project-id and table-id assocation
+		  
+		  
+		  $actRecord["Item label"] = $label;
+		  $actRecord["Project URI"] = $projectURI;
+		  $actRecord["Project name"] = $projectName;
+		  $names = $this->getLinkedPeople($itemUUID);
+		  $actRecord["Related person(s)"] = implode(", ", $names);
+		  
+		  $rawContext = $row["full_context"];
+		  $rawContextArray = explode(self::contextDelim, $rawContext);
+		  $i = 0;
+		  while($i <= $this->maxContextFields){
+				$contextLabelKey = "Context (".($i + 1).")";
+				if(isset($rawContextArray[$i])){
+					 if($rawContextArray[$i] != $label){
+						  $actRecord[$contextLabelKey] = $rawContextArray[$i];
+					 }
+					 else{
+						  $actRecord[$contextLabelKey] = "";
+					 }
+				}
+				else{
+					 $actRecord[$contextLabelKey] = "";
+				}
+		  $i++;
+		  }
+		  
+	 
+		  $actRecord["Context URI"] = $parentURI;
+		  $actRecord = $this->tableAddGeoTimeFields($row["uuid"], $rawContext, $projectUUID, $actRecord);
+		  
+		  if($this->showLinkedFields){
+				$actRecord = $this->tableAddLinkedFields($itemUUID, $actRecord); //add the linked data fields
+		  }
+		  if($this->showSourceFields){
+				$actRecord = $this->tableAddSourceFields($itemUUID, $actRecord); //add the source data fields
+		  }
+		  
+		  return $actRecord;
 	 }
 	 
 	 
@@ -398,7 +436,7 @@ class TabOut_Table  {
 						  }
 						  
 					 }
-					 elseif(strtolower($linkedField["linkedType"]) == "unit-type" || strtolower($linkedField["linkedType"]) == "measurement type"){
+					 elseif($this->showUnitTypeFields && (strtolower($linkedField["linkedType"]) == "unit-type" || strtolower($linkedField["linkedType"]) == "measurement type")){
 						  $linkedVal= $this->itemLinkedUnitTypeValues($itemUUID, $linkedField["varIDs"]);
 						  if($this->showFieldURIs || $this->showUnitTypeURIs){
 								$propKeyA = $linkedField["linkedLabel"]." (".$linkedField["linkedURI"].")";
@@ -453,6 +491,43 @@ class TabOut_Table  {
 		  return $result;
 		  
 	 }
+	 
+	 //get an array of the variables that are used as "type" variables in linked data
+	 function getProjectsLinkedTypeVariables(){
+		  $output = false;
+		  $db = $this->startDB();
+		  $projCondition = "";
+		  if(is_array($this->limitingProjArray)){
+				$projCondition = $this->makeORcondition($this->limitingProjArray, "fk_project_uuid", "linked_data");
+				$projCondition = " AND (". $projCondition .") ";
+		  }
+		  
+		  $sql = "SELECT itemUUID
+		  FROM linked_data
+		  WHERE itemType = 'variable' AND linkedType = 'type' $projCondition ;";
+		  
+		  $result = $db->fetchAll($sql);
+		  if($result){
+				$output = array();
+				foreach($result as $row){
+					 $output[] = $row["itemUUID"];
+				}
+		  }
+		  
+		  return $output;
+	 }
+	 
+	 
+	 
+	 
+	 
+	 
+	 
+	 
+	 
+	 
+	 
+	 
 	 
 	 function itemLinkedTypeValuesPlusSourceVals($itemUUID, $actVarIDs, $optCondition = ""){
 		  $db = $this->startDB();
@@ -546,24 +621,204 @@ class TabOut_Table  {
 		  
 		  $projCondition = "";
 		  if(is_array($this->limitingProjArray)){
-				$projCondition = $this->makeORcondition($this->limitingProjArray, "project_id");
+				$projCondition = $this->makeORcondition($this->limitingProjArray, "project_id", "space");
 				$projCondition = " AND (". $projCondition .") ";
 		  }
 		  
 		  $this->recStart = ($this->page - 1) * $this->setSize;
 		  
-		  $sql = "SELECT uuid, project_id, space_label, full_context
+		  $sql = "SELECT space.uuid, space.project_id, space.space_label, space.full_context
 		  FROM space
-		  WHERE class_uuid = '$classUUID'  $projCondition
-		  ORDER BY project_id, label_sort, full_context
+		  WHERE space.class_uuid = '$classUUID'  $projCondition
+		  ORDER BY space.project_id, space.label_sort, space.full_context
 		  LIMIT ".($this->recStart ).",".($this->setSize)."
 		  ;
 		  ";
+		  
+		  if($this->DBtableID){
+				if($this->checkExTableExists($this->DBtableID)){
+					 //only change the SQL if the table has already been created
+					 $sql = "SELECT space.uuid, space.project_id, space.space_label, space.full_context
+					 FROM space
+					 LEFT JOIN ".$this->DBtableID." AS ex ON space.uuid = ex.uuid
+					 WHERE space.class_uuid = '$classUUID' AND ex.uuid IS NULL  $projCondition
+					 ORDER BY space.project_id, space.label_sort, space.full_context
+					 LIMIT ".($this->recStart ).",".($this->setSize)."
+					 ;
+					 ";
+				}
+		  }
+		  
 		  
 		  $result =  $db->fetchAll($sql);
 		  return $result;
 	 }
 	 
+	 
+	 
+	 function getClassLinkedMeasurements($classUUID){
+		  
+		  $errors = array();
+		  $db = $this->startDB();
+		  
+		  $projCondition = "";
+		  if(is_array($this->limitingProjArray)){
+				$projCondition = $this->makeORcondition($this->limitingProjArray, "project_id", "space");
+				$projCondition = " AND (". $projCondition .") ";
+		  }
+		  
+		  $this->recStart = ($this->page - 1) * $this->setSize;
+		  
+		  $sql = "SELECT DISTINCT space.uuid, space.project_id, space.space_label, space.full_context
+		  FROM space
+		  JOIN observe ON space.uuid = observe.subject_uuid
+		  JOIN properties ON properties.property_uuid = observe.property_uuid
+		  JOIN linked_data ON (properties.variable_uuid = linked_data.itemUUID AND linked_data.linkedType LIKE '%Measurement type%')
+		  WHERE space.class_uuid = '$classUUID'  $projCondition
+		  ORDER BY space.project_id, space.label_sort, space.full_context
+		  LIMIT ".($this->recStart ).",".($this->setSize)."
+		  ;
+		  ";
+		  
+		  if($this->DBtableID){
+				if($this->checkExTableExists($this->DBtableID)){
+					 //only change the SQL if the table has already been created
+					 $sql = "SELECT DISTINCT space.uuid, space.project_id, space.space_label, space.full_context
+					 FROM space
+					 JOIN observe ON space.uuid = observe.subject_uuid
+					 JOIN properties ON properties.property_uuid = observe.property_uuid
+					 JOIN linked_data ON (properties.variable_uuid = linked_data.itemUUID AND linked_data.linkedType LIKE '%Measurement type%')
+					 LEFT JOIN ".$this->DBtableID." AS ex ON space.uuid = ex.uuid
+					 WHERE space.class_uuid = '$classUUID' AND ex.uuid IS NULL $projCondition
+					 ORDER BY space.project_id, space.label_sort, space.full_context
+					 LIMIT ".($this->recStart ).",".($this->setSize)."
+					 ;
+					 ";
+					 
+				}
+		  }
+		  
+		  $result =  $db->fetchAll($sql);
+		  return $result;
+	 }
+	 
+	 
+	 function getClassVarLimited($classUUID){
+		  
+		  $errors = array();
+		  $db = $this->startDB();
+		  
+		  $projCondition = "";
+		  $varCondition = "";
+		  if(is_array($this->limitingProjArray)){
+				$projCondition = $this->makeORcondition($this->limitingProjArray, "project_id", "space");
+				$projCondition = " AND (". $projCondition .") ";
+		  }
+		  if(is_array($this->limitingVarArray)){
+				$varCondition = $this->makeORcondition($this->limitingVarArray, "variable_uuid", "properties");
+				$varCondition = " AND (". $varCondition .") ";
+		  }
+		  
+		  $this->recStart = ($this->page - 1) * $this->setSize;
+		  
+		  $sql = "SELECT DISTINCT space.uuid, space.project_id, space.space_label, space.full_context
+		  FROM space
+		  JOIN observe ON space.uuid = observe.subject_uuid
+		  JOIN properties ON properties.property_uuid = observe.property_uuid
+		  WHERE space.class_uuid = '$classUUID'  $projCondition $varCondition 
+		  ORDER BY space.project_id, space.label_sort, space.full_context
+		  LIMIT ".($this->recStart ).",".($this->setSize)."
+		  ;
+		  ";
+		  
+		  if($this->DBtableID){
+				if($this->checkExTableExists($this->DBtableID)){
+					 //only change the SQL if the table has already been created
+					 $sql = "SELECT DISTINCT space.uuid, space.project_id, space.space_label, space.full_context
+					 FROM space
+					 JOIN observe ON space.uuid = observe.subject_uuid
+					 JOIN properties ON properties.property_uuid = observe.property_uuid
+					 LEFT JOIN ".$this->DBtableID." AS ex ON space.uuid = ex.uuid
+					 WHERE space.class_uuid = '$classUUID' AND ex.uuid IS NULL $projCondition $varCondition
+					 ORDER BY space.project_id, space.label_sort, space.full_context
+					 LIMIT ".($this->recStart ).",".($this->setSize)."
+					 ;
+					 ";
+					 
+				}
+		  }
+		  
+		  $result =  $db->fetchAll($sql);
+		  return $result;
+	 }
+	 
+	 
+	 
+	 
+	 function getClassLinkTypeLimited($classUUID){
+		  
+		  $errors = array();
+		  $db = $this->startDB();
+		  
+		  $projCondition = "";
+		  $varCondition = "";
+		  $limitingTypeCondition = "";
+		  $obsJoins = "";
+		  if(is_array($this->limitingProjArray)){
+				$projCondition = $this->makeORcondition($this->limitingProjArray, "project_id", "space");
+				$projCondition = " AND (". $projCondition .") ";
+		  }
+		  if(is_array($this->limitingVarArray)){
+				$obsJoins = " JOIN observe ON space.uuid = observe.subject_uuid JOIN properties ON properties.property_uuid = observe.property_uuid ";
+				$varCondition = $this->makeORcondition($this->limitingVarArray, "variable_uuid", "properties");
+				$varCondition = " AND (". $varCondition .") ";
+		  }
+		  if(is_array($this->limitingTypeURIs)){
+				$varCondition = "";
+				$obsJoins = "";
+				$i = 1;
+				foreach($this->limitingTypeURIs as $typeKey => $typeURIs){
+					 $obsJoins .= "  JOIN observe AS obs_$i ON space.uuid = obs_$i.subject_uuid  JOIN linked_data AS ld_$i ON obs_$i.property_uuid = ld_$i.itemUUID ";  
+					 $condition = $this->makeORcondition($typeURIs, "linkedURI", "ld_$i");
+					 $limitingTypeCondition .= " AND (". $condition .") ";
+					 $i++;
+				}
+		  }
+		  
+		  $this->recStart = ($this->page - 1) * $this->setSize;
+		  
+		  $sql = "SELECT DISTINCT space.uuid, space.project_id, space.space_label, space.full_context
+		  FROM space
+		  $obsJoins
+		  WHERE space.class_uuid = '$classUUID'  $projCondition $varCondition $limitingTypeCondition
+		  ORDER BY space.project_id, space.label_sort, space.full_context
+		  LIMIT ".($this->recStart ).",".($this->setSize)."
+		  ;
+		  ";
+		  
+		  
+		  
+		  if($this->DBtableID){
+				if($this->checkExTableExists($this->DBtableID)){
+					 //only change the SQL if the table has already been created
+					 $sql = "SELECT DISTINCT space.uuid, space.project_id, space.space_label, space.full_context
+					 FROM space
+					 JOIN observe ON space.uuid = observe.subject_uuid
+					 JOIN properties ON properties.property_uuid = observe.property_uuid
+					 JOIN linked_data ON observe.property_uuid = linked_data.itemUUID
+					 LEFT JOIN ".$this->DBtableID." AS ex ON space.uuid = ex.uuid
+					 WHERE space.class_uuid = '$classUUID' AND ex.uuid IS NULL $projCondition $varCondition  $limitingTypeCondition
+					 ORDER BY space.project_id, space.label_sort, space.full_context
+					 LIMIT ".($this->recStart ).",".($this->setSize)."
+					 ;
+					 ";
+					 
+				}
+		  }
+		  
+		  $result =  $db->fetchAll($sql);
+		  return $result;
+	 }
 	 
 	 
 	 
@@ -577,9 +832,36 @@ class TabOut_Table  {
 				$db = $this->startDB();
 				
 				$projCondition = "";
+				$varCondition = "";
+				$linkedDataJoin = " ";
+				$limitingTypeCondition = "";
 				if(is_array($this->limitingProjArray)){
 					 $projCondition = $this->makeORcondition($this->limitingProjArray, "project_id", "space");
 					 $projCondition = " AND (". $projCondition .") ";
+				}
+				if(is_array($this->limitingVarArray)){
+					 
+					 //if we're limiting to a certain set of variables in the output, also add the linked type data
+					 $additionalTypeVars = $this->getProjectsLinkedTypeVariables();
+					 if(is_array($additionalTypeVars)){
+						  $setVars = array_merge($this->limitingVarArray, $additionalTypeVars);
+					 }
+					 else{
+						  $setVars = $this->limitingVarArray;
+					 }
+					 
+					 $varCondition = $this->makeORcondition($setVars, "variable_uuid", "var_tab");
+					 $varCondition  = " AND (". $varCondition  .") ";
+				}
+				if(is_array($this->limitingTypeURIs)){
+					 $linkedDataJoin = "";
+					 $i = 1;
+					 foreach($this->limitingTypeURIs as $typeKey => $typeURIs){
+						  $linkedDataJoin .= "  JOIN observe AS obs_$i ON space.uuid = obs_$i.subject_uuid  JOIN linked_data AS ld_$i ON obs_$i.property_uuid = ld_$i.itemUUID ";  
+						  $condition = $this->makeORcondition($typeURIs, "linkedURI", "ld_$i");
+						  $limitingTypeCondition .= " AND (". $condition .") ";
+						  $i++;
+					 }
 				}
 				
 				$sql = "SELECT round(COUNT(observe.subject_uuid)/10,0) as sCount, var_tab.variable_uuid, var_tab.var_label, var_tab.sort_order
@@ -587,7 +869,8 @@ class TabOut_Table  {
 				JOIN observe ON observe.subject_uuid = space.uuid
 				JOIN properties ON observe.property_uuid = properties.property_uuid
 				JOIN var_tab ON properties.variable_uuid = var_tab.variable_uuid
-				WHERE space.class_uuid = '$classUUID' $projCondition
+				$linkedDataJoin
+				WHERE space.class_uuid = '$classUUID' $projCondition $varCondition $limitingTypeCondition
 				GROUP BY var_tab.variable_uuid
 				ORDER BY sCount DESC, var_tab.sort_order, var_tab.var_label
 				";
@@ -597,7 +880,8 @@ class TabOut_Table  {
 				JOIN observe ON observe.subject_uuid = space.uuid
 				JOIN properties ON observe.property_uuid = properties.property_uuid
 				JOIN var_tab ON properties.variable_uuid = var_tab.variable_uuid
-				WHERE space.class_uuid = '$classUUID' $projCondition
+				$linkedDataJoin
+				WHERE space.class_uuid = '$classUUID' $projCondition $varCondition $limitingTypeCondition
 				GROUP BY var_tab.variable_uuid
 				ORDER BY ".$this->sortForSourceVars."
 				";
@@ -610,10 +894,12 @@ class TabOut_Table  {
 					 $actVarIDs = array(); //array of active variableIDs
 					 $actVarLabels = array(); //temporary array of active var labels
 					 foreach($result as $row){
-						  $actVarIDs[] = $row["variable_uuid"];
-						  $varLabel = $row["var_label"];
-						  if(!in_array($varLabel, $actVarLabels)){
-								$actVarLabels[] = $varLabel;
+						  if($row["sCount"]>0){
+								$actVarIDs[] = $row["variable_uuid"];
+								$varLabel = $row["var_label"];
+								if(!in_array($varLabel, $actVarLabels)){
+									 $actVarLabels[] = $varLabel;
+								}
 						  }
 					 }
 					 $this->actVarLabels = $actVarLabels;
@@ -1000,6 +1286,132 @@ class TabOut_Table  {
 		  }
 		  return $success;
 	 }
+	 
+	 
+	 
+	 
+	 
+	 
+	 
+	 
+	 
+	 
+	 //save a record to the output data table
+	 function saveActRecord($uuid, $actRecord){
+		  $output = false;
+		  if($this->DBtableID){
+				$db = $this->startDB();
+				$i = 1;
+				$data = array("uuid" => $uuid,
+								  "uri" => self::OCspatialURIbase.$uuid
+								  );
+				foreach($actRecord as $fieldKey => $value){
+					 $dataField = "field_".$i ;
+					 $data[$dataField] = $value;
+					 $i++;
+				}
+				
+				try{
+					 $db->insert($this->DBtableID, $data); //add the unit
+					 $output = true;
+				}
+				catch (Exception $e) {
+					 $output = false;
+				}
+		  }
+		  
+		  return $output;
+	 }
+	 
+	 function checkExTableExists($tab){
+		  $db = $this->startDB();
+		  $sql = "SELECT 1 FROM ".$tab." LIMIT 1;";
+		  $tableExists = false;
+		  try{
+				$result =  $db->fetchAll($sql);
+				$tableExists = true;
+		  }
+		  catch (Exception $e) {
+				$tableExists = false;
+		  }
+		  
+		  return $tableExists;
+	 }
+	 
+	 
+	 
+	 function createExportTable($actRecord){
+		  
+		  if($this->DBtableID){
+				$db = $this->startDB();
+				
+				$tableExists = $this->checkExTableExists($this->DBtableID);
+				
+				if(!$tableExists){
+					//make the table
+					 
+					 $where = "source_id = '".$this->DBtableID."' ";
+					 $db->delete("export_tabs_fields", $where);
+					 
+					 $i = 1;
+					 $data = array("source_id" => $this->DBtableID);
+					 $createFields = array();
+					 $fieldErrors = false;
+					 foreach($actRecord as $fieldKey => $value){
+						  $dataField = "field_".$i ;
+						  $createFields[] = $dataField ;
+						  
+						  //save the export field names
+						  $data = array("source_id" => $this->DBtableID,
+											 "field_num" => $i,
+											 "field_name" => $dataField,
+											 "field_label" => $fieldKey
+											 );
+						  
+						  try{
+								$db->insert("export_tabs_fields", $data); //add the unit
+						  }
+						  catch (Exception $e) {
+								$fieldErrors = true;
+						  }
+						  
+						  unset($data);
+						  $i++;
+					 }
+					 
+					 if(!$fieldErrors){
+						  
+						  $fieldsToCreate = implode(" text,", $createFields) ." text CHARACTER SET utf8";
+						  $schemaSql = "CREATE TABLE ".$this->DBtableID."  (
+										 id INT NOT NULL PRIMARY KEY AUTO_INCREMENT,
+										 uuid varchar(50) CHARACTER SET latin1 COLLATE latin1_general_ci NOT NULL,
+										 uri varchar(200) CHARACTER SET latin1 COLLATE latin1_general_ci NOT NULL,
+										 $fieldsToCreate,
+										 UNIQUE KEY uuid (uuid)
+										 )ENGINE=MyISAM DEFAULT CHARSET=utf8;
+										 ";
+						  
+						  $db->query($schemaSql);
+						  $alterSQL = "ALTER TABLE ".$this->DBtableID." DEFAULT CHARACTER SET utf8 COLLATE  utf8_general_ci;";
+						  $db->query($alterSQL);
+						  
+						  $j = 1;
+						  while($j < $i){
+								if(isset($createFields[$j]) && $j <= 20){
+									 $indexSQL = "CREATE INDEX fInd_".$j." ON ".$this->DBtableID."(".$createFields[$j]."(20));";
+									 $db->query($indexSQL);
+								}
+								$j++;
+						  }						  						  
+					 }
+				}
+				
+		  }
+		  
+	 }
+	 
+	 
+	 
 	 
 	 
 	 

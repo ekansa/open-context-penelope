@@ -1,5 +1,7 @@
 <?php
     
+    
+    
     $linkVarObj = $this->linkVarObj;    
     $data = $linkVarObj->propData;
     $varLabel = $linkVarObj->varLabel;
@@ -65,6 +67,7 @@
                     else{
                     ?>
                     <span style="font-size:xx-small;"><a href="bm?q=<?php echo urlencode($row["val_text"]); ?>">[BM-equiv.]</a></span>
+                    <span style="font-size:xx-small;"><a href="<?php echo $linkVarObj->makeDeleteLink($row["property_uuid"], $row["linkedURI"]); ?>">Delete this Link</a></span>
                     <?php
                     }//end more typical case of linking to typologies
                     ?>
