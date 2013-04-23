@@ -188,8 +188,8 @@ class TableController extends Zend_Controller_Action {
 		          
         
         //class of items to export in a table
-        $classUUID = "881CEDA3-C445-4C9C-4D4B-634BD2963892"; //animal bone
-		  //$classUUID = "A2017643-0086-4D98-4932-E4AD3884E99D"; //pottery
+        //$classUUID = "881CEDA3-C445-4C9C-4D4B-634BD2963892"; //animal bone
+		  $classUUID = "A2017643-0086-4D98-4932-E4AD3884E99D"; //pottery
 		  
 		  $page = 1;
 		  //$setSize = 300000;
@@ -229,6 +229,8 @@ class TableController extends Zend_Controller_Action {
 									"TESTPRJ0000000004" => 'Pinarbasi'
 									);
 		 
+		  $projArray = array("4B16F48E-6F5D-41E0-F568-FCE64BE6D3FA" => 'Stonewares'
+									);
 		 
 		  foreach($projArray as $key => $name){
 				$limitingProjArray[] = $key;
@@ -240,12 +242,12 @@ class TableController extends Zend_Controller_Action {
 		  $tableObj->limitingProjArray = $limitingProjArray;
 		  $tableObj->showUnitTypeFields = false;
 		  $tableObj->limitUnitTypeFields = false;
-		  $tableObj->showSourceFields = false;
+		  $tableObj->showSourceFields = true;
 		  $tableObj->showBP = false;
 		  $tableObj->showBCE = true;
 		  $tableObj->showLDSourceValues = true;
 		  $tableObj->tableID = false;
-		  $tableObj->DBtableID = "z_ex_main_final";
+		  $tableObj->DBtableID = "z_ex_grave";
 		  
 		  //$tableObj->recordQueries = true;
 		  $tableObj->sortForSourceVars = " var_tab.sort_order, sCount DESC, var_tab.var_label ";
