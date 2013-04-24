@@ -9,6 +9,7 @@ class TabOut_TablePublish  {
 	 public $db; //database connection object
 	 
 	 public $penelopeTabID; //name of the table in Penelope
+	 public $requestParams; //parameters sent in a post request (for updating table metadata)
 	 
 	 public $setURI; //URI that can be used to duplicate the table. false if it can't be duplicated with a query
 	 public $numFound; //number of records in the total set
@@ -34,16 +35,10 @@ class TabOut_TablePublish  {
 	 
 	 public $tableFieldsTemp; //array of table fields, temporary for internal use.
 	 public $tableFields; //array of table fields
-	 public $records; //array of data records
+	 public $sampleRecords; //array of sample records (not the full set)
+	 public $records; //array of all data records
 	 
-	 
-	 
-	 
-	 
-	 
-	 
-	 
-	 
+	 const defaultSample = 50;
 	 
 	 
 	 //get the table field names
@@ -73,7 +68,25 @@ class TabOut_TablePublish  {
 	 
 	 
 	 
-	 
+	 function getSampleRecords(){
+		  
+		  $db = $this->startDB();
+		  
+		  $sql = "SELECT *
+		  FROM ".$this->penelopeTabID."
+		  LIMIT 1,".self::defaultSample." ;
+		  ";
+		  
+		  $result = $db->fetchAll($sql);
+		  if($result){
+				$this->sampleRecords = $result;
+		  }
+		  else{
+				return false;
+		  }
+		  
+		  
+	 }
 	 
 	 
 	 

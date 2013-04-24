@@ -1,57 +1,59 @@
 <?php
 
-$tablePublish = $this->tablePublish;
+$tablePubObj = $this->tablePubObj;
 
 ?>
 <html>
     <head>
         <meta charset="UTF-8" />
         <title>Table Publishing</title>
-        <link href="../css/bootstrap.css"  rel="stylesheet" type="text/css" />
-        <link href="../css/bootstrap-responsive.css"  rel="stylesheet" type="text/css" />
+        <link href="../public/css/bootstrap.css"  rel="stylesheet" type="text/css" />
+        <link href="../public/css/bootstrap-responsive.css"  rel="stylesheet" type="text/css" />
+        <link href="../public/css/rev2-general.css"  rel="stylesheet" type="text/css" />
     </head>
     <body>
-        <table>
-            <thead>
-                <tr>
-                <?php
-                foreach($tableArray as $recordkey => $fieldVals){
-                        
-                        ?>
-                        <th>Record URI</th>
+        <div id="main">
+            <div id="main_content">
+                <h2>Table Preview</h2>
+                <table class="table table-striped table-condensed table-hover table-bordered data-tab" >
+                    <thead>
+                        <tr>
                         <?php
-                        foreach($fieldVals as $fieldKey => $value){
-                        ?> 
-                            <th><?php echo $fieldKey; ?></th>
-                        <?php     
-                        }//end loop through the fields and values
-                    break; //no need to do the whole array, we're setting up the heading
-                }//end loop through the table array  
-                ?>
-                </tr>
-            </thead>
-            <tbody>
-                
-            <?php 
-            $i = 1;
-            foreach($tableArray as $recordkey => $fieldVals){
-            ?>
-                <tr id="<?php echo "rec-".$i;?>" >
-                    <td><?php echo $recordkey; ?></td>
-                    <?php
-                    foreach($fieldVals as $fieldKey => $value){
-                    ?> 
-                    <td><?php echo $value; ?></td>
-                    <?php     
-                    }//end loop through the fields and values
+                        foreach($tablePubObj->tableFieldsTemp as $fieldKey => $fieldLabel){
+                                
+                        ?>        
+                            <th><?php echo $fieldLabel; ?></th>
+                         <?php   
+                        }//end loop through the table array  
+                        ?>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        
+                    <?php 
+                    $i = 1;
+                    foreach($tablePubObj->sampleRecords as $row){
                     ?>
-                </tr>
-            <?php
-                $i++;
-            }//end loop through the table array 
-            ?>
-        
-            </tbody>
-        </table>
+                        <tr id="<?php echo "rec-".$i;?>" >
+                            
+                        <?php
+                        foreach($row as $fieldKey => $value){
+                            if(array_key_exists($fieldKey, $tablePubObj->tableFieldsTemp)){ 
+                        ?> 
+                            <td><?php echo $value; ?></td>
+                        <?php     
+                            }//end case with field key existing
+                        }//end loop through the fields and values
+                        ?>
+                        </tr>
+                    <?php
+                        $i++;
+                    }//end loop through the table array 
+                    ?>
+                
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </body>
 </html>
