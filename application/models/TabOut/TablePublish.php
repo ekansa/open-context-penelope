@@ -39,6 +39,106 @@ class TabOut_TablePublish  {
 	 public $records; //array of all data records
 	 
 	 const defaultSample = 50;
+	 const tagDelim = ";"; //delimiter for tags
+	 
+	 
+	 
+	 
+	 // this function is the main function for updating metadata records for a table
+	 function addUpdateMetadata(){
+	 
+		  $chValue = $this->checkParam("note"); 
+		  if($chValue != false ){
+				$this->tableName = $chValue;
+		  }
+		  
+		  $chValue = $this->checkParam("description"); 
+		  if($chValue != false ){
+				$this->tableDesciption = $chValue;
+		  }
+		  
+		  $chValue = $this->checkParam("tags"); 
+		  if($chValue != false ){
+				if(stristr($chValue, self::tagDelim)){
+					 $rawTags = explode(self::tagDelim, $chValue);
+				}
+				else{
+					 $rawTags = array($chValue);
+				}
+				$tags = array();
+				foreach($rawTags as $tag){
+					 $tags[] = trim($tag);
+				}
+				$this->tableTags = $tags;
+		  }
+		  
+	 }
+	 
+	 
+	 //this function makes some metadata automatically, based on the table's associations
+	 function autoMetadata(){
+		  
+	 }
+	 
+	 
+	 //get dublin-core creator information
+	 function getPersons(){
+		  
+		  $linksObj = new dbXML_dbLinks;
+		  $creatorRels = $linksObj->relToCreator;
+		  $contribRels = $linksObj->relToContributor;
+		  
+		  $db = $this->startDB();
+		  
+		  $sql = "SELECT links.targ_uuid, links.link_type,
+		  persons.combined_name, persons.last_name, persons.first_name, persons.mid_init
+		  FROM links 
+		  JOIN persons ON persons.uuid = links.targ_uuid
+		  JOIN ".$this->penelopeTabID." AS actTab ON actTab.uuid = links.origin_uuid
+		  WHERE links.targ_type LIKE '%person%'
+			
+		  UNION
+			
+		  SELECT links.targ_uuid, links.link_type, 
+		  users.combined_name, users.last_name, users.first_name, users.mid_init
+		  FROM links 
+		  JOIN users ON users.uuid = links.targ_uuid
+		  JOIN ".$this->penelopeTabID." AS actTab ON actTab.uuid = links.origin_uuid
+		  WHERE links.targ_type LIKE '%person%'
+			
+		  ";
+		  
+		  $result = $db->fetchAll($sql);
+		  if($result){
+				foreach($result as $row){
+					 
+					 
+					 
+					 
+				}
+		  }
+		  
+	 }
+	 
+	 
+	 
+	 //post parameter checking
+	 function checkParam($key, $requestParams = false){
+		  
+		  if(!$requestParams){
+				$requestParams = $this->requestParams;
+		  }
+	 
+		  $output = false;
+		  
+		  if(array_key_exists($key, $requestParams)){
+				if(strlen($requestParams[$key]) > 0){
+					 $output = $requestParams[$key];
+				}
+		  }
+		  return $output;
+	 }
+	 
 	 
 	 
 	 //get the table field names

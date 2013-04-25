@@ -1085,6 +1085,8 @@ class TableController extends Zend_Controller_Action {
 	 function postMetadataAction(){
 		  
 		  Zend_Loader::loadClass('TabOut_TablePublish');
+		  Zend_Loader::loadClass('dbXML_dbLinks'); //needed for dublin core relations
+		  
 		  $tablePubObj = new TabOut_TablePublish;
 		  $requestParams =  $this->_request->getParams();
 		  
