@@ -41,6 +41,7 @@ class TabOut_TablePublish  {
 	 const defaultSample = 50;
 	 const tagDelim = ";"; //delimiter for tags
 	 
+	 const personBaseURI = "http://opencontext.org/persons/";
 	 
 	 
 	 
@@ -81,7 +82,7 @@ class TabOut_TablePublish  {
 	 }
 	 
 	 
-	 //get dublin-core creator information
+	 //get dublin-core creator, contributor, and related people information
 	 function getPersons(){
 		  
 		  $linksObj = new dbXML_dbLinks;
@@ -89,36 +90,90 @@ class TabOut_TablePublish  {
 		  $contribRels = $linksObj->relToContributor;
 		  
 		  $db = $this->startDB();
+		  $result = false;
 		  
-		  $sql = "SELECT links.targ_uuid, links.link_type,
+		  $sql = "SELECT actTab.uuid, links.targ_uuid, links.link_type,
 		  persons.combined_name, persons.last_name, persons.first_name, persons.mid_init
-		  FROM links 
+		  FROM ".$this->penelopeTabID." AS actTab
+		  JOIN links ON actTab.uuid = links.origin_uuid
 		  JOIN persons ON persons.uuid = links.targ_uuid
-		  JOIN ".$this->penelopeTabID." AS actTab ON actTab.uuid = links.origin_uuid
-		  WHERE links.targ_type LIKE '%person%'
-			
-		  UNION
-			
-		  SELECT links.targ_uuid, links.link_type, 
-		  users.combined_name, users.last_name, users.first_name, users.mid_init
-		  FROM links 
-		  JOIN users ON users.uuid = links.targ_uuid
-		  JOIN ".$this->penelopeTabID." AS actTab ON actTab.uuid = links.origin_uuid
-		  WHERE links.targ_type LIKE '%person%'
-			
+		  WHERE links.targ_type LIKE '%person%' ;
 		  ";
 		  
-		  $result = $db->fetchAll($sql);
-		  if($result){
-				foreach($result as $row){
-					 
-					 
-					 
-					 
+		  $resultA = $db->fetchAll($sql);
+		 
+		  $sql =	"	
+				SELECT actTab.uuid, links.targ_uuid, links.link_type, 
+				users.combined_name, users.last_name, users.first_name, users.mid_init
+				FROM ".$this->penelopeTabID." AS actTab
+				JOIN links ON actTab.uuid = links.origin_uuid
+				JOIN users ON users.uuid = links.targ_uuid
+				WHERE links.targ_type LIKE '%person%'
+				 
+				";
+		  
+		  $resultB = $db->fetchAll($sql);
+		  if($resultA && $resultB){
+				$result = array();
+				foreach($resultA as $row){
+					 $ukey = md5($row["uuid"].$row["targ_uuid"].$row["link_type"]);
+					 $result[$ukey] = $row;
+				}
+				foreach($resultB as $row){
+					 $ukey = md5($row["uuid"].$row["targ_uuid"].$row["link_type"]);
+					 if(!array_key_exists($ukey, $result)){
+						  $result[$ukey] = $row;
+					 }
 				}
 		  }
+		  elseif($resultB && !$resultA){
+				$result = $resultB;
+		  }
+		  elseif(!$resultB && $resultA){
+				$result = $resultA;
+		  }
 		  
-	 }
+		  if($result){
+				$creators = array();
+				$contributors = array();
+				$persons = array();
+				foreach($result as $row){
+					 $uuid = $row["targ_uuid"];
+					 $uri = self::personBaseURI.$uuid;
+					 $name = $row["combined_name"];
+					 $linkType = $row["link_type"];
+					 if(in_array($linkType, $creatorRels)){
+						  if(!array_key_exists($uri, $creators)){
+								$creators[$uri] = array("name" => $name, "count" => 1);
+						  }
+						  else{
+								$creators[$uri]["count"] ++ ;  
+						  }
+					 }
+					 elseif(in_array($linkType, $contribRels)){
+						  if(!array_key_exists($uri, $contributors)){
+								$contributors[$uri] = array("name" => $name, "count" => 1);
+						  }
+						  else{
+								$contributors[$uri]["count"] = $contributors[$uri]["count"] + 1; 
+						  }
+					 }
+					 
+					 if(!array_key_exists($uri, $persons)){
+						  $persons[$uri] = array("name" => $name, "count" => 1);
+					 }
+					 else{
+						  $persons[$uri]["count"] ++ ;  
+					 }
+					 
+				}
+				
+				$this->creators = $creators;
+				$this->contributors = $contributors;
+				$this->linkedPersons = $persons;
+				
+		  }
+	 }//end function
 	 
 	 
 	 
@@ -166,6 +221,22 @@ class TabOut_TablePublish  {
 		  
 	 }
 	 
+	 //get the number of records in a table
+	 function getTableSize(){
+		  $db = $this->startDB();
+		  
+		  $sql = "SELECT count(id) as IDcount
+		  FROM ".$this->penelopeTabID."
+		  ";
+		  
+		  $result = $db->fetchAll($sql);
+		  if($result){
+				$this->numFound = $result[0]["IDcount"];
+		  }
+		  else{
+				return false;
+		  }
+	 }
 	 
 	 
 	 function getSampleRecords(){

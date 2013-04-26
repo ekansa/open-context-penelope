@@ -14,7 +14,30 @@ $tablePubObj = $this->tablePubObj;
     <body>
         <div id="main">
             <div id="main_content">
-                <h2>Table Preview</h2>
+                <h2>Dublin Core Creators</h2>
+                <ul>
+                    <?php
+                    foreach($tablePubObj->creators as $uri => $persArray){
+                                
+                        ?>        
+                            <li><a href="<?php echo $uri; ?>"><?php echo $persArray["name"]; ?></a> (<?php echo $persArray["count"]; ?>)</li>
+                         <?php   
+                        }//end loop through the table array  
+                        ?>
+                </ul>
+                <h2>Dublin Core Contributors</h2>
+                <ul>
+                    <?php
+                    foreach($tablePubObj->contributors as $uri => $persArray){
+                                
+                        ?>        
+                            <li><a href="<?php echo $uri; ?>"><?php echo $persArray["name"]; ?></a> (<?php echo $persArray["count"]; ?>)</li>
+                         <?php   
+                        }//end loop through the table array  
+                        ?>
+                </ul>
+                
+                <h2>Table Preview (<?php echo $tablePubObj->numFound; ?> records)</h2>
                 <table class="table table-striped table-condensed table-hover table-bordered data-tab" >
                     <thead>
                         <tr>

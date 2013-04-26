@@ -1039,6 +1039,7 @@ class TableController extends Zend_Controller_Action {
 	 function publishAction(){
 		 
 		  Zend_Loader::loadClass('TabOut_TablePublish');
+		  Zend_Loader::loadClass('dbXML_dbLinks'); //needed for dublin core relations
 		  
 		  $tablePubObj = new TabOut_TablePublish;
 		  $requestParams =  $this->_request->getParams();
@@ -1049,36 +1050,15 @@ class TableController extends Zend_Controller_Action {
 				return $this->render('table-index');
 		  }
 		  
+		  $tablePubObj->getTableSize(); //get the number of records in a table
 		  $tablePubObj->getTableFields(); //get the fields in a table.
 		  $tablePubObj->getSampleRecords(); //get the fields in a table.
-		  
+		  $tablePubObj->getPersons();
 		  
 		  $this->view->tablePubObj = $tablePubObj;
 		  
 	 }
 	 
-	 
-	 //get form to create metadata and publish a table
-	 function publishAction(){
-		 
-		  Zend_Loader::loadClass('TabOut_TablePublish');
-		  
-		  $tablePubObj = new TabOut_TablePublish;
-		  $requestParams =  $this->_request->getParams();
-		  if(isset($requestParams['table'])){
-			 $tablePubObj->penelopeTabID = $requestParams['table'];
-		  }
-		  else{
-				return $this->render('table-index');
-		  }
-		  
-		  $tablePubObj->getTableFields(); //get the fields in a table.
-		  $tablePubObj->getSampleRecords(); //get the fields in a table.
-		  
-		  
-		  $this->view->tablePubObj = $tablePubObj;
-		  
-	 }
 	 
 	 
 	 //update metadata for a published table
