@@ -10,72 +10,146 @@ $tablePubObj = $this->tablePubObj;
         <link href="../public/css/bootstrap.css"  rel="stylesheet" type="text/css" />
         <link href="../public/css/bootstrap-responsive.css"  rel="stylesheet" type="text/css" />
         <link href="../public/css/rev2-general.css"  rel="stylesheet" type="text/css" />
+        <link href="../public/css/rev2-tab-publish.css"  rel="stylesheet" type="text/css" />
     </head>
     <body>
         <div id="main">
+            <div id="nav">
+                <div class="navbar">
+                    <div class="navbar-inner">
+                        <ul class="nav">
+                            <li><a href="../table/">Ouput Table Index</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
             <div id="main_content">
-                <h2>Dublin Core Creators</h2>
-                <ul>
-                    <?php
-                    foreach($tablePubObj->creators as $uri => $persArray){
-                                
-                        ?>        
-                            <li><a href="<?php echo $uri; ?>"><?php echo $persArray["name"]; ?></a> (<?php echo $persArray["count"]; ?>)</li>
-                         <?php   
-                        }//end loop through the table array  
-                        ?>
-                </ul>
-                <h2>Dublin Core Contributors</h2>
-                <ul>
-                    <?php
-                    foreach($tablePubObj->contributors as $uri => $persArray){
-                                
-                        ?>        
-                            <li><a href="<?php echo $uri; ?>"><?php echo $persArray["name"]; ?></a> (<?php echo $persArray["count"]; ?>)</li>
-                         <?php   
-                        }//end loop through the table array  
-                        ?>
-                </ul>
-                
-                <h2>Table Preview (<?php echo $tablePubObj->numFound; ?> records)</h2>
-                <table class="table table-striped table-condensed table-hover table-bordered data-tab" >
-                    <thead>
-                        <tr>
-                        <?php
-                        foreach($tablePubObj->tableFieldsTemp as $fieldKey => $fieldLabel){
-                                
-                        ?>        
-                            <th><?php echo $fieldLabel; ?></th>
-                         <?php   
-                        }//end loop through the table array  
-                        ?>
-                        </tr>
-                    </thead>
-                    <tbody>
+                <div id="meta">
+                    <form method="POST" action="../table/post-metadata">
                         
-                    <?php 
-                    $i = 1;
-                    foreach($tablePubObj->sampleRecords as $row){
-                    ?>
-                        <tr id="<?php echo "rec-".$i;?>" >
+                        <input type="hidden" name="table" value="<?php echo $tablePubObj->penelopeTabID; ?>" />
+                        
+                        <h2>Table Title [Get as <a href="../table/publish?format=json&table=<?php echo $tablePubObj->penelopeTabID; ?>">JSON</a>]</h2>
+                        <input name="title" type="text" id="tabTitle" value="<?php echo $tablePubObj->tableName; ?>" />
+                        <br/>
+                        
+                        <h2>Table Description</h2>
+                        <textarea name="description" rows="5" id="tabDes" ><?php echo $tablePubObj->tableDesciption ; ?>
+                        </textarea>
+                        <br/>
+                        
+                        <h2>Table Tags ("; " Delimited)</h2>
+                        <textarea name="tags" rows="2" id="tabTags" ><?php
                             
-                        <?php
-                        foreach($row as $fieldKey => $value){
-                            if(array_key_exists($fieldKey, $tablePubObj->tableFieldsTemp)){ 
-                        ?> 
-                            <td><?php echo $value; ?></td>
-                        <?php     
-                            }//end case with field key existing
-                        }//end loop through the fields and values
-                        ?>
-                        </tr>
-                    <?php
-                        $i++;
-                    }//end loop through the table array 
-                    ?>
+                            if(is_array($tablePubObj->tableTags)){
+                                echo implode("; ", $tablePubObj->tableTags);
+                            }
+                        ?></textarea>
+                        <br/>
+                        
+                        <h2>Table DOI</h2>
+                        <input name="doi" type="text" id="tabDOI" value="<?php echo $tablePubObj->tableDOI; ?>" />
+                        <br/>
+                        
+                        <h2>Table ARK</h2>
+                        <input name="ark" type="text" id="tabARK" value="<?php echo $tablePubObj->tableARK; ?>" />
+                        <br/>
+
+                        
+                        <h2>Dublin Core Creators</h2>
+                        <ul>
+                            <?php
+                            foreach($tablePubObj->creators as $uri => $persArray){
+                                        
+                                ?>        
+                                    <li><a href="<?php echo $uri; ?>"><?php echo $persArray["name"]; ?></a> (<?php echo $persArray["count"]; ?>)</li>
+                                 <?php   
+                                }//end loop through the table array  
+                                ?>
+                        </ul>
+                        <br/>
+                        <h2>Dublin Core Contributors</h2>
+                        <ul>
+                            <?php
+                            foreach($tablePubObj->contributors as $uri => $persArray){
+                                        
+                                ?>        
+                                    <li><a href="<?php echo $uri; ?>"><?php echo $persArray["name"]; ?></a> (<?php echo $persArray["count"]; ?>)</li>
+                                 <?php   
+                                }//end loop through the table array  
+                                ?>
+                        </ul>
+                        <br/>
+                        <h2>Associated Projects</h2>
+                        <ul>
+                            <?php
+                            foreach($tablePubObj->projects as $uri => $projArray){
+                                        
+                                ?>        
+                                    <li><a href="<?php echo $uri; ?>"><?php echo $projArray["name"]; ?></a> (<?php echo $projArray["count"]; ?>)</li>
+                                 <?php   
+                                }//end loop through the table array  
+                                ?>
+                        </ul>
+                        <br/>
+                        <div id="subDiv">
+                            <input type="submit" />
+                        </div>
+                    </form>
+                </div>
+                <br/>
                 
-                    </tbody>
-                </table>
+                <div id="autoDiv">
+                    <form method="post" action="../table/auto-persons-projects" >
+                        <input type="hidden" name="table" value="<?php echo $tablePubObj->penelopeTabID; ?>" />
+                        <lable>Update with autogenerated person, project links</lable>
+                        <input type="submit" />
+                    </form>
+                </div>
+                
+                
+                <br/>
+                <div id="sampleDiv">
+                    <h2>Table Preview (<?php echo $tablePubObj->recordCount; ?> records)</h2>
+                    <table class="table table-striped table-condensed table-hover table-bordered data-tab" id="sample" >
+                        <thead>
+                            <tr>
+                            <?php
+                            foreach($tablePubObj->tableFieldsTemp as $fieldKey => $fieldLabel){
+                                    
+                            ?>        
+                                <th><?php echo $fieldLabel; ?></th>
+                             <?php   
+                            }//end loop through the table array  
+                            ?>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            
+                        <?php 
+                        $i = 1;
+                        foreach($tablePubObj->sampleRecords as $row){
+                        ?>
+                            <tr id="<?php echo "rec-".$i;?>" >
+                                
+                            <?php
+                            foreach($row as $fieldKey => $value){
+                                if(array_key_exists($fieldKey, $tablePubObj->tableFieldsTemp)){ 
+                            ?> 
+                                <td><?php echo $value; ?></td>
+                            <?php     
+                                }//end case with field key existing
+                            }//end loop through the fields and values
+                            ?>
+                            </tr>
+                        <?php
+                            $i++;
+                        }//end loop through the table array 
+                        ?>
+                    
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </body>

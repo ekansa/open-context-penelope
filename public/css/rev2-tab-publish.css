@@ -1,0 +1,32 @@
+@charset "utf-8";
+
+#meta {
+    padding: 10px;
+    margin-left:10px;
+    width: 600px;
+    background-color: #f3f3f3;
+}
+#tabTitle{
+    width: 95%;
+}
+#tabDes{
+    width: 95%;
+}
+#tabTags{
+    width: 95%;
+}
+#tabDOI{
+    width: 95%;
+}
+#tabARK{
+    width: 95%;
+}
+#autoDiv {
+    padding: 10px;
+    margin-left:10px;
+    border: thin solid #d7d7d7;
+}
+#sampleDiv {
+    padding: 10px;
+    margin-left:10px;
+}
