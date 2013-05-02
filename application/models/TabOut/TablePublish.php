@@ -11,6 +11,7 @@ class TabOut_TablePublish  {
 	 public $db; //database connection object
 	 
 	 public $penelopeTabID; //name of the table in Penelope
+	 public $publishedURI; //published URI
 	 public $requestParams; //parameters sent in a post request (for updating table metadata)
 	 
 	 public $setURI; //URI that can be used to duplicate the table. false if it can't be duplicated with a query
@@ -81,6 +82,43 @@ class TabOut_TablePublish  {
 				return false;
 		  }
 	 }
+	 
+	 
+	 
+	 //get saved metadata from the database, from already published URI
+	 function getSavedMetadataByURI($uri){
+		  
+		  $db = $this->startDB();
+		  
+		  $sql = "SELECT *
+		  FROM export_tabs_meta
+		  WHERE publishedURI = '".$uri."'
+		  LIMIT 1;
+		  ";
+		  
+		  $result = $db->fetchAll($sql);
+		  if($result){
+				$this->published = $result[0]["published"];
+				$this->publishedURI = $uri;
+				if($this->published){
+					 $this->pubCreated = $result[0]["pub_created"];
+					 $this->pubUpdate = $result[0]["pub_update"];
+				}
+				else{
+					 $this->pubCreated = false;
+					 $this->pubUpdate = true;
+				}
+				$metadataJSON = $result[0]["metadata"];
+				$metadata = Zend_Json::decode($metadataJSON);
+				$this->metadata = $metadata;
+				return true;
+		  }
+		  else{
+				return false;
+		  }
+	 }
+	 
+	 
 	 
 
 	 //parse metadata array
@@ -249,6 +287,80 @@ class TabOut_TablePublish  {
 		  }//end case with results
 	 
 	 }//end function
+	 
+	 
+	 //get dublin core creators associated with the project
+	 function getProjectCreators(){
+		  
+		  $creators = $this->creators;
+		  if(!is_array($creators)){
+				$creators = array();
+		  }
+		  
+		  $db = $this->startDB();
+		  if(is_array($this->projects)){
+				$projects = $this->projects;
+				foreach($projects as $uriKey => $pArray){
+					 $uriEx = explode("/", $uriKey);
+					 $projectUUID = $uriEx[count($uriEx) - 1]; //last member of the array is the UUID
+					 $projectCount = $pArray["count"];
+					 
+					 
+					 $sql = "SELECT dc_field, dc_value
+					 FROM dcmeta_proj
+					 WHERE project_id = '$projectUUID'";
+					 
+					 $result = $db->fetchAll($sql, 2);
+					 if($result){
+						  foreach($result as $row){
+								$rawField = trim($row["dc_field"]);
+								$DCvalue = trim($row["dc_value"]);
+								
+								if(stristr($rawField, "creator")){
+									 $personUUID = $this->getPersonID($projectUUID, $DCvalue);
+									 $personURI = self::personBaseURI.$personUUID;
+									 $creators[$personURI] = array("name" => $DCvalue,
+																			 "count" => $projectCount + 0 );
+								}
+						  }
+					 }
+				}
+				$this->creators = $creators;
+		  }
+
+	 }//end function
+	 
+	 
+	 //does what it says. gets a person's uuid based on their name and project information
+	 function getPersonID($projectUUID, $personName){
+	
+		  $db = $this->startDB();
+		  
+		  $sql = "SELECT persons.uuid
+					FROM persons
+					WHERE persons.project_id = '".$projectUUID."'
+					AND persons.combined_name LIKE '%".$personName."%'	
+					LIMIT 1
+					
+					UNION
+					
+					SELECT users.uuid AS uuid
+					FROM users 
+					WHERE users.combined_name LIKE '%".$personName."%'	
+					LIMIT 1
+					
+					";
+		 
+		  $result = $db->fetchAll($sql, 2);
+		  $personID = false;
+		  if($result){
+				$personID = $result[0]["uuid"];
+		  }
+		  
+		  return $personID;
+        
+    } //end function
+	 
 	 
 	 
 	 //get dublin-core creator, contributor, and related people information

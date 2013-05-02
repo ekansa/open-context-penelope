@@ -27,7 +27,11 @@ class ZooController extends Zend_Controller_Action {
         //get selected root item then add it and all children to database
         $baseURL = "http://opencontext/subjects/";
 		  $baseMediaURL = "http://opencontext/media/";
-        $rootUUID = "ROOTPRJ0000000006";
+        $rootUUID = "4_global_Palestine";
+		  
+		  if(isset($_GET["root"])){
+				$rootUUID = $_GET["root"];
+		  }
 		  
 		  Zend_Loader::loadClass('PublishedData_Hierarchy');
         Zend_Loader::loadClass('PublishedData_Space');

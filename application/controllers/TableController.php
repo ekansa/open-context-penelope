@@ -1076,7 +1076,7 @@ class TableController extends Zend_Controller_Action {
 			 $tablePubObj->requestParams = $requestParams;
 		  }
 		  else{
-				return $this->render('table-index');
+				return $this->render('index');
 		  }
 		  
 		  $tablePubObj->autoMetadata();
@@ -1112,6 +1112,44 @@ class TableController extends Zend_Controller_Action {
 		  echo "Metadata updated based on posted values. ";
 		  
 	 }
+	 
+	 
+	 //get old table metadata to update
+	  //update metadata for a published table
+	 function oldMetadataAction(){
+		  
+		  Zend_Loader::loadClass('TabOut_UpdateOld');
+		  Zend_Loader::loadClass('TabOut_TablePublish');
+		  Zend_Loader::loadClass('dbXML_dbLinks'); //needed for dublin core relations
+		  
+		  $tableOldObj = new TabOut_UpdateOld;
+		  $requestParams =  $this->_request->getParams();
+		  
+		  if(isset($requestParams['uri'])){
+			 $tableOldObj->oldURI = $requestParams['uri'];
+			 $tableOldObj->requestParams = $requestParams;
+		  }
+		  else{
+				return $this->render('index');
+		  }
+		  
+		  $tableOldObj->getParseJSON();
+		  $tableOldObj->processOldData();
+		  
+		  $requestParams["format"] = "json";
+		  if(isset($requestParams["format"])){
+				$this->_helper->viewRenderer->setNoRender();
+				header('Content-Type: application/json; charset=utf8');
+				$output = array("old" => $tableOldObj->oldTableData,
+									 "new" => $tableOldObj->newMetadata);
+				echo Zend_Json::encode($output);
+		  }
+		  else{
+				$this->view->tableOldObj = $tableOldObj;
+		  }
+		  
+	 }
+	 
 	 
 	 
 	 //get the list of output tables

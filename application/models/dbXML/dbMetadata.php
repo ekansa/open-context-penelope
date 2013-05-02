@@ -212,68 +212,68 @@ class dbXML_dbMetadata {
   
     //get dublin core metadata from the project
     public function getDCMetadata($projectUUID){
-	$db = $this->db;
-	if($this->dbPenelope){
-	   
-	   $sql = "SELECT dc_field, dc_value
-	   FROM dcmeta_proj
-	   WHERE project_id = '$projectUUID'";
-	    
-	}
-	else{
-	   $sql = "SELECT dc_field, dc_value
-	   FROM dcmeta_proj
-	   WHERE project_id = '$projectUUID'";
-	}
-	
-	$result = $db->fetchAll($sql, 2);
-        if($result){
-	    
-	    $creators = $this->projCreators;
-	    if(!is_array($creators)){
-		$creators = array();
-	    }
-	    $coverages = $this->projCoverages;
-	    if(!is_array($coverages)){
-		$coverages = array();
-	    }
-	    $subjects = $this->projSubjects;
-	    if(!is_array($subjects)){
-		$subjects = array();
-	    }
-	    
-	    foreach($result as $row){
-		
-		$rawField = trim($row["dc_field"]);
-		$DCvalue = trim($row["dc_value"]);
-		
-		if(stristr($rawField, "creator")){
-		    $personUUID = $this->getPersonID($projectUUID, $DCvalue);
-		    $hashName = sha1($DCvalue);
-		    if(!array_key_exists($hashName, $creators)){
-			$creators[$hashName] = array("value" => $DCvalue, "itemUUID" => $personUUID);
-		    }
-		    $this->projCreators = $creators;
-		}
-		
-		if(stristr($rawField, "subject")){
-		    $hashName = sha1($DCvalue);
-		    if(!array_key_exists($hashName, $subjects)){
-			$subjects[$hashName] = array("value" => $DCvalue);
-		    }
-		    $this->projSubjects = $subjects;
-		}
-		
-		if(stristr($rawField, "coverage")){
-		    $hashName = sha1($DCvalue);
-		    if(!array_key_exists($hashName, $coverages)){
-			$coverages[$hashName] = array("value" => $DCvalue);
-		    }
-		    $this->projCoverages = $coverages;
-		}
-		
-	    }//end loop
-        }
+		  $db = $this->db;
+		  if($this->dbPenelope){
+			  
+			  $sql = "SELECT dc_field, dc_value
+			  FROM dcmeta_proj
+			  WHERE project_id = '$projectUUID'";
+				
+		  }
+		  else{
+			  $sql = "SELECT dc_field, dc_value
+			  FROM dcmeta_proj
+			  WHERE project_id = '$projectUUID'";
+		  }
+		  
+		  $result = $db->fetchAll($sql, 2);
+		  if($result){
+				
+				$creators = $this->projCreators;
+				if(!is_array($creators)){
+					 $creators = array();
+				}
+				$coverages = $this->projCoverages;
+				if(!is_array($coverages)){
+					 $coverages = array();
+				}
+				$subjects = $this->projSubjects;
+				if(!is_array($subjects)){
+					 $subjects = array();
+				}
+				
+				foreach($result as $row){
+			  
+					 $rawField = trim($row["dc_field"]);
+					 $DCvalue = trim($row["dc_value"]);
+					 
+					 if(stristr($rawField, "creator")){
+						  $personUUID = $this->getPersonID($projectUUID, $DCvalue);
+						  $hashName = sha1($DCvalue);
+						  if(!array_key_exists($hashName, $creators)){
+						 $creators[$hashName] = array("value" => $DCvalue, "itemUUID" => $personUUID);
+						  }
+						  $this->projCreators = $creators;
+					 }
+					 
+					 if(stristr($rawField, "subject")){
+						  $hashName = sha1($DCvalue);
+						  if(!array_key_exists($hashName, $subjects)){
+						 $subjects[$hashName] = array("value" => $DCvalue);
+						  }
+						  $this->projSubjects = $subjects;
+					 }
+					 
+					 if(stristr($rawField, "coverage")){
+						  $hashName = sha1($DCvalue);
+						  if(!array_key_exists($hashName, $coverages)){
+						 $coverages[$hashName] = array("value" => $DCvalue);
+						  }
+						  $this->projCoverages = $coverages;
+					 }
+			  
+				}//end loop
+		  }
     
     }
   
