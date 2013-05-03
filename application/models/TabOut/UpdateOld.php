@@ -4,8 +4,12 @@ class TabOut_UpdateOld  {
     
 	 public $db;
 	 public $oldURI;
+	 public $oldTableID;
 	 public $oldTableData;
 	 public $newMetadata;
+	 
+	 public $tablePage = 1; //current page for the table, default to 1
+	 public $totalTabs = 1; //the total number of table segments
 	 
 	 public $requestParams; //request parameters
 	 
@@ -21,11 +25,26 @@ class TabOut_UpdateOld  {
 	 const projectBaseURI = "http://opencontext.org/projects/";
 	 const subjectBaseURI = "http://opencontext.org/subjects/";
 	 
+	 //get the table ID from the URL
+	 function tableIDfromURI(){
+		  if($this->oldURI){
+				$uriExp = explode("/", $this->oldURI);
+				$this->oldTableID = $uriExp[count($uriExp)-1]; //last part of URL is the ID (unless paging)
+				
+				if(strlen($this->oldTableID)<4){
+					 $this->oldTableID = $uriExp[count($uriExp)-2]; //last part of URL is the ID, this captures the paging issue
+				}
+				
+		  }
+	 }
+	 
+	 
 	 //get the old JSON file by URI
 	 function getParseJSON(){
 		  
 		  if($this->oldURI){
 				
+				$this->tableIDfromURI();
 				if(!stristr($this->oldURI, ".json")){
 					 $this->oldURI = $this->oldURI.".json";
 				}
@@ -79,6 +98,28 @@ class TabOut_UpdateOld  {
  
 	 }
 	 
+	 
+	 
+	 //this function simply goes through a table and saves its record associations without 
+	 function processOldRecords(){
+		  if(is_array($this->oldTableData) && $this->oldTableData){
+				
+				$oldData = $this->oldTableData;
+				if(isset($oldData["meta"]["table_segments"]["currentTab"])){
+					 $this->tablePage = $oldData["meta"]["table_segments"]["currentTab"] + 0;
+				}
+				if(isset($oldData["meta"]["table_segments"]["totalTabs"])){
+					 $this->totalTabs = $oldData["meta"]["table_segments"]["totalTabs"] + 0;
+				}
+				$this->purgeTableRecords();				
+				foreach($oldData["records"] as $uuid => $record){
+					 $this->insertTabRecord($uuid); //save the association between a UUID and a tableID
+				}
+		  }
+	 }
+	 
+	 
+	 
 	 //get some of the old metadata put into new
 	 function processOldMetadata(){
 		  
@@ -99,6 +140,12 @@ class TabOut_UpdateOld  {
 				$tablePubObj->tableTags = $tags;
 		  }
 		  
+		  if(isset($oldTableData["meta"]["table_segments"]["currentTab"])){
+				$this->tablePage = $oldTableData["meta"]["table_segments"]["currentTab"] + 0;
+		  }
+		  if(isset($oldTableData["table_segments"]["totalTabs"])){
+				$this->totalTabs = $oldTableData["meta"]["table_segments"]["totalTabs"] + 0;
+		  }
 		  $this->tablePubObj = $tablePubObj;
 	 }
 	 
@@ -128,6 +175,8 @@ class TabOut_UpdateOld  {
 		  
 		  $db = $this->startDB();
 		  if($this->oldTableData){
+				
+				$this->purgeTableRecords(); //delete the old associations between UUIDs and this tableID.
 				
 				$this->checkLinkedTypeData();
 				$linkedVarTypeFields = $this->linkedVarTypeFields;
@@ -212,11 +261,44 @@ class TabOut_UpdateOld  {
 					 }
 					 $this->getLinkedTypes($uuid);
 					 $newRecords[$uuid] = $newRecord;
+					 $this->insertTabRecord($uuid); //save the association between a UUID and a tableID
 				}//end loop
 				$oldData["records"] = $newRecords;
 				$this->oldTableData = $oldData;
 		  }
 		  
+	 }
+	 
+	 
+	 //delete associations between uuids and a table ID. 
+	 function purgeTableRecords(){
+		  
+		  if($this->oldTableID){
+				$db = $this->startDB();
+				$where =  "tableID = '".$this->oldTableID."' AND page = ".$this->tablePage;
+				$db->delete("export_tabs_records", $where );
+		  }
+	 }
+	 
+	 
+	 //add record of UUID's association to a table
+	 function insertTabRecord($uuid){
+		  if($this->oldTableID){
+				$db = $this->startDB();
+				
+				$data = array("hashID" => md5($uuid."_".$this->oldTableID),
+								  "uuid" => $uuid,
+								  "tableID" => $this->oldTableID,
+								  "page" => $this->tablePage
+								  );
+				
+				try{
+					 $db->insert("export_tabs_records", $data);
+				}
+				catch (Exception $e)  {
+					 
+				}
+		  }
 	 }
 	 
 	 
