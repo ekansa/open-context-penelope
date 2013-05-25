@@ -175,8 +175,18 @@ class LinkedDataController extends Zend_Controller_Action
 		  $propertyUUID = $_REQUEST['propertyUUID'];
 		  $projectUUID = $_REQUEST['projectUUID'];
 		  $linkURI = $_REQUEST['uri'];
-		  $varUUID = $_REQUEST['varUUID'];
-		  $linkedLabel = $_REQUEST['linkedLabel'];
+		  if(isset($_REQUEST['varUUID'])){
+				$varUUID = $_REQUEST['varUUID'];
+		  }
+		  else{
+				$varUUID = false;
+		  }
+		  if(isset($_REQUEST['linkedLabel'])){
+				$linkedLabel = $_REQUEST['linkedLabel'];
+		  }
+		  else{
+				$linkedLabel = "";
+		  }
 		  $linkedType = "type";
 		  
 		  //echo $propertyUUID ." is ". $linkURI;
@@ -200,8 +210,13 @@ class LinkedDataController extends Zend_Controller_Action
 		  $db->insert("linked_data", $data);
 		  $this->link_label_Update($linkedLabel, $linkURI, $projectUUID, $db);
 		  
-		  $headerLink = "var?varUUID=".$varUUID."&showPropCounts=".$_REQUEST['showPropCounts'];
-		  header("Location: $headerLink");
+		  if(!isset($_REQUEST['noRedirect'])){
+				$headerLink = "var?varUUID=".$varUUID."&showPropCounts=".$_REQUEST['showPropCounts'];
+				header("Location: $headerLink");
+		  }
+		  else{
+				echo "OK";
+		  }
     }
     
 	 
