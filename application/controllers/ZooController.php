@@ -27,7 +27,7 @@ class ZooController extends Zend_Controller_Action {
         //get selected root item then add it and all children to database
         $baseURL = "http://opencontext/subjects/";
 		  $baseMediaURL = "http://opencontext/media/";
-        $rootUUID = "4_global_Palestine";
+        $rootUUID = "5D6B6454-017A-43C1-9F15-6DFE36C3558F";
 		  
 		  if(isset($_GET["root"])){
 				$rootUUID = $_GET["root"];
@@ -50,6 +50,248 @@ class ZooController extends Zend_Controller_Action {
 		  echo Zend_Json::encode(array("done" => $hierarchyObj->doneURIs, "errors" => $hierarchyObj->errors));
 	 }
 	 
+	 
+	 function boneHelpAction(){
+		  $baseURL = "http://opencontext/subjects/";
+		  Zend_Loader::loadClass('PublishedData_Space');
+        Zend_Loader::loadClass('PublishedData_Observe');
+		  Zend_Loader::loadClass('PublishedData_Properties');
+		  Zend_Loader::loadClass('dbXML_xmlSpace');
+		  
+		  $spaceXML = new dbXML_xmlSpace;
+		  $namespaces = $spaceXML->nameSpaces();
+		  
+		  $this->_helper->viewRenderer->setNoRender();        
+		  $db = Zend_Registry::get('db');
+		  $sql = "SELECT uuid, project_id, source_id
+		  FROM space
+		  WHERE (project_id = '3' OR project_id = 'TESTPRJ0000000004') AND class_uuid = '881CEDA3-C445-4C9C-4D4B-634BD2963892' ";
+		  
+		  $result = $db->fetchAll($sql);
+		  foreach($result as $row){
+				$uuid = $row["uuid"];
+				$projectID = $row["project_id"];
+				$sourceID = $row["source_id"];
+				
+				$itemURL = $baseURL.$uuid.".xml";
+				@$xmlString = file_get_contents($itemURL);
+				if($xmlString != false){
+					 @$itemXML = simplexml_load_string($xmlString);
+					 if($itemXML != false){
+						  
+						  foreach($namespaces as $prefix => $nsURI){
+								$itemXML->registerXPathNamespace($prefix, $nsURI);
+						  }
+						  
+						  $propsObj = new PublishedData_Properties;
+						  $propsObj->startDB();
+						  $propsObj->itemUUID = $uuid ;
+						  $propsObj->projectUUID = $projectID;
+						  $propsObj->sourceID = $sourceID;
+						  $properties = $propsObj->itemPropsRetrieve($itemXML);
+						  $propsObj->saveData($properties);
+						  
+						  echo"<br/> Done with: <a href='http://penelope.oc/preview/space?UUID=".$uuid."'>".$uuid."</a>";
+					 }
+				}
+		  }//end loop
+	 }//end function
+	 
+	 
+	 
+	 
+	 
+	 function redoBoneAction(){
+		  
+		  $this->_helper->viewRenderer->setNoRender();    
+		  
+		  $badUUIDs = array(
+	 		'01441BAE-754C-4E62-6BA4-124BFDF3EEBC', 
+		  '0200669B-35A6-43EB-7A41-91AE643D382D', 
+		  '047AFCCA-AA60-43D4-047E-FF7DA51B593E', 
+		  '04A63CD6-7FF8-4180-7D79-BA3C3C66595D', 
+		  '059E4CDF-DDA2-49BF-A8D2-9AD85D77ADF6', 
+		  '0607E92B-3D69-4AA5-53DE-4E6FB67FC9B9', 
+		  '08A06A64-93E9-4931-E79E-F0617D31D4F7', 
+		  '0C4B1D47-540C-4761-2AD6-E414A852A3D6', 
+		  '108D6BEC-E96F-4A1D-AEAE-4F6DAC86A014', 
+		  '12C8FAD4-2A68-4FCF-4ACD-5746EA5D9AB9', 
+		  '14724176-1470-4EAB-3AA5-F080E24DF4BC', 
+		  '15C344F0-44E2-4BDE-9506-51C8AA994541', 
+		  '16963252-985A-464F-EB3E-F51DEE2B33DB', 
+		  '16F42A27-CE3E-4CAF-FBA8-77A9A2C9C36C', 
+		  '181C0884-910C-42E7-6D9B-7510C49D8565', 
+		  '19163DDE-37AF-4D61-1E8A-AB8346D7605B', 
+		  '1CCD6761-12C8-401F-0F2F-4C6C48041AF2', 
+		  '1CDBFC9D-6E1C-42DA-AD11-7756A9B42DEF', 
+		  '1FA1323E-5674-4603-2F40-7849CF8E5DBB', 
+		  '21988064-0F1F-4A5D-AECD-BF55BB0CA2E1', 
+		  '242F2DA4-EB88-4A0C-0826-A96A247BC69B', 
+		  '250EA659-3C7C-4CB0-E6E9-2A84B33946D8', 
+		  '25139E00-1569-4586-5597-4FF7B72335D4', 
+		  '2823BAC8-7571-4FFC-D2FD-B31E7440F60C', 
+		  '292ECCF7-63A4-43CD-8605-56411AF81D12', 
+		  '2DEFF61C-7016-4BFE-9E1B-B1666527C021', 
+		  '32B7EC55-8D57-4F2C-A627-368CFB35C354', 
+		  '340D2E85-3FA2-499C-BDC6-7D42DE8B3F1C', 
+		  '343871AE-758F-44C1-B4E8-41DE73246F15', 
+		  '348E355C-67CE-4B8A-2BA2-9D3BBB350BCC', 
+		  '363D0E3E-BFBB-48CC-D743-ACED753F69A2', 
+		  '3849D365-513B-44CC-28B9-349BAA2BD0FB', 
+		  '38DFEAA4-E8E3-4A50-ED0D-406B1A8D183B', 
+		  '3ACA5C4D-DC04-4FAF-83C4-EF2BDE9E8C6F', 
+		  '3B70AE9C-3874-4503-C019-D8E790ABBF54', 
+		  '3E15833D-6BBF-46AA-8B39-6F939495C52A', 
+		  '41530EDC-6017-40D9-57E8-0158E8A37882', 
+		  '4224A848-447A-45D6-17C6-0F58A32F28FE', 
+		  '4316715A-17DF-416E-A02D-EF6CAE9D147A', 
+		  '44C5229B-F1D7-4D7A-E397-DE61DA0D8F68', 
+		  '4639210E-7107-44F3-8909-160F07518857', 
+		  '46F8E4F3-E16F-4B98-4CEB-061C4EAFCA17', 
+		  '4D62F3A0-AB5C-4281-A6A9-8EF358F66A56', 
+		  '4FA60232-AE64-4229-3C66-CCB484A4DD7A', 
+		  '5446567D-CD42-4528-BFDF-01430C8B2F89', 
+		  '567FCC18-03F7-49B4-ED61-F0346BD57CD1', 
+		  '5AD7AE95-F044-4646-8AC7-4295E4EF3724', 
+		  '5D1853DB-439A-40C9-6318-2C3A0D6AE54A', 
+		  '66CF332B-D95B-4286-B771-228F90B2EE9D', 
+		  '67388B7F-4C27-4F4F-C0D4-7268E6BFBDED', 
+		  '688E93C7-5E6D-42AE-B7F3-FC1618ED2E73', 
+		  '6C64F66E-8DC0-4972-7EA3-135C6702C4F1', 
+		  '6E1F08CE-8FD0-43D2-3A21-1B5887204EA7', 
+		  '6E44EEDD-C941-4841-E1ED-B0589BB86832', 
+		  '6F07D707-9F61-4327-684C-BCB675F2AE08', 
+		  '6F0F00AB-91DE-4D94-1139-6C88903D383E', 
+		  '76F0D616-250D-4AC4-466E-BB2CB6BE6376', 
+		  '7E6A88E7-F3E3-49F5-793D-E54E3FF4265B', 
+		  '83B92423-794A-4FF4-5569-0E1341E7E675', 
+		  '84345D49-2DB3-4C7A-05EF-8C1E817E0C6A', 
+		  '8779B999-D1B8-4694-DDB7-CE5F6E61D7BE', 
+		  '889763AA-0D0E-4D55-C3F8-95C543B59489', 
+		  '8913B5ED-5C7C-4BB7-7DB7-06B1BDBFFB1F', 
+		  '8C6F0BC8-3189-49CD-7928-C2B7E062E719', 
+		  '8CCF6C8E-55C0-4D91-83ED-C298645998DE', 
+		  '8EC793FE-1FA8-45C6-EB12-0C3D90E2795F', 
+		  '8FE01A8F-B20A-4348-4D34-03F365CFD3A1', 
+		  '912D181E-DFE8-4965-D83E-B6C98C3B72EB', 
+		  '914E4FDE-8B9A-4602-D3F8-21FDB3788E45', 
+		  '92587F94-E920-48D2-4FF1-B4D4F6B9C361', 
+		  '94819171-7079-4024-3B22-8C8E7E3C9B5F', 
+		  '96F898BF-A473-42FF-C6F1-89ECCDB1F39C', 
+		  '9745844F-6CBB-4A6B-13B3-1FC7FAB3EA32', 
+		  '9822EE58-1E2F-42F9-6502-F5EAE0D2CA39', 
+		  '9B81BC5D-2723-4B96-910C-FB306BFEA7CA', 
+		  'A3A5684C-9B04-4629-5B9D-E7181EE6AB9E', 
+		  'A500860F-2349-423D-788F-E28D465E054B', 
+		  'A85C37A5-BC95-4338-99DC-99DE61B41EB6', 
+		  'AFDADE4D-258E-4CA5-E9EC-4816CC4F70EF', 
+		  'B54F1D45-AA29-4CBF-8029-3870E47AEDBD', 
+		  'B56D1197-8E1E-47FD-DF69-EBD0A5BC1543', 
+		  'B6E99761-7C2F-4783-E854-E666058F9536', 
+		  'B89AF4FA-BD0B-448E-E955-E129229209E1', 
+		  'B95A67B3-89E8-4BBD-74A1-419A3A9A1206', 
+		  'BA6761E0-F87D-444E-0590-56E883251CCC', 
+		  'C277864E-B0F9-4E3F-5D6D-4E1068C94152', 
+		  'C486EB00-6290-478B-D1E2-E1E00F41895C', 
+		  'C49F1AA0-0E50-40BF-7E1A-115BB32BD7BA', 
+		  'C78FACC3-4B62-436F-3CCB-D150457C8BFE', 
+		  'CA804F46-3C71-454D-FF31-E5B2384B7468', 
+		  'CB513F76-084E-45F5-39EA-878FD0FC8F48', 
+		  'CB879D7C-3524-4968-C1B8-DA9109FEBD49', 
+		  'CD2B56AE-619E-46B6-5B26-55F3A9FD9029', 
+		  'CDA374A3-7F5A-4F76-C479-27BA66872D94', 
+		  'D07ADDC8-3496-4EA4-10BB-39D03F9C507F', 
+		  'D2D8FA29-7D25-4901-A435-84128A78277F', 
+		  'D300D36C-922B-461F-B467-A6E352D06773', 
+		  'DBE40725-677B-4C26-92C9-CB8352A69C7C', 
+		  'DF4C063E-7CE2-4955-C882-3CA420ECE0AA', 
+		  'E10C2368-6A4B-4528-28FE-673F06218358', 
+		  'E119757F-13BB-4CD6-FDCF-70C11B1C7EA2', 
+		  'E7465FF9-B1BE-4503-3DD0-6560548EAA23', 
+		  'EF221176-6028-436D-3541-C89A2AE9F20E', 
+		  'F2A34C09-E652-4C1E-D1DA-A37663EED096', 
+		  'F84014C3-33E1-4FDF-35C2-EB00A1535D76', 
+		  'FC2C7F03-C8CA-487C-BC0E-7787371A3278', 
+		  'FC504975-D305-4949-F781-92A9B53E2220', 
+		  'FE70CC58-72ED-4AAD-AB6A-519699FB47CD',  
+		  );
+		  
+		  $db = Zend_Registry::get('db');
+		  Zend_Loader::loadClass('dataEdit_SpaceIdentity');
+		  $spaceEdit = new dataEdit_SpaceIdentity;
+		  $spaceEdit->actSourceTab = 'z_1_ee76ce40e';
+		  $output = array();
+		  foreach($badUUIDs as $uuid){
+				
+				$sql = "UPDATE space SET source_id = 'z_1_ee76ce40e' WHERE uuid = '".$uuid."' LIMIT 1;";
+				$db->query($sql, 2);
+				
+				$sql = "SELECT source_id, space_label, full_context, class_uuid
+				FROM space
+				WHERE uuid = '$uuid' LIMIT 1;
+				";
+				
+				$result = $db->fetchAll($sql);
+				if($result){
+					 $itemLabel = $result[0]["space_label"];
+					 $itemContext = $result[0]["full_context"];
+					 $sourceID = $result[0]["source_id"];
+					 $classUUID = $result[0]["class_uuid"];
+					 $sourceData = $spaceEdit->getSourceIDs($itemLabel, $itemContext, $sourceID, $classUUID);
+					 $itemProps = $spaceEdit->itemProperties($uuid);
+					 $repeatedVars = $spaceEdit->singleORrepeatedVariables($uuid);
+					 
+					 $output[$uuid] = array("source" => $sourceData,
+													"props" => $itemProps,
+													"repvars" => $repeatedVars
+													);
+					 
+				}
+				
+		  }//end loop
+		  
+		  header('Content-Type: application/json; charset=utf8');
+		  echo Zend_Json::encode($output);
+		  
+	 }
+	 
+	 
+	 
+	   //load up old space data from XML documents
+	 function repubListAction(){
+		  
+		  //this line is necessary for ajax calls:
+        $this->_helper->viewRenderer->setNoRender();        
+        
+		  $badListURL = "http://opencontext.org/sets/Turkey/Pinarbasi.json?projID=TESTPRJ0000000004&cat=Animal+Bone&recs=100";
+		  
+		  $basePublishURL = "http://penelope.oc/publish/publishdoc";
+		  $params = array(
+				"projectUUID" => "TESTPRJ0000000004",
+				"pubURI" => "http://opencontext.org/publish/item-publish",
+				"update" => "true",
+				"itemType" => "space");
+		  
+		  $badJSON = file_get_contents($badListURL);
+		  $badObj = Zend_Json::decode($badJSON);
+		  $output = array();
+		  foreach($badObj["results"] as $result){
+				sleep(.25);
+				$uri = $result["uri"];
+				$uriEx = explode("/",  $uri);
+				$uuid = $uriEx[(count($uriEx)-1)];
+				
+				$params["itemUUID"] = $uuid;
+				$actURL =  $basePublishURL . "?" . http_build_query($params);
+				
+				$resp = file_get_contents($actURL);
+				$respObj = Zend_Json::decode($resp);
+				$output[] = $respObj;
+		  }
+		  
+		  header('Content-Type: application/json; charset=utf8');
+		  echo Zend_Json::encode($output);
+	 }
 
 
 	  //load up old space data from XML documents
@@ -101,12 +343,13 @@ class ZooController extends Zend_Controller_Action {
         $this->_helper->viewRenderer->setNoRender();        
         
         //get selected root item then add it and all children to database
-        //$projUUID = "D297CD29-50CA-4B2C-4A07-498ADF3AF487";
+        $projUUID = "3DE4CD9C-259E-4C14-9B03-8B10454BA66E";
         
 		  Zend_Loader::loadClass('dataEdit_SpaceIdentity');
 		  
 		  $editObj = new dataEdit_SpaceIdentity;
 		  $editObj->projUUID = $projUUID;
+		  $editObj->sourceLimit = "z_1_ee76ce40e"; 
 		  $editObj->storeIDsWithDuplicatingVars();
 		  $sourceIDs = $editObj->getSourceDataIDs();
 		  $output = $editObj->fixIdentities();
@@ -267,6 +510,9 @@ class ZooController extends Zend_Controller_Action {
 		  header('Content-Type: application/json; charset=utf8');
 		  echo Zend_Json::encode($output);
 	 }
+	 
+	 
+	 
 	 
 
 }//end class
