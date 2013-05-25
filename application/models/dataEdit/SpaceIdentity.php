@@ -6,6 +6,8 @@ class dataEdit_SpaceIdentity  {
     
     public $db;
 	 public $projUUID;
+	 public $sourceLimit; //source table to limit search
+	 public $actSourceTab;
 	 
 	 public $sourceParents = array();
 	 
@@ -314,10 +316,18 @@ class dataEdit_SpaceIdentity  {
 	 //get the field_num for a variable from the source data
 	 function getVarSourceField($varLabel, $sourceID){
 		  $db = $this->startDB();
+		  
+		  if($this->actSourceTab){
+				$sourceTerm = " (source_id = '$sourceID' OR source_id = '".$this->actSourceTab."' ) ";
+		  }
+		  else{
+				$sourceTerm = " (source_id = '$sourceID') ";
+		  }
+		  
 		  $varLabel = addslashes($varLabel);
 		  $sql = "SELECT field_name
 		  FROM field_summary
-		  WHERE source_id = '$sourceID'
+		  WHERE $sourceTerm
 		  AND field_label LIKE '$varLabel'
 		  LIMIT 1;
 		  ";
@@ -376,10 +386,18 @@ class dataEdit_SpaceIdentity  {
 		  $val = addslashes($val);
 		  $output = false;
 		  
+		  if($this->actSourceTab){
+				$sourceTerm = " (source_id = '$sourceID' OR source_id = '".$this->actSourceTab."' ) ";
+		  }
+		  else{
+				$sourceTerm = " (source_id = '$sourceID') ";
+		  }
+		  
+		  
 		  $sql = "SELECT field_summary.field_name as varField, fs.field_name as valField
 		  FROM field_summary
 		  JOIN field_summary AS fs ON field_summary.pk_field = fs.fk_field_describes
-		  WHERE field_summary.source_id = '$sourceID' AND field_summary.field_type = 'Variable'
+		  WHERE $sourceTerm AND field_summary.field_type = 'Variable'
 		  ";
 		  
 		  $result =  $db->fetchAll($sql);
@@ -411,7 +429,7 @@ class dataEdit_SpaceIdentity  {
 	 function itemProperties($itemUUID){
 		  $db = $this->startDB();
 		  
-		  $sql = "SELECT properties.variable_uuid, properties.property_uuid,  
+		  $sql = "SELECT properties.variable_uuid, observe.property_uuid,  
 				  var_tab.var_label, 
 				  IF (
 				  val_tab.val_text IS NULL , (
@@ -467,6 +485,13 @@ class dataEdit_SpaceIdentity  {
 		  
 		  $this->createTable(); //make the table if it does not exist
 		  
+		  if($this->sourceLimit){
+				$sourceTerm = " AND space.source_id = '".$this->sourceLimit."' ";
+		  }
+		  else{
+				$sourceTerm = "";
+		  }
+		  
 		  //clean the table
 		  $sql = "TRUNCATE TABLE  dupsubjects";
 		  $db->query($sql, 2);
@@ -485,7 +510,7 @@ class dataEdit_SpaceIdentity  {
 								JOIN properties ON observe.property_uuid = properties.property_uuid
 								JOIN space ON observe.subject_uuid = space.uuid
 								WHERE observe.project_id = '".$this->projUUID."' 
-								AND (properties.variable_uuid = '$varID')
+								AND (properties.variable_uuid = '$varID') $sourceTerm
 								GROUP BY observe.subject_uuid
 								ORDER BY fCount DESC";
 								
