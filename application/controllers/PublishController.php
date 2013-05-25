@@ -10,7 +10,7 @@ class PublishController extends Zend_Controller_Action
 {
     
     const xmlRoot = "http://about.oc/oc_xmlgen/";
-    const defDest = "http://opencontext/publish/itempublish";
+    const defDest = "http://opencontext/publish/item-publish";
     public $hostRoot = "http://penelope.oc";
     const mediaOnly = false;
     
