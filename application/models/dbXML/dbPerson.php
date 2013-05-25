@@ -34,24 +34,21 @@ class dbXML_dbPerson {
     
     
     public function initialize($db = false){
-        if(!$db){
-            $db_params = OpenContext_OCConfig::get_db_config();
-            $db = new Zend_Db_Adapter_Pdo_Mysql($db_params);
-            $db->getConnection();
-        }
+        
+        $db = $this->startDB();
         
         $this->db = $db;
-	$this->firstName = false;
-	$this->lastName = false;
-	$this->midInitial = false;
-	$this->initials = false;
-	$this->affiliation = false;
-	$this->email = false;
-	
-	$this->personQueryVal = false;
-	$this->spaceCount = false;
-	$this->diaryCount = false;
-	$this->mediaCount = false;
+		  $this->firstName = false;
+		  $this->lastName = false;
+		  $this->midInitial = false;
+		  $this->initials = false;
+		  $this->affiliation = false;
+		  $this->email = false;
+		  
+		  $this->personQueryVal = false;
+		  $this->spaceCount = false;
+		  $this->diaryCount = false;
+		  $this->mediaCount = false;
 	
     }
     
@@ -77,61 +74,63 @@ class dbXML_dbPerson {
         $sql = "SELECT *
         FROM persons
         WHERE uuid = '".$this->itemUUID."'
-	";
+		  ";
         
         $result = $db->fetchAll($sql, 2);
         if($result){
             $this->projectUUID = $result[0]["project_id"];
             $this->sourceID = $result[0]["source_id"];
-	    $this->label = trim($result[0]["combined_name"]);
-	    $this->firstName = $result[0]["first_name"];
-	    $this->lastName = $result[0]["last_name"];
-	    $this->midInitial = $result[0]["mid_init"];
-	    $this->initials = $result[0]["initials"];
-	    $this->affiliation = $result[0]["org_name"];
-	    $this->personQueryVal = urlencode($this->label);
+				$this->label = trim($result[0]["combined_name"]);
+				$this->firstName = $result[0]["first_name"];
+				$this->lastName = $result[0]["last_name"];
+				$this->midInitial = $result[0]["mid_init"];
+				$this->initials = $result[0]["initials"];
+				$this->affiliation = $result[0]["org_name"];
+				$this->personQueryVal = urlencode($this->label);
+				$found = true;
         }
-	else{
+		  else{
 	    
-	    $sql = "SELECT *
-	    FROM users
-	    WHERE uuid = '".$this->itemUUID."'
-	    ";
+				$sql = "SELECT *
+				FROM users
+				WHERE uuid = '".$this->itemUUID."'
+				";
+				
+				$result = $db->fetchAll($sql, 2);
+				if($result){
+			  
+					 $this->sourceID = $result[0]["source_id"];
+					 $this->label = trim($result[0]["combined_name"]);
+					 $this->firstName = $result[0]["first_name"];
+					 $this->lastName = $result[0]["last_name"];
+					 $this->midInitial = $result[0]["mid_init"];
+					 $this->initials = $result[0]["initials"];
+					 $this->affiliation = $result[0]["affiliation"];
+					 $this->email = $result[0]["email"];
+					 $this->personQueryVal = urlencode($this->label);
+					 $found = true;
+					 
+					 $sql = "SELECT links.project_id
+						 FROM links
+						 WHERE (links.origin_uuid = '".$this->itemUUID."'
+						 OR
+						 links.targ_uuid = '".$this->itemUUID."' )
+						 
+						 UNION
+						 
+						 SELECT observe.project_id
+						 FROM observe
+						 WHERE observe.subject_uuid = '".$this->itemUUID."'
+						 
+						 ";
+			 
+					 $resultB = $db->fetchAll($sql, 2);
+					 if($resultB){
+						  $this->projectUUID = $resultB[0]["project_id"]; 
+					 }
+				}
 	    
-	    $result = $db->fetchAll($sql, 2);
-	    if($result){
-		
-		$this->sourceID = $result[0]["source_id"];
-		$this->label = trim($result[0]["combined_name"]);
-		$this->firstName = $result[0]["first_name"];
-		$this->lastName = $result[0]["last_name"];
-		$this->midInitial = $result[0]["mid_init"];
-		$this->initials = $result[0]["initials"];
-		$this->affiliation = $result[0]["affiliation"];
-		$this->email = $result[0]["email"];
-		$this->personQueryVal = urlencode($this->label);
-		
-		$sql = "SELECT links.project_id
-			FROM links
-			WHERE (links.origin_uuid = '".$this->itemUUID."'
-			OR
-			links.targ_uuid = '".$this->itemUUID."' )
-			
-			UNION
-			
-			SELECT observe.project_id
-			FROM observe
-			WHERE observe.subject_uuid = '".$this->itemUUID."'
-			
-			";
-		
-		$resultB = $db->fetchAll($sql, 2);
-		if($resultB){
-		    $this->projectUUID = $resultB[0]["project_id"]; 
-		}
-	    }
-	    
-	}
+		  }
         
         return $found;
     }
@@ -161,39 +160,59 @@ class dbXML_dbPerson {
     
     public function getLinkCounts(){
 	
-	$db = $this->db;
-	
-	$sql = "SELECT links.origin_type, count(links.origin_uuid) as typeCount
-	FROM links
-	WHERE links.targ_uuid = '".$this->itemUUID."'
-	GROUP BY links.origin_type, links.origin_uuid
-	";
-	
-	$result = $db->fetchAll($sql, 2);
-        if($result){
-	    $this->spaceCount = 0;
-	    $this->mediaCount = 0;
-	    $this->diaryCount = 0;
-	    
-	    foreach($result as $row){
-		
-		$type = $row["origin_type"];
-		$typeCount = $row["typeCount"];
-		
-		if(stristr($type, "location") || stristr($type, "space") || stristr($type, "spatial")){
-		    $this->spaceCount  += $typeCount;
-		}
-		elseif(stristr($type, "media") || stristr($type, "resource") ){
-		     $this->mediaCount += $typeCount;
-		}
-		elseif(stristr($type, "diary") || stristr($type, "document") ){
-		     $this->diaryCount += $typeCount;
-		}
-	    }
-	}
+		  $db = $this->db;
+		  
+		  $sql = "SELECT links.origin_type, count(links.origin_uuid) as typeCount
+		  FROM links
+		  WHERE links.targ_uuid = '".$this->itemUUID."'
+		  GROUP BY links.origin_type, links.origin_uuid
+		  ";
+		  
+		  $result = $db->fetchAll($sql, 2);
+		  if($result){
+				$this->spaceCount = 0;
+				$this->mediaCount = 0;
+				$this->diaryCount = 0;
+				
+				foreach($result as $row){
+			  
+					 $type = $row["origin_type"];
+					 $typeCount = $row["typeCount"];
+					 
+					 if(stristr($type, "location") || stristr($type, "space") || stristr($type, "spatial")){
+						  $this->spaceCount  += $typeCount;
+					 }
+					 elseif(stristr($type, "media") || stristr($type, "resource") ){
+							$this->mediaCount += $typeCount;
+					 }
+					 elseif(stristr($type, "diary") || stristr($type, "document") ){
+							$this->diaryCount += $typeCount;
+					 }
+				}
+		  }
     }
 
     
+	 
+	 function startDB(){
+		  if(!$this->db){
+				$db = Zend_Registry::get('db');
+				$this->setUTFconnection($db);
+				$this->db = $db;
+		  }
+		  else{
+				$db = $this->db;
+		  }
+		  
+		  return $db;
+	 }
+	 
+	 function setUTFconnection($db){
+		  $sql = "SET collation_connection = utf8_unicode_ci;";
+		  $db->query($sql, 2);
+		  $sql = "SET NAMES utf8;";
+		  $db->query($sql, 2);
+    }
     
     
 }  
