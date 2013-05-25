@@ -38,6 +38,7 @@ class PublishedData_Properties {
 				
 				
 				if($act_prop->xpath("arch:valueID")){
+					 
 					 foreach($act_prop->xpath("arch:valueID") as $act_prop_result){
 						 $actPropData["value_uuid"] = $act_prop_result."";
 						 $actValData["value_uuid"] = $actPropData["value_uuid"];
@@ -45,18 +46,17 @@ class PublishedData_Properties {
 					 $actPropData["prop_hash"] = md5($projectUUID . $actPropData["variable_uuid"] . $actPropData["value_uuid"]);
 				}
 				else{
-					if(($act_prop->xpath("arch:integer"))||($act_prop->xpath("arch:decimal"))){
-						$actPropData["value_uuid"] = "number";
-						foreach($act_prop->xpath("arch:integer") as $act_prop_result){
-							$actPropData["val_num"] = $act_prop_result."";
-						}
-						foreach($act_prop->xpath("arch:decimal") as $act_prop_result){
-							$actPropData["val_num"] = $act_prop_result."";
-						}
-						$doVal = false;
-						
-						
-					}
+					 if(($act_prop->xpath("arch:integer"))||($act_prop->xpath("arch:decimal"))){
+						  $actPropData["value_uuid"] = "number";
+						  foreach($act_prop->xpath("arch:integer") as $act_prop_result){
+							  $actPropData["val_num"] = $act_prop_result."";
+						  }
+						  foreach($act_prop->xpath("arch:decimal") as $act_prop_result){
+							  $actPropData["val_num"] = $act_prop_result."";
+						  }
+						  $doVal = false;
+						  $actPropData["prop_hash"] = md5($projectUUID . $actPropData["variable_uuid"] . $actPropData["val_num"]);
+					 }
 				}
 				
 				if($act_prop->xpath("oc:var_label")){
@@ -71,6 +71,14 @@ class PublishedData_Properties {
 						  $actValData["text_scram"] = md5($actValData["val_text"] . $projectUUID);
 					 }
 				}
+				
+				if(!isset( $actPropData["value_uuid"]) && isset($actValData["val_text"])){
+					 $actPropData["value_uuid"] = $this->get_make_ValID($actValData["val_text"], $projectUUID);
+					 $actValData["value_uuid"] = $actPropData["value_uuid"];
+					 $actPropData["prop_hash"] = md5($projectUUID . $actPropData["variable_uuid"] . $actPropData["value_uuid"]);
+				}
+				
+				
 
 				if($act_prop->xpath("oc:var_label/@type")){
 					 foreach($act_prop->xpath("oc:var_label/@type") as $act_prop_result){
@@ -270,6 +278,71 @@ class PublishedData_Properties {
 				}
 		  }
 	 }
+	 
+	 
+	 function get_make_ValID($valText, $projectUUID, $dataTableName = 'manual'){
+		  
+		  $db = $this->startDB();
+        $valText = trim($valText);
+        $qvalText = addslashes($valText);
+        $qvalShort = addslashes(substr($valText,0,199));
+        
+        if(strlen($qvalText)<200){
+            
+            $textCond = "val_tab.val_text = '$qvalText' ";
+        }
+        else{
+            
+            $textCond = "val_tab.val_text LIKE '$qvalShort%' ";
+        }
+        
+        $valScram   = md5($valText . $projectUUID);
+        
+        $sql = "SELECT val_tab.value_uuid
+        FROM val_tab
+        WHERE ($textCond
+        AND val_tab.project_id = '$projectUUID')
+        OR val_tab.text_scram = '$valScram'
+        ";
+        
+        $valRows = $db->fetchAll($sql, 2);
+        if($valRows){
+            $valueUUID = $valRows[0]["value_uuid"];
+				if(!$valueUUID){
+					 $valueUUID = GenericFunctions::generateUUID();
+					 $where = "($textCond
+        AND val_tab.project_id = '$projectUUID')
+        OR val_tab.text_scram = '$valScram' ";
+					 //$db->update("val_tab", $where);
+				}
+        }
+        else{
+            $valueUUID = GenericFunctions::generateUUID();
+            $numval = null;
+            if(strlen($valText) > 0){
+                $numcheck = "0".$valText;
+                if(is_numeric($numcheck)){
+                    $numval = $numcheck;
+                }
+            }
+            
+            //insert the value into the val_tab table:
+            $data = array(
+                    'project_id'   => $projectUUID,
+                    'source_id'          => $dataTableName,
+                    'text_scram'        => $valScram,
+                    'val_text'          => $valText,
+                    'value_uuid'        => $valueUUID,
+                    'val_num'           => $numval
+            );
+            
+            $db->insert('val_tab', $data);
+        }
+        
+       return $valueUUID;
+        
+    }
+	 
 	 
 	 
     function startDB(){
