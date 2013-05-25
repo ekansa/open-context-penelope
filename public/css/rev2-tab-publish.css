@@ -26,6 +26,16 @@
     margin-left:10px;
     border: thin solid #d7d7d7;
 }
+#publishDiv {
+    padding: 10px;
+    margin-left:10px;
+    border: thin solid #d7d7d7;
+    background-color: rgb(228, 228, 230);
+}
+#publishDiv input{
+    width: 500px;
+    height: 30px;
+}
 #sampleDiv {
     padding: 10px;
     margin-left:10px;

@@ -1053,8 +1053,16 @@ class TableController extends Zend_Controller_Action {
 		  $tablePubObj->getMakeMetadata(); // get saved metadata, or auto-generate to begin metadata creation
 		  if(isset($requestParams["format"])){
 				$this->_helper->viewRenderer->setNoRender();
+				
 				header('Content-Type: application/json; charset=utf8');
-				echo Zend_Json::encode($tablePubObj->metadata);
+				
+				if($requestParams["format"] == "jsonld"){
+					 $tablePubObj->generateJSON_LD();
+					 echo Zend_Json::encode($tablePubObj->JSON_LD);
+				}
+				else{
+					 echo Zend_Json::encode($tablePubObj->metadata);
+				}
 		  }
 		  else{
 				$this->view->tablePubObj = $tablePubObj;
@@ -1087,6 +1095,58 @@ class TableController extends Zend_Controller_Action {
 	 }
 	 
 	 
+	 //remove person from metadata
+	 function removePersonAction(){
+		  
+		  Zend_Loader::loadClass('TabOut_TablePublish');
+		  Zend_Loader::loadClass('dbXML_dbLinks'); //needed for dublin core relations
+		  
+		  $tablePubObj = new TabOut_TablePublish;
+		  $requestParams =  $this->_request->getParams();
+		  
+		  if(isset($requestParams['table'])){
+			 $tablePubObj->penelopeTabID = $requestParams['table'];
+			 $tablePubObj->requestParams = $requestParams;
+		  }
+		  else{
+				return $this->render('index');
+		  }
+		  
+		  $tablePubObj->removePerson();
+		  $this->_helper->viewRenderer->setNoRender();
+		  $location = "../table/publish?table=".$tablePubObj->penelopeTabID;
+		  header("Location: ".$location);
+		  echo "Person removal attempt. ";
+	 }
+	 
+	 //add person to metadata
+	 function addPersonAction(){
+		  
+		  Zend_Loader::loadClass('TabOut_TablePublish');
+		  Zend_Loader::loadClass('dbXML_dbLinks'); //needed for dublin core relations
+		  Zend_Loader::loadClass('dbXML_dbPerson'); //needed for looking up persons
+		  
+		  $tablePubObj = new TabOut_TablePublish;
+		  $requestParams =  $this->_request->getParams();
+		  
+		  if(isset($requestParams['table'])){
+			 $tablePubObj->penelopeTabID = $requestParams['table'];
+			 $tablePubObj->requestParams = $requestParams;
+		  }
+		  else{
+				return $this->render('index');
+		  }
+		  
+		  $tablePubObj->addPerson();
+		  $this->_helper->viewRenderer->setNoRender();
+		  $location = "../table/publish?table=".$tablePubObj->penelopeTabID;
+		  header("Location: ".$location);
+		  echo "Person adding attempt. ";
+		  //echo print_r($tablePubObj);
+	 }
+	 
+	 
+	 
 	 
 	 //update metadata for a published table
 	 function postMetadataAction(){
@@ -1112,6 +1172,49 @@ class TableController extends Zend_Controller_Action {
 		  echo "Metadata updated based on posted values. ";
 		  
 	 }
+	 
+	 
+	  //update metadata for a published table
+	 function publishTableAction(){
+		  
+		  Zend_Loader::loadClass('TabOut_TablePublish');
+		  Zend_Loader::loadClass('dbXML_dbLinks'); //needed for dublin core relations
+		  
+		  $destinationURI = "http://opencontext/publish/table-publish";
+		  
+		  $tablePubObj = new TabOut_TablePublish;
+		  $requestParams =  $this->_request->getParams();
+		  
+		  if(isset($requestParams['pubURI'])){
+				$destinationURI = $requestParams['pubURI'];
+		  }
+		  
+		  if(isset($requestParams['table'])){
+				$tablePubObj->penelopeTabID = $requestParams['table'];
+				$ok = $tablePubObj->getSavedMetadata(); // get saved metadata
+		  }
+		  elseif(isset($requestParams['uri'])){
+				$ok = $tablePubObj->getSavedMetadataByURI($requestParams['uri']);
+		  }
+		  else{
+				return $this->render('table-index');
+		  }
+		  
+		  if($ok){
+				$tablePubObj->generateJSON_LD();
+				$output = $tablePubObj->publishTableJSON($destinationURI);
+		  }
+		  else{
+				header('HTTP/1.1 400 Bad Request');
+		  }
+		  
+		  $this->_helper->viewRenderer->setNoRender();
+		  header('Content-Type: application/json; charset=utf8');
+		  echo Zend_Json::encode($output);
+	 }
+	 
+	 
+	 
 	 
 	 
 	 //get old table metadata to update
@@ -1147,6 +1250,31 @@ class TableController extends Zend_Controller_Action {
 		  else{
 				$this->view->tableOldObj = $tableOldObj;
 		  }
+		  
+	 }
+	 
+	 //get all table - record associations {
+	  function allOldTableRecordsAction(){
+		  $this->_helper->viewRenderer->setNoRender();
+		  Zend_Loader::loadClass('TabOut_UpdateOld');
+		  Zend_Loader::loadClass('TabOut_OldTables');
+		  Zend_Loader::loadClass('TabOut_TablePublish');
+		  
+		  if(isset($requestParams['uri'])){
+				$startURI = $requestParams['uri'];
+		  }
+		  else{
+				$startURI = "http://opencontext/table-browse/.json";
+		  }
+		  
+		  $oldTables = new TabOut_OldTables;
+		  $oldTables->URIstartTableJSON = $startURI;
+		  $oldTables->saveAllTableRecordAssociations();
+		  
+		  
+		  header('Content-Type: application/json; charset=utf8');
+		  $output = array($oldTables->doneList);
+		  echo Zend_Json::encode($output);
 		  
 	 }
 	 

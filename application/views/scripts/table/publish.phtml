@@ -29,7 +29,7 @@ $tablePubObj = $this->tablePubObj;
                         
                         <input type="hidden" name="table" value="<?php echo $tablePubObj->penelopeTabID; ?>" />
                         
-                        <h2>Table Title [Get as <a href="../table/publish?format=json&table=<?php echo $tablePubObj->penelopeTabID; ?>">JSON</a>]</h2>
+                        <h2>Table Title [Get as <a href="../table/publish?format=json&table=<?php echo $tablePubObj->penelopeTabID; ?>">JSON</a> or <a href="../table/publish?format=jsonld&table=<?php echo $tablePubObj->penelopeTabID; ?>">JSON-LD</a>]</h2>
                         <input name="title" type="text" id="tabTitle" value="<?php echo $tablePubObj->tableName; ?>" />
                         <br/>
                         
@@ -54,24 +54,49 @@ $tablePubObj = $this->tablePubObj;
                         <h2>Table ARK</h2>
                         <input name="ark" type="text" id="tabARK" value="<?php echo $tablePubObj->tableARK; ?>" />
                         <br/>
+                        <div id="subDiv">
+                            <input type="submit" />
+                        </div>
 
+                    </form>
                         
                         <h2>Dublin Core Creators</h2>
                         <ul>
                             <?php
-                            foreach($tablePubObj->creators as $uri => $persArray){
+                            $cr = 1;
+                            foreach($tablePubObj->rawCreators as $uri => $persArray){
                                         
                                 ?>        
-                                    <li><a href="<?php echo $uri; ?>"><?php echo $persArray["name"]; ?></a> (<?php echo $persArray["count"]; ?>)</li>
-                                 <?php   
+                                    <li>
+                                    <form method="POST" action="../table/remove-person">
+                                        <a href="<?php echo $uri; ?>"><?php echo $persArray["name"]; ?></a> (<?php echo $persArray["count"]; ?>)
+                                        <input type="hidden" name="uri" value="<?php echo $uri; ?>"/>
+                                        <input type="hidden" name="role" value="creator"/>
+                                        <input type="hidden" name="table" value="<?php echo $tablePubObj->penelopeTabID; ?>" />
+                                        <input type="submit" value="-" class="btn btn-danger btn-mini" />
+                                    </form>
+                                    </li>
+                                 <?php
+                                $cr++;
                                 }//end loop through the table array  
                                 ?>
+                                
+                                    <li>
+                                    <form method="POST" action="../table/add-person">
+                                        <input type="text" name="uuid" value="Person UUID" size="50" style="margin-top:1.5%" />
+                                        <input type="text" name="rank" value="<?php echo $cr; ?>" size="3" style="margin-top:1.5%" />
+                                        <input type="hidden" name="role" value="creator"/>
+                                        <input type="hidden" name="table" value="<?php echo $tablePubObj->penelopeTabID; ?>" />
+                                        <input type="submit" value="+" class="btn btn-primary btn-mini" />
+                                    </form>
+                                    </li>
+                                
                         </ul>
                         <br/>
                         <h2>Dublin Core Contributors</h2>
                         <ul>
                             <?php
-                            foreach($tablePubObj->contributors as $uri => $persArray){
+                            foreach($tablePubObj->rawContributors as $uri => $persArray){
                                         
                                 ?>        
                                     <li><a href="<?php echo $uri; ?>"><?php echo $persArray["name"]; ?></a> (<?php echo $persArray["count"]; ?>)</li>
@@ -91,10 +116,8 @@ $tablePubObj = $this->tablePubObj;
                                 }//end loop through the table array  
                                 ?>
                         </ul>
-                        <br/>
-                        <div id="subDiv">
-                            <input type="submit" />
-                        </div>
+                        
+                       
                     </form>
                 </div>
                 <br/>
@@ -102,8 +125,20 @@ $tablePubObj = $this->tablePubObj;
                 <div id="autoDiv">
                     <form method="post" action="../table/auto-persons-projects" >
                         <input type="hidden" name="table" value="<?php echo $tablePubObj->penelopeTabID; ?>" />
-                        <lable>Update with autogenerated person, project links</lable>
+                        <label>Update with autogenerated person, project links</label>
                         <input type="submit" />
+                    </form>
+                </div>
+                
+                
+                <div id="publishDiv">
+                    <form method="post" action="../table/publish-table" >
+                        <input type="hidden" name="table" value="<?php echo $tablePubObj->penelopeTabID; ?>" />
+                        <label>URI to publish to: </label>
+                        <div class="input-append">
+                            <input class="span2" id="appendedInputButton" type="text" placeholder="http://opencontext/publish/table-publish" />
+                            <button class="btn btn-inverse" type="submit">Publish</button>
+                        </div>
                     </form>
                 </div>
                 

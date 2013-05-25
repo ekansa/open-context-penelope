@@ -7,6 +7,7 @@
 class TabOut_TablePublish  {
     
 	 public $metadata; //metadata array
+	 public $JSON_LD; //JSON_LD metadata array
 	 
 	 public $db; //database connection object
 	 
@@ -21,10 +22,12 @@ class TabOut_TablePublish  {
 	 public $pubUpdate; //date-time for the last update of the published table
 	 
 	 
-	 public $linkedPersons; //array and count of associated records of individuals in the table
-	 public $creators; //array and count of associated records of dublin core creators
-	 public $contributors; //array and count of associated records of dublin core contributors
+	 public $rawLinkedPersons; //array and count of associated records of individuals in the table
+	 public $rawCreators; //array and count of associated records of dublin core rawCreators
+	 public $rawContributors; //array and count of associated records of dublin core rawContributors
 	 public $projects; //array and count of associated projects represented in a table
+	 public $tableID; //ID for the table
+	 public $tablePage; //page number for the table. 
 	 
 	 public $cache_id; //id for the table
 	 public $setLastPublished; //publication time for the set
@@ -50,6 +53,10 @@ class TabOut_TablePublish  {
 	 
 	 const personBaseURI = "http://opencontext.org/persons/";
 	 const projectBaseURI = "http://opencontext.org/projects/";
+	 const tableBaseURI = "http://opencontext.org/tables/";
+	 
+	 const closeMatchURI = "http://www.w3.org/2004/02/skos/core#closeMatch";
+	 const closeMatch = "closeMatch";
 	 
 	 //get saved metadata from the database
 	 function getSavedMetadata(){
@@ -64,7 +71,16 @@ class TabOut_TablePublish  {
 		  
 		  $result = $db->fetchAll($sql);
 		  if($result){
+				
+				if(strlen($result[0]["tableID"])>1){
+					 $this->tableID = $result[0]["tableID"];
+				}
+				else{
+					 $this->tableID = false;
+				}
+				$this->tablePage = $result[0]["page"];
 				$this->published = $result[0]["published"];
+				$this->publishedURI = $result[0]["publishedURI"];
 				if($this->published){
 					 $this->pubCreated = $result[0]["pub_created"];
 					 $this->pubUpdate = $result[0]["pub_update"];
@@ -75,6 +91,7 @@ class TabOut_TablePublish  {
 				}
 				$metadataJSON = $result[0]["metadata"];
 				$metadata = Zend_Json::decode($metadataJSON);
+				$metadata["tableID"] = $this->tableID;
 				$this->metadata = $metadata;
 				return true;
 		  }
@@ -98,6 +115,8 @@ class TabOut_TablePublish  {
 		  
 		  $result = $db->fetchAll($sql);
 		  if($result){
+				$this->tableID = $result[0]["tableID"];
+				$this->tablePage = $result[0]["page"];
 				$this->published = $result[0]["published"];
 				$this->publishedURI = $uri;
 				if($this->published){
@@ -129,10 +148,10 @@ class TabOut_TablePublish  {
 		  $this->tableTags = $metadata["tags"];
 		  $this->tableDOI = $metadata["doi"];
 		  $this->tableARK = $metadata["ark"];
-		  $this->recordCount = $metadata["recordCount"];
-		  $this->creators = $metadata["creators"];
-		  $this->contributors = $metadata["contributors"];
-		  $this->persons = $metadata["persons"];
+		  $this->recordCount = $metadata["recordCount"]+0;
+		  $this->rawCreators = $metadata["rawCreators"];
+		  $this->rawContributors = $metadata["rawContributors"];
+		  $this->rawLinkedPersons = $metadata["rawLinkedPersons"];
 		  $this->projects = $metadata["projects"];
 		  $this->tableFields = $metadata["tableFields"];
 	 }
@@ -148,6 +167,7 @@ class TabOut_TablePublish  {
 		  $db->delete("export_tabs_meta", $where);
 		  
 		  $data = array(	"source_id" => $this->penelopeTabID,
+								"tableID" => $this->tableID,
 								"title" => $this->tableName,
 								"published" => $this->published,
 								"pub_created" => $this->pubCreated,
@@ -162,21 +182,185 @@ class TabOut_TablePublish  {
 	 // this makes JSON
 	 function generateJSON(){
 		  $metadata = array();
+		  $metadata["tableID"] = $this->tableID;
+		  $metadata["tablePage"] = $this->tablePage;
 		  $metadata["title"] = $this->tableName;
 		  $metadata["description"] = $this->tableDesciption;
 		  $metadata["tags"] = $this->tableTags;
 		  $metadata["doi"] = $this->tableDOI;
 		  $metadata["ark"] = $this->tableARK;
-		  $metadata["recordCount"] = $this->recordCount;
-		  $metadata["creators"] = $this->creators;
-		  $metadata["contributors"] = $this->contributors;
-		  $metadata["persons"] = $this->linkedPersons;
+		  $metadata["recordCount"] = $this->recordCount+0;
+		  $metadata["rawCreators"] = $this->rawCreators;
+		  $metadata["rawContributors"] = $this->rawContributors;
+		  $metadata["rawLinkedPersons"] = $this->rawLinkedPersons;
 		  $metadata["projects"] = $this->projects;
 		  $metadata["tableFields"] = $this->tableFields;
 		  $this->metadata = $metadata;
 		  return Zend_Json::encode($metadata);
 	 }
 	 
+	 
+	 //this makes JSON-LD from JSON
+	 function generateJSON_LD(){
+		  
+		  $metadata = $this->metadata;
+		  $JSON_LD = array();
+		  
+		  
+		  $JSON_LD["@context"] = array(
+
+				"type" => "@type",
+				"id" => "@id",
+				"tableID" => "http://purl.org/dc/elements/1.1/identifier",
+				"title" => "http://purl.org/dc/elements/1.1/title",
+				"description" => "http://purl.org/dc/terms/abstract",
+				"published" => "http://purl.org/dc/terms/issued",
+				"updated" => "http://purl.org/dc/terms/modified",
+				"doi" => "http://purl.org/ontology/bibo/doi",
+				"ark" => "http://en.wikipedia.org/wiki/Archival_Resource_Key",
+				"editorList" => "http://purl.org/ontology/bibo/editorList",
+				"editor" => "http://purl.org/ontology/bibo/editor",
+				"contributorList" => "http://purl.org/ontology/bibo/contributorList",
+				"contributor" => "http://purl.org/dc/terms/contributor",
+				"references" => "http://purl.org/dc/terms/references",
+				"name" => "http://www.w3.org/2000/01/rdf-schema#label",
+				"spatial" => "http://purl.org/dc/terms/spatial",
+				"temporal" => "http://purl.org/dc/terms/temporal",
+				"recordCount" => "http://rdfs.org/ns/void#entities", //number of entities
+				"fieldCount" => "http://rdfs.org/ns/void#properties", //number of properties
+				"publisher" => "http://purl.org/dc/terms/publisher"
+				);
+		  
+		  $JSON_LD["id"] = $this->generateTableURI();
+		  $JSON_LD["tableID"] = $this->getGenerateTableID();
+		  $JSON_LD["title"] = $metadata["title"];
+		  $JSON_LD["description"] = $metadata["description"];
+		  $JSON_LD["published"] = date("Y-m-d\TH:i:s\-07:00", time());
+		  $JSON_LD["updated"] = date("Y-m-d\TH:i:s\-07:00", time());
+		  $JSON_LD["recordCount"] = $metadata["recordCount"];
+		  $JSON_LD["fieldCount"] = count($metadata["tableFields"]);
+		  $JSON_LD["publisher"] = array("name" => "Open Context",
+												  "id" => "http://opencontext.org");
+		  
+		  if($metadata["doi"] != false){
+				$JSON_LD["doi"] = $metadata["doi"];
+		  }
+		  if($metadata["ark"] != false){
+				$JSON_LD["ark"] = $metadata["ark"];
+		  }
+		  if(count($metadata["rawCreators"])>0){
+				foreach($metadata["rawCreators"] as $uriKey => $nameArray){
+					 $JSON_LD["editorList"][]["editor"] = array("name" => $nameArray["name"],
+																			  "count" => $nameArray["count"],
+																			  "id" => $uriKey
+																			  );
+					 
+				}
+		  }
+		  if(count($metadata["rawContributors"])>0){
+				foreach($metadata["rawContributors"] as $uriKey => $nameArray){
+					 $JSON_LD["contributorList"][]["contributor"] = array("name" => $nameArray["name"],
+																			  "count" => $nameArray["count"],
+																			  "id" => $uriKey
+																			  );
+					 
+				}
+		  }
+		  if(count($metadata["projects"])>0){
+				foreach($metadata["projects"] as $uriKey => $nameArray){
+					 $JSON_LD["references"][] = array("name" => $nameArray["name"],
+																			  "count" => $nameArray["count"],
+																			  "type" => "http://opencontext/about/concepts#projects",
+																			  "id" => $uriKey
+																			  );
+					 
+				}
+		  }
+		  $JSON_LD["tableFields"] = $metadata["tableFields"];
+		  $this->JSON_LD = $JSON_LD;
+		  return $JSON_LD;
+	 }
+	 
+	 
+	 function generateTableURI(){
+		  $tableURI = self::tableBaseURI.($this->tableID);
+		  if($this->tablePage > 1){
+				$tableURI .= "/".($this->tablePage);
+		  }
+		  return $tableURI;
+	 }
+	 
+	 
+	 
+	 //publish the table metadata to a URI
+	 function publishTableJSON($destinationURI){
+		  $output = false;
+		  
+		  $client = new Zend_Http_Client();
+		  $client->setUri($destinationURI);
+		  $client->setConfig(array(
+				'maxredirects' => 0,
+				'timeout'      => 280));
+		  
+		  $clientParams = array("json" => Zend_Json::encode($this->JSON_LD));
+		  
+		  $client->setParameterPost($clientParams);
+		  $response = $client->request('POST');
+		  if($response){
+				$JSON = $response->getBody();
+				$output = Zend_Json::decode($JSON);
+				if(!is_array($output)){
+					 $output = array("error" => true, "response" => $JSON);
+				}
+				else{
+					 $output = $this->OKpublishProces($output);
+				}
+		  }
+
+		  return $output;
+	 }
+	 
+	 function OKpublishProces($resultObj){
+		  
+		  $db = $this->startDB();
+		  $where = "source_id = '".$this->penelopeTabID."' ";	 
+		  $data = array();
+		  
+		  if(isset( $resultObj["id"])){
+				$data["published"] = true;
+				$data["pub_created"] = $resultObj["published"];
+				$data["pub_update"] = $resultObj["updated"];
+				$data["publishedURI"] = $resultObj["id"];
+				
+				$db->update("export_tabs_meta", $data, $where);
+				return $resultObj;
+		  }
+		  else{
+				$resultObj["error"] = true;
+				$resultObj["message"] = "Strange JSON";
+				return $resultObj;
+		  }
+	 }
+	 
+	 
+	 
+	 
+	 //make a table ID if you don't have one yet. 
+	 function getGenerateTableID(){
+		  
+		  if(!$this->tableID){
+				
+				$db = $this->startDB();
+				$where = "source_id = '".$this->penelopeTabID."' ";	 
+				$metadataString = Zend_Json::encode($this->metadata);
+				$this->tableID = md5($metadataString);
+				
+				$data = array("tableID" => $this->tableID);
+				$db->update("export_tabs_meta", $data, $where);
+		  }
+		  
+		  return $this->tableID;
+	 }
 	 
 	 
 	 
@@ -227,6 +411,7 @@ class TabOut_TablePublish  {
 	 //get saved metadata if it exists, if not make new metadata record
 	 function getMakeMetadata(){
 		  if(!$this->getSavedMetadata()){
+				$this->tableID = false;
 				$this->tableName = "[Not titled]";
 				$this->tableDesciption = "[Not described]";
 				$this->tableTags = false;
@@ -237,6 +422,8 @@ class TabOut_TablePublish  {
 				$this->pubUpdate = false;
 				$this->getProjects();
 				$this->getPersons();
+				$this->getProjectCreators();
+				$this->getGenerateTableID(); //create a table ID based in the metadata for the table
 				$this->saveMetadata(); //save the results
 		  }
 		  else{
@@ -254,8 +441,155 @@ class TabOut_TablePublish  {
 		  $this->getMakeMetadata();
 		  $this->getProjects();
 		  $this->getPersons();
+		  $this->getProjectCreators();
 		  $this->saveMetadata(); //save the results
 	 }
+	 
+	 
+	 //this function makes some metadata automatically, based on the table's associations
+	 function removePerson(){
+		  
+		  $this->getMakeMetadata();
+		  $changesMade = false;
+		  $requestParams = $this->requestParams;
+		  if(isset($requestParams["uri"]) && isset($requestParams["role"])){
+				
+				$personURI = $requestParams["uri"];
+				if($requestParams["role"] == "creator"){
+					 $persons = $this->rawCreators;
+					 unset($persons[$personURI]);
+					 $this->rawCreators = $persons;
+					 $changesMade = true;
+				}
+				elseif($requestParams["role"] == "contributor"){
+					 $persons = $this->rawContributors;
+					 unset($persons[$personURI]);
+					 $this->rawContributors = $persons;
+					 $changesMade = true;
+				}
+				elseif($requestParams["role"] == "person"){
+					 $persons = $this->rawLinkedPersons;
+					 unset($persons[$personURI]);
+					 $this->rawLinkedPersons = $persons;
+					 $changesMade = true;
+				}
+				else{
+					
+				}
+		  }
+		 
+		  if($changesMade){
+				$this->saveMetadata(); //save the results
+		  }
+		  return $changesMade;
+	 }
+	 
+	 
+	 
+	 
+	 
+	 //this function makes some metadata automatically, based on the table's associations
+	 function addPerson(){
+		  
+		  $this->getMakeMetadata();
+		  $changesMade = false;
+		  $requestParams = $this->requestParams;
+		  if(isset($requestParams["uuid"]) && isset($requestParams["role"])){
+				
+				$personUUID = trim($requestParams["uuid"]);
+				$uri = self::personBaseURI.$personUUID;
+				
+				if(isset($requestParams["rank"])){
+					 $rank = $requestParams["rank"];
+				}
+				else{
+					 $rank = false;
+				}
+				
+				$pObj = new dbXML_dbPerson;
+				$pObj->initialize();
+				$pObj->dbPenelope = true;
+				$pFound = $pObj->getByID($personUUID);
+				if($pFound){
+					 $name = $pObj->label;
+					 if($requestParams["role"] == "creator"){
+						  $persons = $this->rawCreators;
+						  $persons = $this->addPersonRank($persons, $name, $uri, $rank);
+						  $this->rawCreators = $persons;
+						  $changesMade = true;
+					 }
+					 elseif($requestParams["role"] == "contributor"){
+						  $persons = $this->rawContributors;
+						  $persons = $this->addPersonRank($persons, $name, $uri, $rank);
+						  $this->rawContributors = $persons;
+						  $changesMade = true;
+					 }
+					 elseif($requestParams["role"] == "person"){
+						  $persons = $this->rawLinkedPersons;
+						  $persons = $this->addPersonRank($persons, $name, $uri, $rank);
+						  $this->rawLinkedPersons = $persons;
+						  $changesMade = true;
+					 }
+					 else{
+						 
+					 }
+				}
+		  }
+		 
+		  if($changesMade){
+				$this->saveMetadata(); //save the results
+		  }
+		  return $changesMade;
+	 }
+	 
+	 
+	 
+	 //add a person to an array of people, put that fellow in the right order
+	 function addPersonRank($persons, $name, $uri, $rank = false){
+		  
+		  $persCount = count($persons);
+		  if(!$rank){
+				$rank = $persCount;
+		  }
+		  if(!is_numeric($rank)){
+				$rank = $persCount;
+		  }
+		  else{
+				$rank = round($rank, 0);
+		  }
+		  
+		  if($rank < 1){
+				$rank = 1;
+		  }
+		  
+		  if($rank < $persCount){
+				$newPersons = array();
+				$i = 1;
+				foreach($persons as $uriKey => $pArray){
+					 if($i == $rank){
+						  $newPersons[$uri] = array("name" => $name, "count" => false); //add the new person at the right rank
+					 }
+					 $newPersons[$uriKey] = $pArray; //add existing person
+				$i++;
+				}
+				unset($persons);
+				$persons = $newPersons;
+		  }
+		  else{
+				$persons[$uri] = array("name" => $name, "count" => false); //add the new person at the end of the array
+		  }
+		  
+		  return $persons;
+	 }
+	 
+	 
+	 
+	 
+	 
+	 
+	 
+	 
+	 
 	 
 	 
 	 
@@ -283,18 +617,19 @@ class TabOut_TablePublish  {
 					 $projects[$uri] = array("name" => $name, "count" => $count);
 				}//end loop
 				
+				$projects = $this->orderURIs($projects);
 				$this->projects = $projects;
 		  }//end case with results
 	 
 	 }//end function
 	 
 	 
-	 //get dublin core creators associated with the project
+	 //get dublin core rawCreators associated with the project
 	 function getProjectCreators(){
 		  
-		  $creators = $this->creators;
-		  if(!is_array($creators)){
-				$creators = array();
+		  $rawCreators = $this->rawCreators;
+		  if(!is_array($rawCreators)){
+				$rawCreators = array();
 		  }
 		  
 		  $db = $this->startDB();
@@ -319,13 +654,18 @@ class TabOut_TablePublish  {
 								if(stristr($rawField, "creator")){
 									 $personUUID = $this->getPersonID($projectUUID, $DCvalue);
 									 $personURI = self::personBaseURI.$personUUID;
-									 $creators[$personURI] = array("name" => $DCvalue,
+									 $rawCreators[$personURI] = array("name" => $DCvalue,
 																			 "count" => $projectCount + 0 );
+									 $rawCreators[$personURI]["rel"] = $this->getLinkedPerson($personUUID);
 								}
 						  }
 					 }
 				}
-				$this->creators = $creators;
+				
+				$rawCreators = $this->consolidateRelatedURIs($rawCreators);
+				$rawCreators = $this->orderURIs($rawCreators);
+				
+				$this->rawCreators = $rawCreators;
 		  }
 
 	 }//end function
@@ -360,6 +700,13 @@ class TabOut_TablePublish  {
 		  return $personID;
         
     } //end function
+	 
+	 
+	 
+	 
+	 
+	 
+	 
 	 
 	 
 	 
@@ -415,8 +762,8 @@ class TabOut_TablePublish  {
 		  }
 		  
 		  if($result){
-				$creators = array();
-				$contributors = array();
+				$rawCreators = array();
+				$rawContributors = array();
 				$persons = array();
 				foreach($result as $row){
 					 $uuid = $row["targ_uuid"];
@@ -424,24 +771,27 @@ class TabOut_TablePublish  {
 					 $name = $row["combined_name"];
 					 $linkType = $row["link_type"];
 					 if(in_array($linkType, $creatorRels)){
-						  if(!array_key_exists($uri, $creators)){
-								$creators[$uri] = array("name" => $name, "count" => 1);
+						  if(!array_key_exists($uri, $rawCreators)){
+								$rawCreators[$uri] = array("name" => $name, "count" => 1);
+								$rawCreators[$uri]["rel"] = $this->getLinkedPerson($uuid);
 						  }
 						  else{
-								$creators[$uri]["count"] ++ ;  
+								$rawCreators[$uri]["count"] ++ ;  
 						  }
 					 }
 					 elseif(in_array($linkType, $contribRels)){
-						  if(!array_key_exists($uri, $contributors)){
-								$contributors[$uri] = array("name" => $name, "count" => 1);
+						  if(!array_key_exists($uri, $rawContributors)){
+								$rawContributors[$uri] = array("name" => $name, "count" => 1);
+								$rawContributors[$uri]["rel"] = $this->getLinkedPerson($uuid);
 						  }
 						  else{
-								$contributors[$uri]["count"] = $contributors[$uri]["count"] + 1; 
+								$rawContributors[$uri]["count"] = $rawContributors[$uri]["count"] + 1; 
 						  }
 					 }
 					 
 					 if(!array_key_exists($uri, $persons)){
 						  $persons[$uri] = array("name" => $name, "count" => 1);
+						  $persons[$uri]["rel"] = $this->getLinkedPerson($uuid);
 					 }
 					 else{
 						  $persons[$uri]["count"] ++ ;  
@@ -449,12 +799,130 @@ class TabOut_TablePublish  {
 					 
 				}
 				
-				$this->creators = $creators;
-				$this->contributors = $contributors;
-				$this->linkedPersons = $persons;
+				//combine URIs for the same person, choose the URI with the most associated items
+				$rawCreators = $this->consolidateRelatedURIs($rawCreators);
+				$rawContributors = $this->consolidateRelatedURIs($rawContributors);
+				$persons = $this->consolidateRelatedURIs($persons);
+				
+				//sort the array by count, from high to low
+				$rawCreators = $this->orderURIs($rawCreators);
+				$rawContributors = $this->orderURIs($rawContributors);
+				$persons = $this->orderURIs($persons);
+				
+				
+				$this->rawCreators = $rawCreators;
+				$this->rawContributors = $rawContributors;
+				$this->rawLinkedPersons = $persons;
 				
 		  }
 	 }//end function
+	 
+	 
+	 
+	 
+	 function getLinkedPerson($personUUID){
+		  
+		  $db = $this->startDB();
+		  
+		  $personURI = self::personBaseURI.$personUUID;
+		  
+		  $sql = "SELECT CONCAT('".self::personBaseURI."', itemUUID) as itemURI, linkedURI
+		  FROM linked_data
+		  WHERE
+		  (
+				(itemUUID = '$personUUID' AND linkedURI LIKE '".self::personBaseURI."%')
+				OR
+				(linkedURI = '".$personURI."')
+		  )
+		  AND linkedType = '".self::closeMatch."' 
+		  ";
+		  
+		  $result = $db->fetchAll($sql);
+		  $output = false;
+		  if($result){
+				$output = array();
+				foreach($result as $row){
+					 if($row["itemURI"] != $personURI && !in_array($row["itemURI"], $output)){
+						  $output[] = $row["itemURI"];
+					 }
+					 if($row["linkedURI"] != $personURI && !in_array($row["linkedURI"], $output)){
+						  $output[] = $row["linkedURI"];
+					 }
+				}
+		  }
+		  
+		  return $output;
+	 }
+	 
+	 //combines results where there a person has more than 1 URI, choses the URI with the largest number of results
+	 function consolidateRelatedURIs($persArray){
+		  
+		  if(is_array($persArray)){
+				$newPersArray = array();
+				$doneURIs = array();
+				foreach($persArray as $uriKey => $person){
+					 $doneRelURIs = array();
+					 $actName = $person["name"];
+					 $actCount = $person["count"];
+					 if(isset($person["rel"])){
+						  if(is_array($person["rel"])){
+								$maxCount = $actCount;
+								foreach($person["rel"] as $relURI){
+									 if(array_key_exists($relURI, $persArray) && !in_array($relURI, $doneURIs)){
+										  $relCount = $persArray[$relURI]["count"];
+										  if($relCount >  $maxCount){
+												$doneURIs[] = $uriKey;
+												$uriKey = $relURI;
+										  }
+										  $actCount = $actCount + $relCount;
+									 }
+									 $doneRelURIs[] = $relURI;
+								}
+						  }
+					 }
+					 
+					 if(!in_array($uriKey, $doneURIs)){
+						  $doneURIs[] = $uriKey;
+						  $newPersArray[$uriKey] = array("name" => $actName, "count" => $actCount);
+					 }
+					 
+					 foreach($doneRelURIs as $doneRel){
+						  if(!in_array($doneRel, $doneURIs)){
+								$doneURIs[] = $doneRel;
+						  }
+					 }
+				}
+		  }
+		  else{
+				$newPersArray = $persArray;
+		  }
+		  return $newPersArray;
+		  //return $persArray;
+	 }
+	 
+	 
+	 //order the array by the count from highest count to lowest
+	 function orderURIs($actArray){
+		  if(is_array($actArray)){
+				if(count($actArray) > 0){
+					 $countURIs = array();				
+					 foreach($actArray as $uriKey => $actItem){
+						  $actCount = $actItem["count"];
+						  $countURIs[$uriKey] = $actCount;
+					 }
+					 arsort($countURIs); //reverse sort, highest to lowest
+					 $newArray = array();
+					 foreach($countURIs as $uriKey  => $count){
+						  $newArray[$uriKey] = $actArray[$uriKey];
+					 }
+					 unset($actArray);
+					 $actArray = $newArray;
+				}
+		  }
+		  return $actArray;
+	 }
+	 
+	 
 	 
 	 
 	 
@@ -512,7 +980,7 @@ class TabOut_TablePublish  {
 		  
 		  $result = $db->fetchAll($sql);
 		  if($result){
-				$this->recordCount = $result[0]["IDcount"];
+				$this->recordCount = $result[0]["IDcount"]+0;
 		  }
 		  else{
 				return false;

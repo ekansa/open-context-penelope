@@ -10,6 +10,16 @@ class TabOut_OldTables  {
 	 
 	 public $URIstartTableJSON; //start point (end point in SOA world) for getting JSON list of tables
 	 
+	 //master function to save all table record associations
+	 function saveAllTableRecordAssociations(){
+		  $this->pageThroughJSONlist(); //page through search JSON to get list of table URLs
+		  $this->saveTableRecords(); //get JSON for each table (and table segments) to save record associations
+	 }
+	 
+	 public $doneList; //list of processed URIs
+	 
+	 public $segmentCount;
+	 
 	 function pageThroughJSONlist(){
 		  
 		  if($this->URIstartTableJSON){
@@ -30,6 +40,9 @@ class TabOut_OldTables  {
 						  else{
 								$continue = false; //no more pages to loop through
 						  }
+						  
+						  sleep(1);
+						  //$continue = false; //no more pages to loop through
 					 }
 				}//end loop through lists
 				
@@ -55,46 +68,78 @@ class TabOut_OldTables  {
 	 }
 	 
 	 
-	 
+	 //loop through all the table URIs save assocations between their records and the table IDs to the database
 	 function saveTableRecords(){
-		  
-		  
+		  if(is_array($this->rawTableURIs)){
+				foreach($this->rawTableURIs as $tableURL){
+					 $this->segmentCount = 1;
+					 $this->processTableURL($tableURL, 1);
+				}
+		  }
 		  
 	 }
 	 
-	 
-	 
-	 
-	 
-	 
-	 
-	 
 	 //recursive function to get table JSON, save all the records for a table, and do it for all the segments
-	 function processTableURL($tableURL){
+	 function processTableURL($tableURL, $segmentPage){
 		  
+		  $doneList = $this->doneList;
+		  if(!is_array($doneList)){
+				$doneList = array();
+		  }
+		  
+		  if($segmentPage > 1){
+				$useTableURL = $tableURL."/".$segmentPage;
+		  }
+		  else{
+				$useTableURL = $tableURL;
+		  }
+		  
+		  sleep(1);
 		  $tableOld = new TabOut_UpdateOld;
-		  $tableOld->oldURI = $tableURL;
-		  $tableOld->getParseJSON();
-		  $tableOld->processOldRecords();
-		  if($tableOld->tablePage < $tableOld->totalTabs){
-				$newSegmentURL = $tableURL."/". $tableOld->tablePage + 1;
-				$this->processTableURL($newSegmentURL);
+		  $tableOld->oldURI = $useTableURL ;
+		  $tableOld->tableIDfromURI();
+		  
+		  if($this->checkNeedsSaving($tableOld->oldTableID, $tableOld->tablePage)){
+				
+				if($tableOld->getParseJSON()){
+					 $tableOld->processOldRecords();
+					 
+					 $doneList[$tableURL][] = $tableOld->tablePage;
+					 $this->doneList = $doneList; //save the fact that you did this
+					 
+					 unset($tableOld);
+					 if($this->segmentCount < 12 && $segmentPage < 12){
+						  $this->segmentCount = $this->segmentCount +  1;
+						  $this->processTableURL($tableURL , $segmentPage + 1);
+					 }
+				}
+		  }
+		 
+		  unset($tableOld);
+		 
+	 }
+	 
+	 
+	 function checkNeedsSaving($tableID, $page){
+		  $db = $this->startDB();
+		  $sql = "SELECT * FROM export_tabs_records WHERE tableID = '$tableID' AND page = ".$page." LIMIT 1;";
+		 
+		  $result = $db->fetchAll($sql);
+		  if($result){
+				return false; // does NOT need saving
+		  }
+		  else{
+				return true; //needs saving
 		  }
 	 }
 	 
-	 
-	 
-	 
-	 
-	 
-	 
-	 
+
 
 	 function getTableJSONlist($JSONuri){
 		  $output = false;
 		  
 		  $client = new Zend_Http_Client();
-		  $client->setUri($this->oldURI);
+		  $client->setUri($JSONuri);
 		  $client->setConfig(array(
 				'maxredirects' => 0,
 				'timeout'      => 280));
@@ -107,7 +152,7 @@ class TabOut_OldTables  {
 				}
 		  }
 
-		  return $output
+		  return $output;
 	 }
 	 
 	 

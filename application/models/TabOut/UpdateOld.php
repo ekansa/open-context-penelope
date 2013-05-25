@@ -8,7 +8,7 @@ class TabOut_UpdateOld  {
 	 public $oldTableData;
 	 public $newMetadata;
 	 
-	 public $tablePage = 1; //current page for the table, default to 1
+	 public $tablePage = false; //current page for the table, default to 1
 	 public $totalTabs = 1; //the total number of table segments
 	 
 	 public $requestParams; //request parameters
@@ -28,12 +28,29 @@ class TabOut_UpdateOld  {
 	 //get the table ID from the URL
 	 function tableIDfromURI(){
 		  if($this->oldURI){
-				$uriExp = explode("/", $this->oldURI);
-				$this->oldTableID = $uriExp[count($uriExp)-1]; //last part of URL is the ID (unless paging)
 				
+				$uriExp = explode("/", $this->oldURI);
+				
+				if(count($uriExp) == 5){
+					 $this->oldTableID = $uriExp[4];
+					 $this->tablePage = 1;
+				}
+				elseif(count($uriExp) == 6){
+					 $this->oldTableID = $uriExp[4];
+					 $this->tablePage = $uriExp[5] + 0;
+				}
+				
+				/*
+				$this->oldTableID = $uriExp[count($uriExp)-1]; //last part of URL is the ID (unless paging)
 				if(strlen($this->oldTableID)<4){
+					 $this->tablePage = $uriExp[count($uriExp)-1] + 0; //last part of URL is the page number
 					 $this->oldTableID = $uriExp[count($uriExp)-2]; //last part of URL is the ID, this captures the paging issue
 				}
+				else{
+					 $this->tablePage = 1;
+				}
+				*/
+				
 				
 		  }
 	 }
@@ -41,7 +58,7 @@ class TabOut_UpdateOld  {
 	 
 	 //get the old JSON file by URI
 	 function getParseJSON(){
-		  
+		  $output = false;
 		  if($this->oldURI){
 				
 				$this->tableIDfromURI();
@@ -66,11 +83,17 @@ class TabOut_UpdateOld  {
 					 if($response){
 						  $oldJSON = $response->getBody();
 						  $this->oldTableData = Zend_Json::decode($oldJSON);
+						  if(is_array($this->oldTableData )){
+								$output = true;
+						  }
+					 }
+					 else{
+						  $this->oldTableData = false;
 					 }
 				}
 		  }
 		  
-		  
+		  return $output;
 	 }//end function
 	 
 	 
@@ -102,11 +125,14 @@ class TabOut_UpdateOld  {
 	 
 	 //this function simply goes through a table and saves its record associations without 
 	 function processOldRecords(){
-		  if(is_array($this->oldTableData) && $this->oldTableData){
+		  if(is_array($this->oldTableData)){
 				
 				$oldData = $this->oldTableData;
-				if(isset($oldData["meta"]["table_segments"]["currentTab"])){
+				if(isset($oldData["meta"]["table_segments"]["currentTab"]) && !$this->tablePage){
 					 $this->tablePage = $oldData["meta"]["table_segments"]["currentTab"] + 0;
+				}
+				else{
+					 //$this->tablePage = 1;
 				}
 				if(isset($oldData["meta"]["table_segments"]["totalTabs"])){
 					 $this->totalTabs = $oldData["meta"]["table_segments"]["totalTabs"] + 0;
@@ -140,8 +166,11 @@ class TabOut_UpdateOld  {
 				$tablePubObj->tableTags = $tags;
 		  }
 		  
-		  if(isset($oldTableData["meta"]["table_segments"]["currentTab"])){
+		  if(isset($oldTableData["meta"]["table_segments"]["currentTab"]) && !$this->tablePage){
 				$this->tablePage = $oldTableData["meta"]["table_segments"]["currentTab"] + 0;
+		  }
+		  else{
+				$this->tablePage = 1;
 		  }
 		  if(isset($oldTableData["table_segments"]["totalTabs"])){
 				$this->totalTabs = $oldTableData["meta"]["table_segments"]["totalTabs"] + 0;

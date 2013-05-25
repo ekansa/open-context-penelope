@@ -4,6 +4,8 @@ class TabOut_Tables  {
 	 
 	 public $db;
 	 public $tables;
+	 public $projects;
+	 public $classes; 
 	 
 	 //get tables for outputs
 	 function getTables(){
@@ -25,6 +27,51 @@ class TabOut_Tables  {
 		  else{
 				$this->tables = array();
 		  }
+	 }
+	 
+	 function getProjectListCount(){
+		  
+		  $db = $this->startDB();
+		  
+		  $sql = "SELECT count(space.uuid) as itemCount, space.project_id, project_list.project_name
+		  
+		  FROM space
+		  JOIN project_list ON space.project_id = project_list.project_id
+		  GROUP BY space.project_id
+		  ORDER BY itemCount DESC
+		  ";
+		  
+		  $result = $db->fetchAll($sql);
+		  if($result){
+				$this->projects = $result;
+		  }
+		  else{
+				$this->projects = array();
+		  }
+		  
+	 }
+	 
+	 
+	 function getClassListCount(){
+		  
+		  $db = $this->startDB();
+		  
+		  $sql = "SELECT count(space.uuid) as itemCount, space.class_uuid, sp_classes.class_label
+		  
+		  FROM space
+		  JOIN sp_classes ON space.class_uuid = sp_classes.class_uuid
+		  GROUP BY space.class_uuid
+		  ORDER BY itemCount DESC
+		  ";
+		  
+		  $result = $db->fetchAll($sql);
+		  if($result){
+				$this->classes = $result;
+		  }
+		  else{
+				$this->classes = array();
+		  }
+		  
 	 }
 	 
 	 
