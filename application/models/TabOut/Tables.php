@@ -49,6 +49,7 @@ class TabOut_Tables  {
 				$this->projects = array();
 		  }
 		  
+		  return $this->projects;
 	 }
 	 
 	 
@@ -72,6 +73,7 @@ class TabOut_Tables  {
 				$this->classes = array();
 		  }
 		  
+		  return $this->classes;
 	 }
 	 
 	 

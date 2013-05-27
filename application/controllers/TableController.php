@@ -1035,6 +1035,144 @@ class TableController extends Zend_Controller_Action {
 	 
 	 
 	 
+	 
+	 
+	 
+	 
+	 
+	  //save all the data to a table
+	  // penelope.oc/table/class-db-save-unit-type
+	  
+	 function createTableAction(){
+		          
+		  //parameters needing boolean values
+		  $booleanParams = array("showUnitTypeFields",
+										 "limitUnitTypeFields",
+										 "showSourceFields",
+										 "showLDSourceValues",
+										 "showBPdates",
+										 "showBCEdates"
+										 );
+		  
+		  
+		  $page = 1;
+		  $setSize = 3000000;
+		  $showUnitTypeFields = false; //boolean, show unit type fields (for measurement types, as in zooarchaeology standard measurements)
+		  $limitUnitTypeFields = false; //boolean, limit outputs to only items with unit type fields.
+		  $showSourceFields = true; //boolean, show the original data (source fields)
+		  $showLDSourceValues = false; //boolen, show the original value linked to linked data
+		  $showBPdates = false;
+		  $showBCEdates = true;
+		  
+		  $tableName = "z_ex_".(substr(md5( (date("Y-M-D", time()))  . (rand(0,10000)) ),8));
+		  
+		  $rawRequestParams =  $this->_request->getParams();
+		  $requestParams = array(); 
+		  foreach($rawRequestParams as $paramKey => $value){
+				if(!is_array($value) && in_array($paramKey, $booleanParams)){
+					 if($value == "1"){
+						  $value = true;
+					 }
+					 elseif($value == "0"){
+						  $value = false;
+					 }
+				}
+				$requestParams[$paramKey] = $value;
+		  }
+		  
+        if(isset($requestParams["classUUID"])){
+				$classUUID = $requestParams["classUUID"];
+		  }
+		  if(isset($requestParams["page"])){
+				$page = $requestParams["page"];
+		  }
+		  if(isset($requestParams["setSize"])){
+				$setSize = $requestParams["setSize"];
+		  }
+		  if(isset($requestParams["setSize"])){
+				$setSize = $requestParams["setSize"];
+		  }
+		  if(isset($requestParams["showUnitTypeFields"])){
+				$showUnitTypeFields = $requestParams["showUnitTypeFields"];
+		  }
+		  if(isset($requestParams["limitUnitTypeFields"])){
+				$limitUnitTypeFields = $requestParams["limitUnitTypeFields"];
+		  }
+		  if(isset($requestParams["showSourceFields"])){
+				$showSourceFields = $requestParams["showSourceFields"];
+		  }
+		  if(isset($requestParams["showLDSourceValues"])){
+				$limitUnitTypeFields = $requestParams["showLDSourceValues"];
+		  }
+		  if(isset($requestParams["showBPdates"])){
+				$showBPdates = $requestParams["showBPdates"];
+		  }
+		  if(isset($requestParams["showBCEdates"])){
+				$showBCEdates = $requestParams["showBCEdates"];
+		  }
+		  if(isset($requestParams["tableName"])){
+				if(strlen($requestParams["tableName"])>1){
+					 $tableName = $requestParams["tableName"];
+				}
+		  }
+		  
+		  if(isset($_REQUEST["projectUUID"])){
+				$projArray = $requestParams["projectUUID"];
+		  }
+		  else{
+				return $this->_forward('index');
+		  }
+		  
+		  if($showBPdates){
+				$showBCEdates = false;
+		  }
+		  else{
+				$showBCEdates = true;
+		  }
+		  
+		  Zend_Loader::loadClass('TabOut_Table');
+		 
+		  $tableObj = new TabOut_Table;
+		  $tableObj->setSize = $setSize;
+		  $tableObj->page = $page;
+		  $tableObj->limitingProjArray = $projArray;
+		  $tableObj->showUnitTypeFields = $showUnitTypeFields;
+		  $tableObj->limitUnitTypeFields = $limitUnitTypeFields;
+		  $tableObj->showSourceFields = $showSourceFields;
+		  $tableObj->showBP = $showBPdates;
+		  $tableObj->showBCE = $showBCEdates;
+		  $tableObj->showLDSourceValues = true;
+		  $tableObj->tableID = false;
+		  $tableObj->DBtableID = $tableName;
+		  
+		  //$tableObj->recordQueries = true;
+		  $tableObj->sortForSourceVars = " var_tab.sort_order, sCount DESC, var_tab.var_label ";
+		  $linkedFields = $tableObj->getLinkedVariables($classUUID);
+		  $tableArray = $tableObj->makeTableArray($classUUID);
+		  
+		  $this->_helper->viewRenderer->setNoRender();
+		  $location = "../table/publish?table=".$tableName;
+		  header("Location: ".$location);
+		  echo "Table created. ";
+	 }
+	 
+	 
+	 
+	 
+	 
+	 
+	 
+	 
+	 
+	 
+	 
+	 
+	 
+	 
+	 
+	 
+	 
+	 
 	 //get form to create metadata and publish a table
 	 function publishAction(){
 		 

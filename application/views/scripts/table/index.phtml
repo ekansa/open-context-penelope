@@ -10,6 +10,7 @@ $tablePubObj = $this->tablePubObj;
         <link href="../public/css/bootstrap.css"  rel="stylesheet" type="text/css" />
         <link href="../public/css/bootstrap-responsive.css"  rel="stylesheet" type="text/css" />
         <link href="../public/css/rev2-general.css"  rel="stylesheet" type="text/css" />
+        <link href="../public/css/rev2-ex-tables.css"  rel="stylesheet" type="text/css" />
         
     </head>
     <body>
@@ -45,6 +46,115 @@ $tablePubObj = $this->tablePubObj;
                 
                     </tbody>
                 </table>
+                <br/>
+                <h2>Create a New Export Table</h2>
+                <form action="../../table/create-table" method="POST" class="form-horizontal" >
+                    <div class="divTab">
+                        <div class="divRow">
+                            <div class="divCell">
+                                <div class="control-group">
+                                    <label class="control-label">Item Class</label>
+                                    <div class="controls">
+                                        <?php
+                                        $classes = $tablePubObj->getClassListCount();
+                                        $checked = "checked";
+                                        $i = 1;
+                                        foreach($classes as $row){
+                                            $radioID = "classUUID_".$i;
+                                        ?>
+                                        <label class="radio">
+                                            <input type="radio" name="classUUID" id="<?php echo $radioID; ?>" value="<?php echo $row["class_uuid"]; ?>" <?php echo $checked; ?> />
+                                            <?php echo $row["class_label"]." (".$row["itemCount"].")"; ?>
+                                        </label>
+                                            
+                                            
+                                        <?php    
+                                            $checked = "";
+                                            $i++;
+                                        }
+                                        ?>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="divCell">
+                                <div class="control-group">
+                                    <label class="control-label">Project</label>
+                                    <div class="controls">
+                                        <?php
+                                        $projects = $tablePubObj->getProjectListCount();
+                                        $i = 1;
+                                        foreach($projects as $row){
+                                            $inputID = "projectUUID_".$i;
+                                        ?>
+                                        <label class="checkbox">
+                                            <input type="checkbox" name="projectUUID[]" id="<?php echo $inputID ; ?>" value="<?php echo $row["project_id"]; ?>" />
+                                            <?php echo $row["project_name"]." (".$row["itemCount"].")"; ?>
+                                        </label>
+                                            
+                                        <?php    
+                                            $i++;
+                                        }
+                                        ?>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="control-group">
+                        <label class="radio inline">Show Standard Measurement Unit Fields</label>
+                        <div class="controls">
+                            <input type="radio" name="showUnitTypeFields" id="showUnitTypeFields1" value="1" /> True
+                            <input type="radio" name="showUnitTypeFields" id="showUnitTypeFields0" value="0" checked /> False
+                        </div>
+                    </div>
+                    <div class="control-group">
+                        <label class="radio inline">Limit Records to Have Standard Measurement Values</label>
+                        <div class="controls">
+                            <input type="radio" name="limitUnitTypeFields" id="limitUnitTypeFields1" value="1" /> True
+                            <input type="radio" name="limitUnitTypeFields" id="limitUnitTypeFields0" value="0" checked /> False
+                        </div>
+                    </div>
+                    <div class="control-group">
+                        <label class="radio inline">Show Original (Source) Fields</label>
+                        <div class="controls">
+                            <input type="radio" name="showSourceFields" id="showSourceFields1" value="1" checked /> True
+                            <input type="radio" name="showSourceFields" id="showSourceFields0" value="0" /> False
+                        </div>
+                    </div>
+                    <div class="control-group">
+                        <label class="radio inline">Show Original Value Used in Type Linking</label>
+                        <div class="controls">
+                            <input type="radio" name="showLDSourceValues" id="showLDSourceValues1" value="1" /> True
+                            <input type="radio" name="showLDSourceValues" id="showLDSourceValues0" value="0" checked /> False
+                        </div>
+                    </div>
+                    <div class="control-group">
+                        <label class="radio inline">Show BP Dates</label>
+                        <div class="controls">
+                            <input type="radio" name="showBPdates" id="showBPdates1" value="1" /> True
+                            <input type="radio" name="showBPdates" id="showBPdates0" value="0" checked /> False
+                        </div>
+                    </div>
+                     <div class="control-group">
+                        <label class="radio inline">Show BCE Dates</label>
+                        <div class="controls">
+                            <input type="radio" name="showBCEdates" id="showBCEdates1" value="1" checked /> True
+                            <input type="radio" name="showBCEdates" id="showBCEdates0" value="0" /> False
+                        </div>
+                    </div>
+                    <div class="control-group">
+                        <label class="control-label" for="tableName">MySQL Valid Table Name</label>
+                        <div class="controls">
+                            <input type="text" name="tableName" id="tableName" placeholder="z_ex_" />
+                        </div>
+                    </div>
+                    <div class="control-group">
+                        <label class="control-label">Create Table</label>
+                        <div class="controls">
+                            <button type="submit" class="btn btn-inverse">Submit</button>
+                        </div>
+                    </div>
+                </form>
             </div>
         </div>
     </body>

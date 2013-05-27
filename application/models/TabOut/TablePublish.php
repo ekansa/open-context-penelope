@@ -353,7 +353,7 @@ class TabOut_TablePublish  {
 				$db = $this->startDB();
 				$where = "source_id = '".$this->penelopeTabID."' ";	 
 				$metadataString = Zend_Json::encode($this->metadata);
-				$this->tableID = md5($metadataString);
+				$this->tableID = md5($this->penelopeTabID.$metadataString);
 				
 				$data = array("tableID" => $this->tableID);
 				$db->update("export_tabs_meta", $data, $where);

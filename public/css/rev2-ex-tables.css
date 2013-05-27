@@ -1,0 +1,12 @@
+@charset "utf-8";
+
+div.divTab {
+    display: table;
+}
+div.divRow {
+    display: table-row;
+}
+div.divCell {
+    display: table-cell;
+    padding: 1%;
+}
