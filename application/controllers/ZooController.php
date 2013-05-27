@@ -51,7 +51,7 @@ class ZooController extends Zend_Controller_Action {
 	 }
 	 
 	 
-	 function boneHelpAction(){
+	 function propertyGetAction(){
 		  $baseURL = "http://opencontext/subjects/";
 		  Zend_Loader::loadClass('PublishedData_Space');
         Zend_Loader::loadClass('PublishedData_Observe');
@@ -66,6 +66,11 @@ class ZooController extends Zend_Controller_Action {
 		  $sql = "SELECT uuid, project_id, source_id
 		  FROM space
 		  WHERE (project_id = '3' OR project_id = 'TESTPRJ0000000004') AND class_uuid = '881CEDA3-C445-4C9C-4D4B-634BD2963892' ";
+		  
+		  $sql = "SELECT uuid, project_id, source_id
+		  FROM space
+		  WHERE 1 ";
+		  
 		  
 		  $result = $db->fetchAll($sql);
 		  foreach($result as $row){
