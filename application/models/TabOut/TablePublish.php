@@ -1000,6 +1000,7 @@ class TabOut_TablePublish  {
 		  $result = $db->fetchAll($sql);
 		  if($result){
 				$this->sampleRecords = $result;
+				return $result;
 		  }
 		  else{
 				return false;
@@ -1009,6 +1010,25 @@ class TabOut_TablePublish  {
 	 }
 	 
 	 
+	 
+	 function getAllRecords(){
+		  
+		  $db = $this->startDB();
+		  
+		  $sql = "SELECT *
+		  FROM ".$this->penelopeTabID."
+		  ";
+		  
+		  $result = $db->fetchAll($sql);
+		  if($result){
+				return $result;
+		  }
+		  else{
+				return false;
+		  }
+		  
+		  
+	 }
 	 
 	 
 	 

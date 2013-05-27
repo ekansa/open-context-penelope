@@ -29,7 +29,10 @@ $tablePubObj = $this->tablePubObj;
                         
                         <input type="hidden" name="table" value="<?php echo $tablePubObj->penelopeTabID; ?>" />
                         
-                        <h2>Table Title [Get as <a href="../table/publish?format=json&table=<?php echo $tablePubObj->penelopeTabID; ?>">JSON</a> or <a href="../table/publish?format=jsonld&table=<?php echo $tablePubObj->penelopeTabID; ?>">JSON-LD</a>]</h2>
+                        <h2>Table Title [Get as <a href="../table/publish?format=json&table=<?php echo $tablePubObj->penelopeTabID; ?>">JSON</a>
+                        or <a href="../table/publish?format=jsonld&table=<?php echo $tablePubObj->penelopeTabID; ?>">JSON-LD</a>
+                        or <a href="../table/table-csv?table=<?php echo $tablePubObj->penelopeTabID; ?>">CSV</a>
+                        ]</h2>
                         <input name="title" type="text" id="tabTitle" value="<?php echo $tablePubObj->tableName; ?>" />
                         <br/>
                         

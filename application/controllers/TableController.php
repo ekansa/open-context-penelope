@@ -1070,6 +1070,34 @@ class TableController extends Zend_Controller_Action {
 	 }
 	 
 	 
+	 
+	 function tableCsvAction(){
+		  
+		  Zend_Loader::loadClass('TabOut_TableCSV');
+		  Zend_Loader::loadClass('TabOut_TablePublish');
+		  
+		  $this->_helper->viewRenderer->setNoRender();
+		  
+		  $requestParams =  $this->_request->getParams();
+		  $tableCSV = new TabOut_TableCSV;
+		  
+		  
+		  if(isset($requestParams['table'])){
+			 $tableCSV->penelopeTabID = $requestParams['table'];
+		  }
+		  else{
+				return $this->render('table-index');
+		  }
+		  
+		  $csv = $tableCSV->makeSaveCSV();
+		  header("Content-type: application/octet-stream");
+		  header("Content-Disposition: attachment; filename=\"OpenContext_data.csv\"");
+		  echo $csv;
+		  
+	 }
+	 
+	 
+	 
 	 //update metadata for a published table
 	 function autoPersonsProjectsAction(){
 		  
