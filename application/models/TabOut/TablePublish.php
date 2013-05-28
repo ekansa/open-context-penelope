@@ -41,7 +41,7 @@ class TabOut_TablePublish  {
 	 public $numSegments; //number of segments a large table is divided into
 	 public $recsPerTable; //number of records per table
 	 
-	 public $zippedFile; //filename for a zip compression CSV version.
+	 public $file; //array of filenames and their sizes
 	 
 	 public $tableFieldsTemp; //array of table fields, temporary for internal use.
 	 public $tableFields; //array of table fields
@@ -78,7 +78,7 @@ class TabOut_TablePublish  {
 				else{
 					 $this->tableID = false;
 				}
-				$this->tablePage = $result[0]["page"];
+				$this->tablePage = $result[0]["page"] +0 ;
 				$this->published = $result[0]["published"];
 				$this->publishedURI = $result[0]["publishedURI"];
 				if($this->published){
@@ -93,12 +93,30 @@ class TabOut_TablePublish  {
 				$metadata = Zend_Json::decode($metadataJSON);
 				$metadata["tableID"] = $this->tableID;
 				$this->metadata = $metadata;
+				$this->checkSavedFiles();
 				return true;
 		  }
 		  else{
 				return false;
 		  }
 	 }
+	 
+	 //check to see if files were created.
+	 function checkSavedFiles(){
+		  
+		  $tableFiles = new TabOut_TableFiles;
+		  $baseFileName = $this->tableID;
+		  $tableFiles->getAllFileSizes($baseFileName);
+		  $this->files = $tableFiles->savedFileSizes;
+		  $metadata = $this->metadata;
+		  $tableFields = $metadata["tableFields"];
+		  unset($metadata["tableFields"]);
+		  $metadata["files"] = $this->files;
+		  $metadata["tableFields"] = $tableFields; //just for sake of order! :)
+		  $this->metadata = $metadata;
+		  
+	 }
+	 
 	 
 	 
 	 
@@ -116,7 +134,7 @@ class TabOut_TablePublish  {
 		  $result = $db->fetchAll($sql);
 		  if($result){
 				$this->tableID = $result[0]["tableID"];
-				$this->tablePage = $result[0]["page"];
+				$this->tablePage = $result[0]["page"] +0 ;
 				$this->published = $result[0]["published"];
 				$this->publishedURI = $uri;
 				if($this->published){
@@ -130,6 +148,7 @@ class TabOut_TablePublish  {
 				$metadataJSON = $result[0]["metadata"];
 				$metadata = Zend_Json::decode($metadataJSON);
 				$this->metadata = $metadata;
+				$this->checkSavedFiles();
 				return true;
 		  }
 		  else{
@@ -154,6 +173,14 @@ class TabOut_TablePublish  {
 		  $this->rawLinkedPersons = $metadata["rawLinkedPersons"];
 		  $this->projects = $metadata["projects"];
 		  $this->tableFields = $metadata["tableFields"];
+		  
+		  if(!$this->tableFields){
+				$this->getTableFields();
+				$metadata["tableFields"] = $this->tableFields;
+				$this->metadata = $metadata;
+				$this->saveMetadata();
+		  }
+		  
 	 }
 	 
 	 
@@ -183,7 +210,7 @@ class TabOut_TablePublish  {
 	 function generateJSON(){
 		  $metadata = array();
 		  $metadata["tableID"] = $this->tableID;
-		  $metadata["tablePage"] = $this->tablePage;
+		  $metadata["tablePage"] = $this->tablePage +0 ;
 		  $metadata["title"] = $this->tableName;
 		  $metadata["description"] = $this->tableDesciption;
 		  $metadata["tags"] = $this->tableTags;
@@ -194,6 +221,7 @@ class TabOut_TablePublish  {
 		  $metadata["rawContributors"] = $this->rawContributors;
 		  $metadata["rawLinkedPersons"] = $this->rawLinkedPersons;
 		  $metadata["projects"] = $this->projects;
+		  $metadata["files"] = $this->files;
 		  $metadata["tableFields"] = $this->tableFields;
 		  $this->metadata = $metadata;
 		  return Zend_Json::encode($metadata);
@@ -1014,6 +1042,7 @@ class TabOut_TablePublish  {
 	 function getAllRecords(){
 		  
 		  $db = $this->startDB();
+		  
 		  
 		  $sql = "SELECT *
 		  FROM ".$this->penelopeTabID."

@@ -1177,6 +1177,7 @@ class TableController extends Zend_Controller_Action {
 	 function publishAction(){
 		 
 		  Zend_Loader::loadClass('TabOut_TablePublish');
+		  Zend_Loader::loadClass('TabOut_TableFiles');
 		  Zend_Loader::loadClass('dbXML_dbLinks'); //needed for dublin core relations
 		  
 		  $tablePubObj = new TabOut_TablePublish;
@@ -1208,26 +1209,26 @@ class TableController extends Zend_Controller_Action {
 	 }
 	 
 	 
-	 
+	 //create and save CSV versions of the table
 	 function tableCsvAction(){
 		  
-		  Zend_Loader::loadClass('TabOut_TableCSV');
+		  Zend_Loader::loadClass('TabOut_TableFiles');
 		  Zend_Loader::loadClass('TabOut_TablePublish');
 		  
 		  $this->_helper->viewRenderer->setNoRender();
 		  
 		  $requestParams =  $this->_request->getParams();
-		  $tableCSV = new TabOut_TableCSV;
+		  $tableFiles = new TabOut_TableFiles;
 		  
 		  
 		  if(isset($requestParams['table'])){
-			 $tableCSV->penelopeTabID = $requestParams['table'];
+			 $tableFiles->penelopeTabID = $requestParams['table'];
 		  }
 		  else{
 				return $this->render('table-index');
 		  }
 		  
-		  $csv = $tableCSV->makeSaveCSV();
+		  $csv = $tableFiles->makeSaveCSV();
 		  header("Content-type: application/octet-stream");
 		  header("Content-Disposition: attachment; filename=\"OpenContext_data.csv\"");
 		  echo $csv;
@@ -1240,6 +1241,7 @@ class TableController extends Zend_Controller_Action {
 	 function autoPersonsProjectsAction(){
 		  
 		  Zend_Loader::loadClass('TabOut_TablePublish');
+		  Zend_Loader::loadClass('TabOut_TableFiles');
 		  Zend_Loader::loadClass('dbXML_dbLinks'); //needed for dublin core relations
 		  
 		  $tablePubObj = new TabOut_TablePublish;
@@ -1265,6 +1267,7 @@ class TableController extends Zend_Controller_Action {
 	 function removePersonAction(){
 		  
 		  Zend_Loader::loadClass('TabOut_TablePublish');
+		  Zend_Loader::loadClass('TabOut_TableFiles');
 		  Zend_Loader::loadClass('dbXML_dbLinks'); //needed for dublin core relations
 		  
 		  $tablePubObj = new TabOut_TablePublish;
@@ -1289,6 +1292,7 @@ class TableController extends Zend_Controller_Action {
 	 function addPersonAction(){
 		  
 		  Zend_Loader::loadClass('TabOut_TablePublish');
+		  Zend_Loader::loadClass('TabOut_TableFiles');
 		  Zend_Loader::loadClass('dbXML_dbLinks'); //needed for dublin core relations
 		  Zend_Loader::loadClass('dbXML_dbPerson'); //needed for looking up persons
 		  
@@ -1318,6 +1322,7 @@ class TableController extends Zend_Controller_Action {
 	 function postMetadataAction(){
 		  
 		  Zend_Loader::loadClass('TabOut_TablePublish');
+		  Zend_Loader::loadClass('TabOut_TableFiles');
 		  Zend_Loader::loadClass('dbXML_dbLinks'); //needed for dublin core relations
 		  
 		  $tablePubObj = new TabOut_TablePublish;
@@ -1344,6 +1349,7 @@ class TableController extends Zend_Controller_Action {
 	 function publishTableAction(){
 		  
 		  Zend_Loader::loadClass('TabOut_TablePublish');
+		  Zend_Loader::loadClass('TabOut_TableFiles');
 		  Zend_Loader::loadClass('dbXML_dbLinks'); //needed for dublin core relations
 		  
 		  $destinationURI = "http://opencontext/publish/table-publish";
@@ -1389,6 +1395,7 @@ class TableController extends Zend_Controller_Action {
 		  
 		  Zend_Loader::loadClass('TabOut_UpdateOld');
 		  Zend_Loader::loadClass('TabOut_TablePublish');
+		  Zend_Loader::loadClass('TabOut_TableFiles');
 		  Zend_Loader::loadClass('dbXML_dbLinks'); //needed for dublin core relations
 		  
 		  $tableOldObj = new TabOut_UpdateOld;
@@ -1425,6 +1432,7 @@ class TableController extends Zend_Controller_Action {
 		  Zend_Loader::loadClass('TabOut_UpdateOld');
 		  Zend_Loader::loadClass('TabOut_OldTables');
 		  Zend_Loader::loadClass('TabOut_TablePublish');
+		  Zend_Loader::loadClass('TabOut_TableFiles');
 		  
 		  if(isset($requestParams['uri'])){
 				$startURI = $requestParams['uri'];
