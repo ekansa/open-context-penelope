@@ -51,6 +51,9 @@ class TabOut_TablePublish  {
 	 const defaultSample = 50;
 	 const tagDelim = ";"; //delimiter for tags
 	 
+	 const primaryKeyFieldLabel = "Open Context URI";
+	 const primaryKeyField = "uri";
+	 
 	 const personBaseURI = "http://opencontext.org/persons/";
 	 const projectBaseURI = "http://opencontext.org/projects/";
 	 const tableBaseURI = "http://opencontext.org/tables/";
@@ -172,7 +175,10 @@ class TabOut_TablePublish  {
 		  $this->rawContributors = $metadata["rawContributors"];
 		  $this->rawLinkedPersons = $metadata["rawLinkedPersons"];
 		  $this->projects = $metadata["projects"];
-		  $this->tableFields = $metadata["tableFields"];
+		  
+		  if(isset($metadata["tableFields"])){
+				 $this->tableFields = $metadata["tableFields"];
+		  }
 		  
 		  if(!$this->tableFields){
 				$this->getTableFields();
@@ -304,6 +310,8 @@ class TabOut_TablePublish  {
 					 
 				}
 		  }
+		  
+		  $JSON_LD["files"] = $metadata["files"];
 		  $JSON_LD["tableFields"] = $metadata["tableFields"];
 		  $this->JSON_LD = $JSON_LD;
 		  return $JSON_LD;
@@ -984,7 +992,11 @@ class TabOut_TablePublish  {
 		  $result = $db->fetchAll($sql);
 		  if($result){
 				$tableFields = array();
+				$tableFields[] = self::primaryKeyFieldLabel; //always start with the primary key
+				
 				$tableFieldsTemp = array();
+				$tableFieldsTemp[self::primaryKeyField] = self::primaryKeyFieldLabel; //always start with the primary key
+		  
 				foreach($result as $row){
 					 $tableFields[] = $row["field_label"];
 					 $tableFieldsTemp[$row["field_name"]] = $row["field_label"];

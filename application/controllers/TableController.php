@@ -1210,7 +1210,7 @@ class TableController extends Zend_Controller_Action {
 	 
 	 
 	 //create and save CSV versions of the table
-	 function tableCsvAction(){
+	 function tableFilesAction(){
 		  
 		  Zend_Loader::loadClass('TabOut_TableFiles');
 		  Zend_Loader::loadClass('TabOut_TablePublish');
@@ -1228,7 +1228,7 @@ class TableController extends Zend_Controller_Action {
 				return $this->render('table-index');
 		  }
 		  
-		  $csv = $tableFiles->makeSaveCSV();
+		  $csv = $tableFiles->makeSaveFiles();
 		  header("Content-type: application/octet-stream");
 		  header("Content-Disposition: attachment; filename=\"OpenContext_data.csv\"");
 		  echo $csv;

@@ -16,13 +16,14 @@ class TabOut_TableFiles  {
 	 
 	 public $fileExtensions = array("csv" => ".csv",
 											  "zip" => ".zip",
-											  "gzip" => ".csv.gz"
+											  "gzip" => ".csv.gz",
+											  "json" => ".json"
 											  );
 	 
 	 const maxRecordSize = 50000;
 	 const CSVdirectory = "csv-export";
 	 
-	 function makeSaveCSV(){
+	 function makeSaveFiles(){
 		  
 		  $tablePublishObj = new TabOut_TablePublish;
 		  $tablePublishObj->penelopeTabID = $this->penelopeTabID;
@@ -32,7 +33,7 @@ class TabOut_TableFiles  {
 		  $baseFilename = $tablePublishObj->tableID;
 		  $tablePublishObj->getTableFields();
 		  
-		  $data = "OpenContext URI,";
+		  $data = "";
 		  $fieldCount = count($tablePublishObj->tableFields);
 		  $i = 1;
 		  foreach($tablePublishObj->tableFields as $field){
@@ -47,9 +48,17 @@ class TabOut_TableFiles  {
 		  
 		  $records = $tablePublishObj->getAllRecords();
 		  //$records = $tablePublishObj->getSampleRecords();
+		  $JSONrecs = array();
+	 
 		  foreach($records as $row){
 				
-				$data .= $row["uri"].",";
+				$actJSONrec = array();
+				foreach($tablePublishObj->tableFieldsTemp as $fieldKey => $fieldLabel){
+					 $actJSONrec[$fieldLabel] = $row[$fieldKey];
+				}
+				$JSONrecs[] = $actJSONrec;
+				
+				//$data .= $row["uri"].",";
 				$i = 1;
 				foreach($row as $fieldKey => $value){
 					 if(array_key_exists($fieldKey, $tablePublishObj->tableFieldsTemp)){
@@ -64,6 +73,7 @@ class TabOut_TableFiles  {
 				$data.="\n";
 		  }
 		  
+		  $this->saveJSON(self::CSVdirectory, $baseFilename, $JSONrecs);
 		  $this->saveCSV(self::CSVdirectory, $baseFilename, $data);
 		  $this->saveGZIP(self::CSVdirectory, $baseFilename, $data);
 		  $this->saveZIP(self::CSVdirectory, $baseFilename, $data);
@@ -105,6 +115,39 @@ class TabOut_TableFiles  {
 				return $value; // If no new lines or commas just return the value
 		  }
 	 }
+	 
+	 
+	 //save the file in the correct correct directory
+	 function saveJSON($itemDir, $baseFilename, $JSONarray){
+		
+		  $fileExtensions = $this->fileExtensions;
+		  $success = false;
+		
+		  try{
+				
+				iconv_set_encoding("internal_encoding", "UTF-8");
+				$JSON = Zend_Json::encode($JSONarray);
+				//iconv_set_encoding("internal_encoding", "UTF-8");
+				//iconv_set_encoding("output_encoding", "UTF-8");
+				$fp = fopen($itemDir."/".$baseFilename.$fileExtensions["json"], 'w');
+				//fwrite($fp, iconv("ISO-8859-7","UTF-8",$JSON));
+				//fwrite($fp, utf8_encode($JSON));
+				fwrite($fp, $JSON);
+				fclose($fp);
+				$success = true;
+		  }
+		  catch (Zend_Exception $e){
+				$success = false; //save failure
+				echo (string)$e;
+				die;
+		  }
+		
+		  return $success;
+	 }
+	 
+	 
+	 
+	 
 	 
 	 
 	 //save the file in the correct correct directory
@@ -223,6 +266,7 @@ class TabOut_TableFiles  {
 				if(!file_exists($dirFilename)){
 					 $fileSize = false;
 					 $fileSizeHuman = false;
+					 $sha1 = false;
 				}
 				else{
 					 $fileSize = filesize($dirFilename);
