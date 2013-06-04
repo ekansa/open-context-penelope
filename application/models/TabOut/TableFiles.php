@@ -10,6 +10,7 @@ class TabOut_TableFiles  {
 	 
 	 public $penelopeTabID; //name of the table in Penelope
 	 public $tableID; //ID for the table
+	 public $tablePage = 1; //table for the table segment.
 	 
 	 public $savedFileSizes; //array of the saved files names and sizes in bytes
 	 
@@ -31,6 +32,7 @@ class TabOut_TableFiles  {
 		  $tablePublishObj->getSavedMetadata();
 		  
 		  $baseFilename = $tablePublishObj->tableID;
+		  $this->tableID = $tablePublishObj->tableID;
 		  $tablePublishObj->getTableFields();
 		  
 		  $data = "";
@@ -58,7 +60,8 @@ class TabOut_TableFiles  {
 				}
 				$JSONrecs[] = $actJSONrec;
 				
-				//$data .= $row["uri"].",";
+				$this->insertTabRecord($row['uuid']); //save record of item association to a record.
+				
 				$i = 1;
 				foreach($row as $fieldKey => $value){
 					 if(array_key_exists($fieldKey, $tablePublishObj->tableFieldsTemp)){
@@ -83,6 +86,28 @@ class TabOut_TableFiles  {
 	 
 	 
 	 
+	 //save record of the item uuid
+	 //add record of UUID's association to a table
+	 function insertTabRecord($uuid){
+		  if($this->tableID){
+				
+				$db = $this->startDB();
+				
+				$data = array("hashID" => md5($uuid."_".$this->tableID),
+								  "uuid" => $uuid,
+								  "tableID" => $this->tableID,
+								  "page" => $this->tablePage
+								  );
+				
+				try{
+					 $db->insert("export_tabs_records", $data);
+				}
+				catch (Exception $e)  {
+					 //echo (string)$e;
+					 //die;
+				}
+		  }
+	 }
 	 
 	 
 	 
