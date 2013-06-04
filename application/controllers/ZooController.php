@@ -298,6 +298,71 @@ class ZooController extends Zend_Controller_Action {
 		  echo Zend_Json::encode($output);
 	 }
 
+	 
+	 //publish space items associated with images
+	 function spaceMediaPubAction(){
+		  
+		  //this line is necessary for ajax calls:
+        $this->_helper->viewRenderer->setNoRender();        
+        
+		  $badListURL = "http://opencontext.org/lightbox/Italy.json?recs=100&page=257";
+		  
+		  $basePublishURL = "http://penelope.oc/publish/publishdoc";
+		  $params = array(
+				"projectUUID" => "DF043419-F23B-41DA-7E4D-EE52AF22F92F",
+				"pubURI" => "http://opencontext.org/publish/item-publish",
+				"update" => "true",
+				"itemType" => "space");
+		  
+		  $paramsB = array(
+				"projectUUID" => "DF043419-F23B-41DA-7E4D-EE52AF22F92F",
+				"pubURI" => "http://opencontext/publish/item-publish",
+				"update" => "true",
+				"itemType" => "space");
+		  
+		  $badJSON = file_get_contents($badListURL);
+		  $badObj = Zend_Json::decode($badJSON);
+		  
+		  $output = array();
+		  $output["queries"] = "";
+		  foreach($badObj["results"] as $jresult){
+				sleep(.25);
+				if($jresult["project"]=="Murlo"){
+					 $uri = $jresult["uri"];
+					 $uriEx = explode("/",  $uri);
+					 $resUUID = $uriEx[(count($uriEx)-1)];
+					 
+					 $db = Zend_Registry::get('db');
+					 $sql = "SELECT origin_uuid as uuid FROM links WHERE targ_uuid = '$resUUID' AND origin_type LIKE '%location%' ";
+					 $result = $db->fetchAll($sql);
+					 foreach($result as $row){
+						  
+						  $params["itemUUID"] = $row["uuid"];
+						  $actURL =  $basePublishURL . "?" . http_build_query($params);
+						  
+						  $resp = file_get_contents($actURL);
+						  $respObj = Zend_Json::decode($resp);
+						  $output[] = $respObj;
+						  
+						  $paramsB["itemUUID"] = $row["uuid"];
+						  $actURL =  $basePublishURL . "?" . http_build_query($paramsB);
+						  
+						  $resp = file_get_contents($actURL);
+						  $respObj = Zend_Json::decode($resp);
+						  $output[] = $respObj;
+						  sleep(.25);
+					 }
+					 
+					 $output["queries"] .= " UPDATE noid_bindings SET solr_indexed = 0 WHERE itemUUID = '$resUUID' LIMIT 1; ";
+					 //echo "UPDATE noid_bindings SET solr_indexed = 0 WHERE itemUUID = '$resUUID' LIMIT 1;";
+					 
+				}
+		  }
+		 
+		  header('Content-Type: application/json; charset=utf8');
+		 echo Zend_Json::encode($output);
+	 }
+	 
 
 	  //load up old space data from XML documents
 	 function linkBoneOntologyAction(){
