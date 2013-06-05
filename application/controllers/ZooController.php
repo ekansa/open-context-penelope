@@ -363,6 +363,88 @@ class ZooController extends Zend_Controller_Action {
 		 echo Zend_Json::encode($output);
 	 }
 	 
+	 
+	 
+	  //publish space items associated with images
+	 function personPubAction(){
+		  
+		  //this line is necessary for ajax calls:
+        $this->_helper->viewRenderer->setNoRender();        
+		  
+		  $basePublishURL = "http://penelope.oc/publish/publishdoc";
+		  $allParams = array();
+		  $allParams[0] = array(
+				"projectUUID" => "DF043419-F23B-41DA-7E4D-EE52AF22F92F",
+				"pubURI" => "http://opencontext.org/publish/item-publish",
+				"update" => "true",
+				"itemType" => "person");
+		  
+		  $allParams[1]  = array(
+				"projectUUID" => "DF043419-F23B-41DA-7E4D-EE52AF22F92F",
+				"pubURI" => "http://opencontext/publish/item-publish",
+				"update" => "true",
+				"itemType" => "person");
+		  
+		
+		  $output = array();
+		  $output["queries"] = "";
+		 
+		  $db = Zend_Registry::get('db');
+		  $sql = "SELECT uuid, project_id FROM persons WHERE
+		  project_id = 'CDD40C27-62ED-4966-AF3D-E781DD0D4846'
+		  OR
+		  project_id = '05F5B702-2967-49B1-FEAA-9B2AA0184513'
+		  OR
+		  project_id = '74749949-4FD4-4C3E-C830-5AA75703E08E'
+		  OR
+		  project_id = 'BC90D462-6639-4087-8527-6BB9E528E07D'
+		  ";
+		  
+		  $sql = "SELECT users.uuid, links.project_id FROM users
+		  JOIN links ON users.uuid = links.targ_uuid
+		  WHERE
+		  users.uuid = '62EE9ABC-AD45-4F92-5A7B-B16A092CB5C2'
+		  ";
+		  
+		  $result = $db->fetchAll($sql);
+		  foreach($result as $row){
+				
+				foreach($allParams as $params){
+					 
+					 $params["itemUUID"] = $row["uuid"];
+					 $params["projectUUID"] = $row["project_id"];
+					 $actURL =  $basePublishURL . "?" . http_build_query($params);
+					 
+					 $resp = file_get_contents($actURL);
+					 $respObj = Zend_Json::decode($resp);
+					 $output[] = $respObj;
+					
+					 sleep(.25);
+					 
+					 $data = array("hash_key" => md5($row["uuid"]."_".$params["pubURI"]),
+										"pubdest" => $params["pubURI"],
+										"project_id" => $row["project_id"],
+										"item_uuid" => $row["uuid"],
+										"item_type" => $params["itemType"],
+										"status" => "ok"
+										);
+					 
+					 try{
+						  $db->insert("published_docs", $data);
+						  }
+					 catch (Exception $e)  {
+								//echo (string)$e;
+								//die;
+					 }
+
+				}
+				
+		  }
+		  header('Content-Type: application/json; charset=utf8');
+		 echo Zend_Json::encode($output);
+	 }
+	 
+	 
 
 	  //load up old space data from XML documents
 	 function linkBoneOntologyAction(){
