@@ -41,6 +41,7 @@ class TabOut_TablePublish  {
 	 public $numSegments; //number of segments a large table is divided into
 	 public $recsPerTable; //number of records per table
 	 
+	 public $license; //array with URI to the copyright license for the table
 	 public $file; //array of filenames and their sizes
 	 
 	 public $tableFieldsTemp; //array of table fields, temporary for internal use.
@@ -179,6 +180,15 @@ class TabOut_TablePublish  {
 		  if(isset($metadata["tableFields"])){
 				 $this->tableFields = $metadata["tableFields"];
 		  }
+		  if(isset($metadata["license"])){
+				$this->license = $metadata["license"];
+		  }
+		  else{
+				$this->license = $this->DBgetLicense();
+				$metadata["license"] = $this->license;
+				$this->metadata = $metadata;
+				$this->saveMetadata(); //save the results
+		  }
 		  
 		  if(!$this->tableFields){
 				$this->getTableFields();
@@ -222,6 +232,7 @@ class TabOut_TablePublish  {
 		  $metadata["tags"] = $this->tableTags;
 		  $metadata["doi"] = $this->tableDOI;
 		  $metadata["ark"] = $this->tableARK;
+		  $metadata["license"] = $this->license;
 		  $metadata["recordCount"] = $this->recordCount+0;
 		  $metadata["rawCreators"] = $this->rawCreators;
 		  $metadata["rawContributors"] = $this->rawContributors;
@@ -262,6 +273,7 @@ class TabOut_TablePublish  {
 				"temporal" => "http://purl.org/dc/terms/temporal",
 				"recordCount" => "http://rdfs.org/ns/void#entities", //number of entities
 				"fieldCount" => "http://rdfs.org/ns/void#properties", //number of properties
+				"license" => "http://www.w3.org/1999/xhtml/vocab/#license", //copyright license
 				"publisher" => "http://purl.org/dc/terms/publisher"
 				);
 		  
@@ -275,6 +287,7 @@ class TabOut_TablePublish  {
 		  $JSON_LD["fieldCount"] = count($metadata["tableFields"]);
 		  $JSON_LD["publisher"] = array("name" => "Open Context",
 												  "id" => "http://opencontext.org");
+		  $JSON_LD["license"] = $metadata["license"];
 		  
 		  if($metadata["doi"] != false){
 				$JSON_LD["doi"] = $metadata["doi"];
@@ -456,6 +469,7 @@ class TabOut_TablePublish  {
 				$this->published = false;
 				$this->pubCreated = false;
 				$this->pubUpdate = false;
+				$this->license = $this->DBgetLicense();
 				$this->getProjects();
 				$this->getPersons();
 				$this->getProjectCreators();
@@ -480,6 +494,41 @@ class TabOut_TablePublish  {
 		  $this->getProjectCreators();
 		  $this->saveMetadata(); //save the results
 	 }
+	 
+	 
+	 
+	 //get the most restrictive license for a dataset
+	 function DBgetLicense(){
+		  
+		  $db = $this->startDB();
+		  
+		  $sql = "SELECT fs.fk_license, cc.LINK_DEED as id, cc.NAME as name
+		  FROM ".$this->penelopeTabID." AS extab
+		  JOIN space ON extab.uuid = space.uuid
+		  JOIN file_summary AS fs ON space.source_id = fs.source_id
+		  JOIN w_lu_creative_commons AS cc ON fs.fk_license = cc.PK_LICENSE
+		  GROUP BY fs.source_id
+		  ORDER BY fs.fk_license DESC
+		  ";
+		  
+		  $result = $db->fetchAll($sql); 
+		  if($result){
+				$output = $result[0];
+				if(stristr($output["id"], "creativecommons")){
+					 $output["name"] = "Creative Commons ".$output["name"];
+				}
+				unset($output["fk_license"]);
+				return $output;
+		  }
+		  else{
+				return array("id" => "http://creativecommons.org/licenses/by/3.0",
+								 "name" => "Creative Commons Attribution"
+								 );
+		  }
+		  
+		  
+	 }
+	 
 	 
 	 
 	 //this function makes some metadata automatically, based on the table's associations
