@@ -188,6 +188,65 @@ class dataEdit_SpaceIdentity  {
 	 }
 	 
 	 
+	 
+	  //duplicate an item and it's observations and links
+	 function itemDuplicateNoObs($itemUUID, $sourceIDs){
+		  
+		  $db = $this->startDB();
+		  $sql = "SELECT * FROM space WHERE uuid = '$itemUUID' LIMIT 1;";
+		  $resA = $db->fetchAll($sql);
+		  $originalSpace = $resA[0];
+		  
+		  $charID = 97; //code for ASCII "a"
+		  $i = 0;
+		  $UUIDsources = array();
+		  foreach($sourceIDs as $sourceItem){
+				
+				if($i>0){
+					 //don't make a new item for the first record, since we already have it. make it for the second record and after
+					 $increment = chr($charID);
+					 $newLabel = $originalSpace["space_label"]."-".$increment;
+					 $newContext = $originalSpace["full_context"]."-".$increment;
+					 $existingNew = $this->checkNewSpace($newLabel, $newContext);
+					 if(!$existingNew){
+						  $newSpace = $originalSpace;
+						  $newUUID = GenericFunctions::generateUUID();
+						  $newSpace["uuid"] = $newUUID;
+						  $newSpace["space_label"] = $newLabel;
+						  $newSpace["full_context"] = $newContext;
+						  $newSpace["hash_fcntxt"] = $newSpace["hash_fcntxt"]."-".$increment;
+						  $newSpace["sample_des"] = Zend_Json::encode(array("src" => $sourceItem, "srcID" => $itemUUID));
+						  $itemOK = false;
+						  try{
+								$db->insert("space", $newSpace); //add the new space item, duplicating the old
+								$itemOK = true;
+						  }
+						  catch (Exception $e) {
+	 
+						  }
+						  if($itemOK){
+								$UUIDsources[$newUUID] = $sourceItem;
+								$this->duplicateItemLinks($itemUUID, $newUUID, $increment);
+								$this->duplicateItemContext($itemUUID, $newUUID, $increment);
+						  }
+					 }
+					 else{
+						  $newUUID = $existingNew["uuid"];
+						  $UUIDsources[$newUUID] = $sourceItem;
+					 }
+				}
+				else{
+					 $UUIDsources[$itemUUID] = $sourceItem; 
+				}
+				
+				$i++;
+				$charID++;
+		  }
+		  
+		  return $UUIDsources;
+	 }
+	 
+	 
 	 //get the new space item if it exists
 	 function checkNewSpace($newLabel, $newContext){
 		  $db = $this->startDB();

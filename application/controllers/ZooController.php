@@ -223,7 +223,31 @@ class ZooController extends Zend_Controller_Action {
 		  
 		  $db = Zend_Registry::get('db');
 		  Zend_Loader::loadClass('dataEdit_SpaceIdentity');
+		  Zend_Loader::loadClass('dataEdit_Property');
+		  
+		  $sql = "SELECT field_summary.field_name, field_summary.field_label,
+					 var_tab.variable_uuid, field_summary.project_id
+					 FROM field_summary
+					 LEFT JOIN var_tab ON (
+						  var_tab.var_label LIKE field_summary.field_label
+						  AND var_tab.project_id = field_summary.project_id
+						  )
+					 WHERE field_summary.source_id = 'z_1_ee76ce40e'
+					 AND field_summary.field_type = 'Property'
+					 ";
+		  $tabFields = array();
+		  $rawTabFields = $db->fetchAll($sql);
+		  foreach($rawTabFields as $field){
+				if($field["variable_uuid"]){
+					 $fieldLabel = $field["field_name"];
+					 $tabFields[$fieldLabel] = $field["variable_uuid"];
+				}
+		  }
+		  
+		  
 		  $spaceEdit = new dataEdit_SpaceIdentity;
+		  $propEdit = new dataEdit_Property;
+		  
 		  $spaceEdit->actSourceTab = 'z_1_ee76ce40e';
 		  $output = array();
 		  foreach($badUUIDs as $uuid){
@@ -231,7 +255,7 @@ class ZooController extends Zend_Controller_Action {
 				$sql = "UPDATE space SET source_id = 'z_1_ee76ce40e' WHERE uuid = '".$uuid."' LIMIT 1;";
 				$db->query($sql, 2);
 				
-				$sql = "SELECT source_id, space_label, full_context, class_uuid
+				$sql = "SELECT source_id, space_label, full_context, class_uuid, project_id
 				FROM space
 				WHERE uuid = '$uuid' LIMIT 1;
 				";
@@ -242,14 +266,58 @@ class ZooController extends Zend_Controller_Action {
 					 $itemContext = $result[0]["full_context"];
 					 $sourceID = $result[0]["source_id"];
 					 $classUUID = $result[0]["class_uuid"];
-					 $sourceData = $spaceEdit->getSourceIDs($itemLabel, $itemContext, $sourceID, $classUUID);
-					 $itemProps = $spaceEdit->itemProperties($uuid);
-					 $repeatedVars = $spaceEdit->singleORrepeatedVariables($uuid);
+					 $projectUUID = $result[0]["project_id"];
 					 
-					 $output[$uuid] = array("source" => $sourceData,
-													"props" => $itemProps,
-													"repvars" => $repeatedVars
-													);
+					 $sourceIDs = $spaceEdit->getSourceIDs($itemLabel, $itemContext, $sourceID, $classUUID);
+					 //$sourceData = $spaceEdit->itemDuplicateNoObs($uuid, $sourceIDs);
+					 
+					 foreach($sourceData as $subjectUUID => $idArray){
+						  
+						  //delete the old observations
+						  $where = "subject_uuid = '$subjectUUID' ";
+						  //$db->delete("observe", $where);
+						  
+						  $id = $idArray["id"];
+						  
+						  $sql = "SELECT * FROM z_1_ee76ce40e AS otab WHERE id = $id LIMIT 1;";
+						  $originalData = $db->fetchAll($sql);
+						  foreach($originalData as $oRow){
+								foreach($oRow as $fieldKey => $value){
+									 if($value){
+										  if(array_key_exists($fieldKey, $tabFields)){
+												$variableUUID = $tabFields[$fieldKey];
+												$valueUUID = $propEdit->get_make_ValID($value, $projectUUID);
+												$propUUID = $propEdit->get_make_PropID($variableUUID, $valueUUID, $projectUUID);
+												
+												$hashObs = md5($projectUUID . "_" . $subjectUUID . "_" . 1 . "_" . $propUUID);
+												$data = array("project_id" => $projectUUID,
+																  "source_id" => $sourceID,
+																  "hash_obs" => $hashObs,
+																  "subject_type" => "Locations or Objects",
+																  "subject_uuid" => $subjectUUID,
+																  "obs_num" => 1,
+																  "property_uuid" => $propUUID
+																  );
+												try{
+													 //$db->insert('observe', $data );
+												}
+												catch (Exception $e) {
+												
+												}
+												
+												$output[$uuid][$id][$fieldKey] = array("link" => "http://penelope.oc/preview/space?UUID=".$subjectUUID,
+																									"subjectUUID" => $subjectUUID,
+																									"propUUID" => $propUUID,
+																									"variableUUID" => $variableUUID,
+																									"valueUUID" => $valueUUID,
+																									 "value" => $value);
+										  }
+									 }
+								}
+						  }
+						  
+						  $firstLoop = false;
+					 }//array of sourceData
 					 
 				}
 				
