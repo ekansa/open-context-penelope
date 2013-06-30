@@ -18,6 +18,38 @@ class ZooController extends Zend_Controller_Action {
     }
     
 	 
+	 //use a solr query to republish a list of items
+	 function republishSolrAction(){
+		  
+		  $this->_helper->viewRenderer->setNoRender();
+		  
+		  $solrQuery = "http://localhost:8983/solr/select?facet=true&facet.mincount=1&fq=%7B%21cache%3Dfalse%7Dproject_name%3AMurlo++%26%26+NOT+project_id%3A0+NOT+def_context_0%3AItaly+%26%26+%28+%28item_type%3Aspatial%29+%29&facet.field=def_context_0&facet.field=project_name&facet.field=item_class&facet.field=time_span&facet.field=geo_point&facet.query=image_media_count%3A%5B1+TO+%2A%5D&facet.query=other_binary_media_count%3A%5B1+TO+%2A%5D&facet.query=diary_count%3A%5B1+TO+%2A%5D&sort=interest_score+desc&wt=json&json.nl=map&q=%2A%3A%2A&start=0&rows=200";
+		  
+		  $respJSONstring = file_get_contents($solrQuery);
+		  $solrJSON = Zend_Json::decode($respJSONstring);
+		  $output = array();
+		  $localPubBaseURI = "http://penelope.oc/publish/publishdoc?projectUUID=DF043419-F23B-41DA-7E4D-EE52AF22F92F&itemType=space&doUpdate=true&itemUUID=";
+		  $ocPubBaseURI = "http://penelope.oc/publish/publishdoc?projectUUID=DF043419-F23B-41DA-7E4D-EE52AF22F92F&itemType=space&doUpdate=true&pubURI=http://opencontext.org/publish/item-publish&itemUUID=";
+		  
+		  foreach($solrJSON["response"]["docs"] as $doc){
+				
+				$uuid = $doc["uuid"];
+				$pubResp = array();
+				$resp = file_get_contents($localPubBaseURI.$uuid);
+				$pubResp["local"] = Zend_Json::decode($resp);
+				sleep(1);
+				$resp = file_get_contents($ocPubBaseURI.$uuid);
+				$pubResp["oc"] = Zend_Json::decode($resp);
+				
+				$output[$uuid] = $pubResp;
+				unset($pubResp);
+		  }
+		  
+		  header('Content-Type: application/json; charset=utf8');
+		  echo Zend_Json::encode($output);
+	 }
+	 
+	 
 	 //load up old space data from XML documents
 	 function addSpaceHierarchyAction(){
 		  
