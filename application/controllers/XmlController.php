@@ -114,6 +114,7 @@ class xmlController extends Zend_Controller_Action {
 	$linksObj->dbPenelope = true;
 	$linksObj->getLinks($itemObj->itemUUID);
 	$linksObj->getSpaceFromTarg($itemObj->itemUUID);
+	$linksObj->makeImplicitSpatial($itemObj->itemUUID);
 	
 	$itemObj->linksObj = $linksObj;
 	

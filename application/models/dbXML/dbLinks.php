@@ -778,6 +778,130 @@ class dbXML_dbLinks  {
     }//end function
     
     
+	 
+	 //make implcit spatial links based on links from other kinds of items
+	 public function makeImplicitSpatial($id){
+		  
+		  $found = false;
+		  if(!$this->spaceLinks){
+				$db = $this->db;
+				
+				$sql = "SELECT COUNT(space.uuid) AS spCount, space.uuid, lb.origin_obs, space.class_uuid, space.space_label
+				FROM links
+				JOIN links AS lb ON lb.targ_uuid = links.origin_uuid
+				JOIN space ON lb.origin_uuid = space.uuid
+				WHERE links.targ_uuid = '".$id."' AND links.origin_type != 'Person'
+				GROUP BY space.uuid
+				ORDER BY spCount DESC
+				LIMIT 100;
+				";
+				
+				$result = $db->fetchAll($sql, 2);
+
+				if(!$result){
+					 $sql = "SELECT COUNT(space.uuid) AS spCount, space.uuid, lb.origin_obs, space.class_uuid, space.space_label
+					 FROM links
+					 JOIN links AS lb ON lb.targ_uuid = links.origin_uuid
+					 JOIN space ON lb.origin_uuid = space.uuid
+					 WHERE links.targ_uuid = '".$id."'
+					 GROUP BY space.uuid
+					 ORDER BY spCount DESC
+					 LIMIT 100;
+					 ";
+					 
+					 $result = $db->fetchAll($sql, 2);
+				}
+				
+				
+				if($result){
+	    
+					$obsNum = 1;
+					 
+					 $oldLinks = $this->links;
+					 if(!is_array($oldLinks)){
+						  $oldLinks = array();
+						  $oldLinks[$obsNum] = array();
+					 }
+					 else{
+						  if(!array_key_exists($obsNum, $oldLinks)){
+								$oldLinks[$obsNum] = array();
+						  }
+					 }
+					 
+					 $spaceLinks = array();
+					 $spaceLinks[$obsNum] = array();
+					 
+					 foreach($result as $row){
+					
+						  $indCount = $row["spCount"];
+						  $linkedUUID = $row["uuid"];
+						  $linkType = "indirect association";
+						  $linkedName = $row["space_label"];
+						  $classUUID = $row["class_uuid"];
+						  $spaceObj = $this->getSpaceData($linkedUUID);
+					
+						  $fullContain = array();
+						  $containArray = $spaceObj->containment;
+						  foreach($containArray as $treeKey => $containArray){
+								foreach($containArray as $containItem){
+							  $containObj = new dbXML_dbSpace;
+							  $containObj->initialize($db);
+							  $containObj->dbPenelope = true;
+							  $containObj->getByID($containItem);
+							  $fullContain[$treeKey][] = array("itemUUID" => $containItem,
+												"label" => $containObj->label,
+												"className" => $containObj->className,
+												"smallClassIcon" => $containObj->smallClassIcon
+												);
+								}
+						  }
+					
+						  $actSpLinkArray = array("linkedName" => $linkedName,
+										  "linkType" => $linkType,
+										  "linkCount" => $indCount,
+										  "linkedUUID" => $linkedUUID,
+										  "classID" => $classUUID,
+										  "className" => $spaceObj->className,
+										  "largeClassIcon" => $spaceObj->largeClassIcon,
+										  "smallClassIcon" => $spaceObj->smallClassIcon,
+										  "containment" => $fullContain
+										  );
+						  
+						  if(!$this->firstSpaceObj){
+								$this->firstSpaceObj = $actSpLinkArray;
+						  }
+					
+						  unset($spaceObj);
+						  //$actSpLinkArray = $this->classLinkLabelGet($classUUID, $actSpLinkArray);
+						  
+						  $obs = 1;
+						  $obsHash = sha1($obs.$linkedUUID.$linkType);
+						  if(!array_key_exists($obsHash, $oldLinks[$obsNum])){
+								$oldLinks[$obsNum][$obsHash] = array("type" => "spatialUnit",
+										  "linkType" => $linkType,
+										  "linkedUUID" => $linkedUUID);
+						  }
+						  if(!array_key_exists($obsHash, $spaceLinks[$obsNum])){
+								$spaceLinks[$obsNum][$obsHash] = $actSpLinkArray;
+						  }
+					
+					 }//end loop
+					 
+					 $this->links = $oldLinks;
+					 $this->spaceLinks = $spaceLinks;
+				}
+        
+        return $found;
+		  }
+		  
+	 }
+	 
+	 
+	 
+	 
+	 
+	 
+	 //make the links to root spatial items for a project
     public function makeProjRootLinks($rootIDs){
 	$db = $this->db;
 	
