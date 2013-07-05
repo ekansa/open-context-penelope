@@ -18,6 +18,62 @@ class ZooController extends Zend_Controller_Action {
     }
     
 	 
+	  function pcTbTextCleanAction(){
+		  
+		  $this->_helper->viewRenderer->setNoRender();
+		  Zend_Loader::loadClass('ProjEdits_Murlo');
+		  $jsonURL = "http://penelope.oc/csv-export/TrenchesGeo.geojson";
+		  //$jsonURL = "http://penelope.oc/csv-export/murlo-trenches-b.txt";
+		  
+		  $murloObj = new ProjEdits_Murlo;
+		  $output = $murloObj->TBtransClean();
+		  
+		  header('Content-Type: application/json; charset=utf8');
+		  
+		  echo Zend_Json::encode($output);
+	 }
+	 
+	 
+	 function pcTbNamesAction(){
+		  $this->_helper->viewRenderer->setNoRender();
+		  Zend_Loader::loadClass('ProjEdits_Murlo');
+		  $murloObj = new ProjEdits_Murlo;
+		  header('Content-Type: text/html; charset=utf8');
+		  echo $murloObj->TBauthors();
+	 }
+	 
+	 
+	 function pcTbImagesAction(){
+		  
+		  $this->_helper->viewRenderer->setNoRender();
+		  Zend_Loader::loadClass('ProjEdits_Murlo');
+		  $jsonURL = "http://penelope.oc/csv-export/TrenchesGeo.geojson";
+		  //$jsonURL = "http://penelope.oc/csv-export/murlo-trenches-b.txt";
+		  
+		  $murloObj = new ProjEdits_Murlo;
+		  $output = $murloObj->TBimagePageNumbers();
+		  
+		  header('Content-Type: application/json; charset=utf8');
+		  
+		  echo Zend_Json::encode($output);
+	 }
+	 
+	 
+	 function pcGeoAction(){
+		  
+		  $this->_helper->viewRenderer->setNoRender();
+		  Zend_Loader::loadClass('ProjEdits_Murlo');
+		  $jsonURL = "http://penelope.oc/csv-export/TrenchesGeo.geojson";
+		  //$jsonURL = "http://penelope.oc/csv-export/murlo-trenches-b.txt";
+		  
+		  $murloObj = new ProjEdits_Murlo;
+		  $output = $murloObj->geoJsonAdd($jsonURL);
+		  
+		  header('Content-Type: application/json; charset=utf8');
+		  
+		  echo Zend_Json::encode($output);
+	 }
+	 
 	 //use a solr query to republish a list of items
 	 function republishSolrAction(){
 		  
