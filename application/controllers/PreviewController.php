@@ -7,11 +7,13 @@ ini_set("max_execution_time", "0");
 
 class PreviewController extends Zend_Controller_Action
 {
-    
+    public $OChost =  "http://opencontext";
     public $baseURL = "http://penelope.oc";
     //public $baseURL = "http://penelope.opencontext.org";
     public $xslURL = "http://penelope.oc/xsl/";
     //public $xslURL = "http://penelope.opencontext.org/public/xsl/";
+    
+    public $format = "xhtml"; //default format
     
     function init()
     {
@@ -27,90 +29,145 @@ class PreviewController extends Zend_Controller_Action
         require_once 'App/Util/AtomMake.php';
     }
     
-    function spaceAction(){
-        $this->_helper->viewRenderer->setNoRender();
+    private function makeDataURL($itemType){
+        
         $itemUUID = $_REQUEST["UUID"];
+        $dataURL = "http://".$_SERVER['SERVER_NAME']."/xml/".$itemType."?xml=1&id=".$itemUUID;
         if(isset($_REQUEST["format"])){
+            
             if($_REQUEST["format"] == "atom"){
-                $doAtom = true;
-                $doXML = false;
-                $doEdit = false;
+                $this->format = "atom";
             }
-            if($_REQUEST["format"] == "xml"){
-                $doAtom = false;
-                $doXML = true;
-                $doEdit = false;
+            elseif($_REQUEST["format"] == "xml"){
+                $this->format = "xml";
             }
-            if($_REQUEST["format"] == "edit"){
-                $doAtom = false;
-                $doXML = false;
-                $doEdit = true;
+            elseif($_REQUEST["format"] == "edit"){
+                $this->format = "edit";
+            }
+            elseif($_REQUEST["format"] == "json"){
+                $this->format = "json";
+                $dataURL = "http://".$_SERVER['SERVER_NAME']."/xml/".$itemType."?id=".$itemUUID;
             }
         }
-        else{
-            $doAtom = false;
-            $doXML = false;
-            $doEdit = false;
-        }
-        
+        return $dataURL;
+    }
     
-        $xslFile = "preview_defaultSpatial_rdfa.xsl";
-        $spaceURI = "http://".$_SERVER['SERVER_NAME']."/xml/space?xml=1&id=".$itemUUID;
-        $spaceString = file_get_contents($spaceURI);
+    
+    function spaceAction(){
         
-        //$this->_helper->viewRenderer->setNoRender();
-        //echo $spaceString;
-        
-        $AtomString = AtomMake::spatialAtomCreate($spaceString);
-        
-        $AtomString = str_replace("http://about.opencontext.org/schema/space_schema_v1.xsd",
-                                  "http://www.opencontext.org/database/schema/space_schema_v1.xsd", $AtomString);
-        
-        $atom = simplexml_load_string($AtomString);
-        
-        if (!$doAtom && !$doXML && !$doEdit) {        
-            $doc = new DOMDocument();
-            
-            if($this->xslURL != false){
-                //$xslString = file_get_contents($this->xslURL.$xslFile);
-                $doc->load($this->xslURL.$xslFile);
-            }
-            else{
-                $doc->load("xsl/".$xslFile);
-            }
-           
-            $proc = new XSLTProcessor();
-            $xslt = $proc->importStylesheet($doc);
-            $atomDoc = new DomDocument();
-            $atomDoc->loadXML($atom->asXML());
-            
-            header('Content-type: application/xhtml+xml', true);
-            echo $proc->transformToXML($atomDoc);
-            
+        $dataURL = $this->makeDataURL("space");
+        $data = file_get_contents($dataURL);
+       
+        if($this->format == "xml"){
+            $this->_helper->viewRenderer->setNoRender();
+            header("Content-type: application/xml");
+            echo  $data;
         }
-        elseif($doEdit){
-            $doc = new DOMDocument();
-            
-            //$doc->load($xslString);
-            $doc->load("xsl/editSpatial.xsl");
-            $proc = new XSLTProcessor();
-            $xslt = $proc->importStylesheet($doc);
-            $atomDoc = new DomDocument();
-            $atomDoc->loadXML($atom->asXML());
-            echo $proc->transformToXML($atomDoc);
+        elseif($this->format == "json"){
+            $this->_helper->viewRenderer->setNoRender();
+            header('Content-Type: application/json; charset=utf8');
+            echo $data;
         }
         else{
-            header("Content-type: application/xml");
-            if(!$doXML){
-                echo $AtomString;
-            }
-            else{
-                echo $spaceString;
-            }
+            $this->view->OChost = $this->OChost;
+            $this->view->XML  = $data;
+            $this->render("view-space");
         }
-     
+       
+    }
+    
+    
+    function mediaAction(){
         
-    }//end space action
+        $dataURL = $this->makeDataURL("media");
+        $data = file_get_contents($dataURL);
+       
+        if($this->format == "xml"){
+            $this->_helper->viewRenderer->setNoRender();
+            header("Content-type: application/xml");
+            echo  $data;
+        }
+        elseif($this->format == "json"){
+            $this->_helper->viewRenderer->setNoRender();
+            header('Content-Type: application/json; charset=utf8');
+            echo $data;
+        }
+        else{
+            $this->view->OChost = $this->OChost;
+            $this->view->XML  = $data;
+            $this->render("view-media");
+        }
+       
+    }
+    
+    function documentAction(){
+        
+        $dataURL = $this->makeDataURL("document");
+        $data = file_get_contents($dataURL);
+       
+        if($this->format == "xml"){
+            $this->_helper->viewRenderer->setNoRender();
+            header("Content-type: application/xml");
+            echo  $data;
+        }
+        elseif($this->format == "json"){
+            $this->_helper->viewRenderer->setNoRender();
+            header('Content-Type: application/json; charset=utf8');
+            echo $data;
+        }
+        else{
+            $this->view->OChost = $this->OChost;
+            $this->view->XML  = $data;
+            $this->render("view-document");
+        }
+       
+    }
+    
+    function personAction(){
+        
+        $dataURL = $this->makeDataURL("person");
+        $data = file_get_contents($dataURL);
+       
+        if($this->format == "xml"){
+            $this->_helper->viewRenderer->setNoRender();
+            header("Content-type: application/xml");
+            echo  $data;
+        }
+        elseif($this->format == "json"){
+            $this->_helper->viewRenderer->setNoRender();
+            header('Content-Type: application/json; charset=utf8');
+            echo $data;
+        }
+        else{
+            $this->view->OChost = $this->OChost;
+            $this->view->XML  = $data;
+            $this->render("view-person");
+        }
+       
+    }
+    
+    function projectAction(){
+        
+        $dataURL = $this->makeDataURL("project");
+        $data = file_get_contents($dataURL);
+       
+        if($this->format == "xml"){
+            $this->_helper->viewRenderer->setNoRender();
+            header("Content-type: application/xml");
+            echo  $data;
+        }
+        elseif($this->format == "json"){
+            $this->_helper->viewRenderer->setNoRender();
+            header('Content-Type: application/json; charset=utf8');
+            echo $data;
+        }
+        else{
+            $this->view->OChost = $this->OChost;
+            $this->view->XML  = $data;
+            $this->render("view-project");
+        }
+       
+    }
     
 
     function propertyAction(){
@@ -150,318 +207,8 @@ class PreviewController extends Zend_Controller_Action
     }
 
 
-    function mediaAction(){
-        $this->_helper->viewRenderer->setNoRender();
-        $itemUUID = $_REQUEST["UUID"];
-        if(isset($_REQUEST["format"])){
-            if($_REQUEST["format"] == "atom"){
-                $doAtom = true;
-                $doXML = false;
-                $doEdit = false;
-            }
-            if($_REQUEST["format"] == "xml"){
-                $doAtom = false;
-                $doXML = true;
-                $doEdit = false;
-            }
-            if($_REQUEST["format"] == "edit"){
-                $doAtom = false;
-                $doXML = false;
-                $doEdit = true;
-            }
-        }
-        else{
-            $doAtom = false;
-            $doXML = false;
-            $doEdit = false;
-        }
-        
-        $xslFile = "preview_defaultMedia.xsl";
-        $itemURI = "http://".$_SERVER['SERVER_NAME']."/xml/media?xml=1&id=";
-        $itemString = file_get_contents($itemURI.$itemUUID);
-        //$doXML = true;
-        
-        $AtomString = AtomMake::resourceAtomCreate($itemString);
-        $atom = simplexml_load_string($AtomString);
-        
-        
-        if (!$doAtom && !$doXML && !$doEdit) {        
-            $doc = new DOMDocument();
-            //$doc->load($xslString);
-            if($this->xslURL != false){
-                //$xslString = file_get_contents($this->xslURL.$xslFile);
-                $doc->load($this->xslURL.$xslFile);
-            }
-            else{
-                $doc->load("xsl/".$xslFile);
-            }
-            $proc = new XSLTProcessor();
-            $xslt = $proc->importStylesheet($doc);
-            $atomDoc = new DomDocument();
-            $atomDoc->loadXML($atom->asXML());
-            echo $proc->transformToXML($atomDoc);
-        }
-        elseif($doEdit){
-            $doc = new DOMDocument();
-            //$doc->load($xslString);
-            $doc->load("xsl/editMedia.xsl");
-            $proc = new XSLTProcessor();
-            $xslt = $proc->importStylesheet($doc);
-            $atomDoc = new DomDocument();
-            $atomDoc->loadXML($atom->asXML());
-            echo $proc->transformToXML($atomDoc);
-        }
-        else{
-            header("Content-type: application/xml");
-            if(!$doXML){
-                echo $AtomString;
-            }
-            else{
-                echo $itemString;
-            }
-        }
-        
-    }//end media action
 
-
-    function documentAction(){
-        $this->_helper->viewRenderer->setNoRender();
-        $itemUUID = $_REQUEST["UUID"];
-        if(isset($_REQUEST["format"])){
-            if($_REQUEST["format"] == "atom"){
-                $doAtom = true;
-                $doXML = false;
-                $doEdit = false;
-            }
-            if($_REQUEST["format"] == "xml"){
-                $doAtom = false;
-                $doXML = true;
-                $doEdit = false;
-            }
-            if($_REQUEST["format"] == "edit"){
-                $doAtom = false;
-                $doXML = false;
-                $doEdit = true;
-            }
-        }
-        else{
-            $doAtom = false;
-            $doXML = false;
-            $doEdit = false;
-        }
-        
-        $xslFile = "preview_defaultDiary.xsl";
-        //$xslFile = "preview_defaultMedia.xsl";
-        $itemURI = "http://".$_SERVER['SERVER_NAME']."/xml/document?xml=1&id=";
-        $itemString = file_get_contents($itemURI.$itemUUID);
-        //$doXML = true;
-        
-        $AtomString = ($itemString);
-        $atom = simplexml_load_string($AtomString);
-        
-        
-        if (!$doAtom && !$doXML && !$doEdit) {        
-            $doc = new DOMDocument();
-            
-            if($this->xslURL != false){
-                //$xslString = file_get_contents($this->xslURL.$xslFile);
-                $doc->load($this->xslURL.$xslFile);
-            }
-            else{
-                $doc->load("xsl/".$xslFile);
-            }
-            
-            $proc = new XSLTProcessor();
-            $xslt = $proc->importStylesheet($doc);
-            $atomDoc = new DomDocument();
-            $atomDoc->loadXML($atom->asXML());
-            echo $proc->transformToXML($atomDoc);
-        }
-        elseif($doEdit){
-            $doc = new DOMDocument();
-            //$doc->load($xslString);
-            $doc->load("xsl/editMedia.xsl");
-            $proc = new XSLTProcessor();
-            $xslt = $proc->importStylesheet($doc);
-            $atomDoc = new DomDocument();
-            $atomDoc->loadXML($atom->asXML());
-            echo $proc->transformToXML($atomDoc);
-        }
-        else{
-            header("Content-type: application/xml");
-            if(!$doXML){
-                echo $AtomString;
-            }
-            else{
-                echo $itemString;
-            }
-        }
-        
-    }//end media action
-
-
-
-
-    function projectAction(){
-        $this->_helper->viewRenderer->setNoRender();
-        $projUUID = $_REQUEST["UUID"];
-        if(isset($_REQUEST["format"])){
-            if($_REQUEST["format"] == "atom"){
-                $doAtom = true;
-                $doXML = false;
-                $doEdit = false;
-            }
-            if($_REQUEST["format"] == "xml"){
-                $doAtom = false;
-                $doXML = true;
-                $doEdit = false;
-            }
-            if($_REQUEST["format"] == "edit"){
-                $doAtom = false;
-                $doXML = false;
-                $doEdit = true;
-            }
-        }
-        else{
-            $doAtom = false;
-            $doXML = false;
-            $doEdit = false;
-        }
-        
-       
-        $projURI = "http://".$_SERVER['SERVER_NAME']."/xml/project?xml=1&id=".$projUUID;
-        //$xslString = file_get_contents("http://penelope.oc/xsl/defaultMedia.xsl");
-        
-        $xslFile = "preview_defaultProject_rdfa.xsl";
-        $projString = file_get_contents($projURI);
-        //$doXML = true;
-       
-      
-       
-        if (!$doAtom && !$doXML && !$doEdit) {        
-            
-            $atom = simplexml_load_string($projString);
-            $doc = new DOMDocument();
-            
-            if($this->xslURL != false){
-                //$xslString = file_get_contents($this->xslURL.$xslFile);
-                $doc->load($this->xslURL.$xslFile);
-            }
-            else{
-                $doc->load("xsl/".$xslFile);
-            }
-            
-            $proc = new XSLTProcessor();
-            $xslt = $proc->importStylesheet($doc);
-            $atomDoc = new DomDocument();
-            $atomDoc->loadXML($atom->asXML());
-             header('Content-type: application/xhtml+xml', true);
-            echo $proc->transformToXML($atomDoc);
-        }
-        elseif($doEdit){
-            $doc = new DOMDocument();
-            //$doc->load($xslString);
-            $doc->load("xsl/editMedia.xsl");
-            $proc = new XSLTProcessor();
-            $xslt = $proc->importStylesheet($doc);
-            $atomDoc = new DomDocument();
-            $atomDoc->loadXML($atom->asXML());
-            echo $proc->transformToXML($atomDoc);
-        }
-        else{
-            header("Content-type: application/xml");
-            if(!$doXML){
-                echo $AtomString;
-            }
-            else{
-                echo $projString;
-            }
-        }
-       
-    }//end project action
-
-
-
-    function personAction(){
-        $this->_helper->viewRenderer->setNoRender();
-        $personUUID = $_REQUEST["UUID"];
-        if(isset($_REQUEST["format"])){
-            if($_REQUEST["format"] == "atom"){
-                $doAtom = true;
-                $doXML = false;
-                $doEdit = false;
-            }
-            if($_REQUEST["format"] == "xml"){
-                $doAtom = false;
-                $doXML = true;
-                $doEdit = false;
-            }
-            if($_REQUEST["format"] == "edit"){
-                $doAtom = false;
-                $doXML = false;
-                $doEdit = true;
-            }
-        }
-        else{
-            $doAtom = false;
-            $doXML = false;
-            $doEdit = false;
-        }
-        
-       
-        $persURI = "http://".$_SERVER['SERVER_NAME']."/xml/person?xml=1&id=".$personUUID ;
-        //$xslString = file_get_contents("http://penelope.oc/xsl/defaultMedia.xsl");
-        
-        $xslFile = "preview_defaultPerson.xsl";
-        $persString = file_get_contents( $persURI);
-        //$doXML = true;
-       
-      
-       
-        if (!$doAtom && !$doXML && !$doEdit) {        
-            
-            $atom = simplexml_load_string($persString );
-            $doc = new DOMDocument();
-            
-            if($this->xslURL != false){
-                //$xslString = file_get_contents($this->xslURL.$xslFile);
-                $doc->load($this->xslURL.$xslFile);
-            }
-            else{
-                $doc->load("xsl/".$xslFile);
-            }
-            
-            $proc = new XSLTProcessor();
-            $xslt = $proc->importStylesheet($doc);
-            $atomDoc = new DomDocument();
-            $atomDoc->loadXML($atom->asXML());
-             header('Content-type: application/xhtml+xml', true);
-            echo $proc->transformToXML($atomDoc);
-        }
-        elseif($doEdit){
-            $doc = new DOMDocument();
-            //$doc->load($xslString);
-            $doc->load("xsl/editMedia.xsl");
-            $proc = new XSLTProcessor();
-            $xslt = $proc->importStylesheet($doc);
-            $atomDoc = new DomDocument();
-            $atomDoc->loadXML($atom->asXML());
-            echo $proc->transformToXML($atomDoc);
-        }
-        else{
-            header("Content-type: application/xml");
-            if(!$doXML){
-                echo $AtomString;
-            }
-            else{
-                echo $persString ;
-            }
-        }
-       
-    }//end project action
-
-
-
+    
     
     function propCheckAction(){
 	

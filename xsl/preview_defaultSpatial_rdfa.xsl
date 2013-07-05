@@ -873,11 +873,13 @@ urchinTracker();
 				<div class="allnotes bodyText">
 					<p class="subHeader">Item Notes</p>
 					<xsl:if test="count(descendant::arch:links/oc:diary_links/oc:link) != 0" >	
+						<!--
 						<p class="bodyText">
-							<xsl:for-each select="atom:feed/atom:entry/arch:spatialUnit/arch:observations/arch:observation/arch:links/oc:diary_links/oc:link">
-							   <a><xsl:attribute name="href">../documents/<xsl:value-of select="oc:id"/></xsl:attribute><xsl:value-of select="oc:name"/></a><xsl:if test="position() != last()"> , </xsl:if>
+							<xsl:for-each select="arch:links/oc:diary_links/oc:link">
+							   <a><xsl:attribute name="href">document?UUID=<xsl:value-of select="oc:id"/></xsl:attribute><xsl:value-of select="oc:name"/></a><xsl:if test="position() != last()"> , </xsl:if>
 							</xsl:for-each>
 						</p>
+						-->
 					</xsl:if>
 					<xsl:if test="$num_externalRefs != 0" >	
 						<p class="bodyText"> 
