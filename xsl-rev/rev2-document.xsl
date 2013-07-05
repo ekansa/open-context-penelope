@@ -276,6 +276,34 @@
 																		</div>
 																</xsl:if>
 																
+																<!-- linked documents -->
+																<xsl:if test="count(descendant::arch:links/oc:diary_links/oc:link) != 0" >
+																	 <div class="item-links">
+																		  <xsl:attribute name="id">l-docs-<xsl:value-of select="position()"/></xsl:attribute>
+																		  <h5>Linked Documents / Logs (<xsl:value-of select="count(descendant::arch:links/oc:diary_links/oc:link)"/>)</h5>
+																		  <div class="list_tab">
+																				<xsl:for-each select="//arch:links/oc:diary_links/oc:link[position() mod 2 = 1]">
+																					 <div class="list_tab_row">
+																						  
+																						  <div class="list_tab_cell"><a>
+																								  <xsl:attribute name="href">document?UUID=<xsl:value-of select="oc:id"/></xsl:attribute><xsl:value-of select="oc:name"/>
+																								  </a>, <em><xsl:value-of select="oc:relation"/></em>
+																						  </div>
+																						  
+																						  <xsl:for-each select="following-sibling::oc:link[1]">
+																								<div class="list_tab_cell"><a>
+																								  <xsl:attribute name="href">document?UUID=<xsl:value-of select="oc:id"/></xsl:attribute><xsl:value-of select="oc:name"/>
+																								  </a>, <em><xsl:value-of select="oc:relation"/></em>
+																						  </div>
+																						  </xsl:for-each>
+																						  
+																					 </div>
+																				</xsl:for-each>
+																		  </div>
+																	 </div>
+																 </xsl:if>
+																
+																
 																<!-- linked persons -->
 																<xsl:if test="count(descendant::arch:links/oc:person_links/oc:link) != 0" >
 																	 <div class="person-links" id="l-persons-1">
