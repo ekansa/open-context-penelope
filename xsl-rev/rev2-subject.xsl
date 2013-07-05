@@ -755,6 +755,50 @@
 																</div>
 														  </div>
 													 </div>
+													 <br/>
+		<a>
+				<xsl:attribute name="href">../publish/publishdoc?projectUUID=<xsl:value-of select="//arch:spatialUnit/@ownedBy"/>&amp;itemUUID=<xsl:value-of select="//arch:spatialUnit/@UUID"/>&amp;itemType=space</xsl:attribute>New Publish on Local Server
+		</a>
+		<br/>
+		<a>
+				<xsl:attribute name="href">../publish/publishdoc?projectUUID=<xsl:value-of select="//arch:spatialUnit/@ownedBy"/>&amp;itemUUID=<xsl:value-of select="//arch:spatialUnit/@UUID"/>&amp;itemType=space&amp;doUpdate=true</xsl:attribute>Update Publish on Local Server
+		</a>
+		<br/>
+		<a>
+				<xsl:attribute name="href">http://opencontext/publish/itempublish?index=true</xsl:attribute>Committ Changes on Local Server
+		</a>
+		
+		<br/>
+		<br/>
+		<a>
+				<xsl:attribute name="href">../publish/publishdoc?projectUUID=<xsl:value-of select="//arch:spatialUnit/@ownedBy"/>&amp;itemUUID=<xsl:value-of select="//arch:spatialUnit/@UUID"/>&amp;itemType=space&amp;pubURI=http://opencontext.org/publish/itempublish</xsl:attribute>New Publish on Open Context
+		</a>
+		<br/>
+		<a>
+				<xsl:attribute name="href">../publish/publishdoc?projectUUID=<xsl:value-of select="//arch:spatialUnit/@ownedBy"/>&amp;itemUUID=<xsl:value-of select="//arch:spatialUnit/@UUID"/>&amp;itemType=space&amp;doUpdate=true&amp;pubURI=http://opencontext.org/publish/itempublish</xsl:attribute>Update Publish on Open Context
+		</a>
+		<br/>
+		<a>
+				<xsl:attribute name="href">http://opencontext.org/publish/itempublish?index=true</xsl:attribute>Committ Changes on Open Context
+		</a>
+		<br/>
+		<br/>
+		<br/>
+		<a>
+				<xsl:attribute name="href">../edit-dataset/set-prop-change?projectUUID=<xsl:value-of select="//arch:spatialUnit/@ownedBy"/>&amp;itemUUID=<xsl:value-of select="//arch:spatialUnit/@UUID"/></xsl:attribute>Edit Properties, Notes, Etc.
+		</a>
+		<br/>
+		<br/>
+		<a>
+				<xsl:attribute name="href">../publish/?projectUUID=<xsl:value-of select="//arch:spatialUnit/@ownedBy"/></xsl:attribute>Go to Project Publishing Page 
+		</a>
+		<br/>
+		<br/>
+		<br/>
+		<a>
+				<xsl:attribute name="href">../edit-dataset/var-order?projectUUID=<xsl:value-of select="//arch:spatialUnit/@ownedBy"/></xsl:attribute>
+											Reorder Properties to Import Order
+		</a>
 												</div>
 												<!-- end div for license div -->
 										</div><!-- end div for right des cell -->
