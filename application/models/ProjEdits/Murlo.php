@@ -11,6 +11,36 @@ class ProjEdits_Murlo  {
 	
     public $db;
 	 
+	  //cleanup non-valid, messy HTML from original trenchbook transcripts
+	 function TBmediaLink(){
+		  
+		  $output = array();
+		  
+		  $db = $this->startDB();
+		  
+		  $sql = "SELECT links.project_id, links.origin_uuid, links.targ_uuid, resource.res_label, diary.diary_label
+		  FROM links
+		  JOIN resource ON resource.uuid = links.targ_uuid
+		  JOIN diary ON diary.uuid = links.origin_uuid
+		  WHERE targ_type = 'Media (various)'
+		  AND origin_type = 'Diary / Narrative'
+		  ";
+	 
+		  $result =  $db->fetchAll($sql);
+		  $linkObj = new dataEdit_Link;
+		  $linkObj->projectUUID = $result[0]["project_id"];
+		  
+		  foreach($result as $row){
+				
+				$newOrigin = $row["targ_uuid"];
+				$newTarget = $row["origin_uuid"];
+				$newLinkUUID = $linkObj->addLinkingRel($newOrigin, 'Media (various)', $newTarget, 'Diary / Narrative', "link");
+				unset($row["project_id"]);
+				$output[$newLinkUUID] = $row;
+		  }
+		  return $output;
+	 }
+	 
 	 //cleanup non-valid, messy HTML from original trenchbook transcripts
 	 function TBtransClean(){
 		  

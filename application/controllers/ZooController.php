@@ -18,6 +18,24 @@ class ZooController extends Zend_Controller_Action {
     }
     
 	 
+	 //add links from media items back to diary items
+	 function pcTbMediaLinkAction(){
+		  
+		  
+		  $this->_helper->viewRenderer->setNoRender();
+		  Zend_Loader::loadClass('ProjEdits_Murlo');
+		  Zend_Loader::loadClass('dataEdit_Link');
+		  
+		  $murloObj = new ProjEdits_Murlo;
+		  $output = $murloObj->TBmediaLink();
+		  
+		  header('Content-Type: application/json; charset=utf8');
+		  
+		  echo Zend_Json::encode($output);
+	 }
+	 
+	 
+	 
 	  function pcTbTextCleanAction(){
 		  
 		  $this->_helper->viewRenderer->setNoRender();
