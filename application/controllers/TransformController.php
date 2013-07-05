@@ -81,7 +81,8 @@ class TransformController extends App_Controller_PenelopeController
         $db->delete('links',          "source_id = '" . $dataTableName . "'");
         $db->delete('persons_lookup',  "source_id = '" . $dataTableName . "'");
         $db->delete('diary',          "source_id = '" . $dataTableName . "'");
-        $db->delete('diary_lookup',   "source_id = '" . $dataTableName . "'");        
+        $db->delete('diary_lookup',   "source_id = '" . $dataTableName . "'");
+		  $db->delete('diary_lookup',   "source_id != '" . $dataTableName . "'");
         $db->delete('resource',       "source_id = '" . $dataTableName . "'");
         $db->delete('resource_lookup',"source_id = '" . $dataTableName . "'");
         $db->delete('resource_lookup',"source_id != '" . $dataTableName . "'");
@@ -712,65 +713,52 @@ class TransformController extends App_Controller_PenelopeController
                         $lookupRows = $db->fetchAll($sql, 2);    
                     }
                    
-                    
-                    foreach($lookupRows as $lookupRow)
-                        {
-                            $insertTextLookUp = true;
-                            $fieldID = $lookupRow['id'];
-                            $checkText = $lookupRow[$fieldName];
-                            
-                            if($longTextChecking){
-                                if(sha1($checkText) != sha1($theText)){
-                                    $insertTextLookUp = false;
-                                    //the text is not exactly the same
-                                }
-                            }
-                            
-                            
-                            /*
-                            if(strlen($variableUUID)<2){
-                                $sql = "SELECT field_summary.variable_uuid
-                                FROM field_summary
-                                WHERE field_summary.source_id = '$dataTableName'
-                                AND field_summary.field_num = $fieldNumber
-                                ";
-                                
-                                $result = $db->fetchAll($sql, 2);
-                                if($result){
-                                    $variableUUID = $result[0]["variable_uuid"];
-                                }
-                                
-                            }
-                            */
-                            
-                            //check for missing variableUUIDs
-                            $variableUUID = $this->checkVarID($variableUUID, $fieldLabel, $projectUUID, $db);
-                            
-                            
-                            $data = array(
-                                'source_id'          => $dataTableName,
-                                'variable_uuid'     => $variableUUID,
-                                'value_uuid'        => $valueUUID,
-                                'field_num'         => $fieldNumber,
-                                'row_num'           => $fieldID
-                             );
-                            
-                            if($insertTextLookUp){ //only add if the lookup text is exactly the same as the text. Important for long text
-                                try{
-                                    $valueLookup->insert($data);
-                                } catch (Exception $e) {
-                                
-                                }
-                            }
-                        }
-                   
+						 
+                    foreach($lookupRows as $lookupRow){
+								$insertTextLookUp = true;
+								$fieldID = $lookupRow['id'];
+								$checkText = $lookupRow[$fieldName];
+								
+								if($longTextChecking){
+									 if(sha1(trim($checkText)) != sha1(trim($theText))){
+										  $insertTextLookUp = false;
+										  //the text is not exactly the same
+									 }
+								}
+								
+								//echo $checkText.sha1(trim($checkText));
+								//echo $theText.sha1(trim($theText));
+								//die;
+								//echo "<br/>Checking on text sameness: ".$insertTextLookUp." for '".substr($checkText,0,200)."' and '".substr($theText,0,200)."' ";
+								
+								//check for missing variableUUIDs
+								$variableUUID = $this->checkVarID($variableUUID, $fieldLabel, $projectUUID, $db);
+								
+								
+								$data = array(
+									 'source_id'          => $dataTableName,
+									 'variable_uuid'     => $variableUUID,
+									 'value_uuid'        => $valueUUID,
+									 'field_num'         => $fieldNumber,
+									 'row_num'           => $fieldID
+								 );
+								
+								if($insertTextLookUp){ //only add if the lookup text is exactly the same as the text. Important for long text
+									 try{
+										  $valueLookup->insert($data);
+									 } catch (Exception $e) {
+									 
+									 }
+								}
+						  }//end loop through lookups
+						  //die;
                       
-                        if(!$lookupRows){
-                            $this->val_lookup_alt($dataTableName, $fieldNumber, $fieldName, $variableUUID, $valueUUID, $theText);
-                            //echo "<br/><br/>";
-                        }
-                        
-                        ++$cntProperties;
+						  if(!$lookupRows){
+								$this->val_lookup_alt($dataTableName, $fieldNumber, $fieldName, $variableUUID, $valueUUID, $theText);
+								//echo "<br/><br/>";
+						  }
+						  
+						  ++$cntProperties;
                     
                     
                 } //end if value not null
@@ -1814,7 +1802,14 @@ class TransformController extends App_Controller_PenelopeController
                         }
                         */
                         $diaryHash  = md5($projectUUID . '_' . $diaryHash);
-                        $diaryRow   = $diary->fetchRow("diary_hash='" . $diaryHash . "'");
+								
+								if(strlen($diaryText)>140){
+									 $diaryRow   = $diary->fetchRow("diary_hash='" . $diaryHash . "' ");
+								}
+								else{
+									 $diaryRow   = $diary->fetchRow("diary_label = '" . $diaryText . "' ");
+								}
+                        
                         if($diaryRow == null)
                         {
                             $diaryUUID        = GenericFunctions::generateUUID();
@@ -1840,6 +1835,46 @@ class TransformController extends App_Controller_PenelopeController
                             //Zend_Debug::dump($data);
                             $diaryLookup->insert($data);
                         }
+								else{
+									 
+									 //echo print_r($diaryRow );
+									 
+                            $diaryUUID =  $diaryRow->uuid;
+									 $diaryLabel = $diaryRow->diary_label;
+									 $diaryText = $diaryRow->diary_text_original;
+									 
+									 // 1) insert all associated records into the lookup table:
+                            $selectLU = $db->select()
+										  ->from  (
+													 array('d' => $dataTableName),
+													 array('d.' . $fieldName, 'd.id')
+										  )
+										  ->where('d.' . $fieldName . ' = "'.$diaryLabel.'" ');
+									 //Zend_Debug::dump($dataTableName);
+									 //Zend_Debug::dump($fieldRec);
+									 //return;
+								 
+                            $luRecs = $db->query($selectLU)->fetchAll();
+                            foreach($luRecs as $luRec){
+                                $rowNumber = $luRec['id'];
+									 
+                                $sql =  "SELECT * FROM diary_lookup WHERE source_id='" . $dataTableName . "' and uuid='" . $diaryUUID .
+                                    "' and field_num =" . $fieldNum . " and row_num = " . $rowNumber;
+												
+                                $rowLU = $db->fetchAll($sql);
+                                if(!$rowLU){
+                                    $data = array(
+                                            'source_id'      => $dataTableName,
+                                            'uuid'      => $diaryUUID,
+                                            'field_num'     => $fieldNum,
+                                            'row_num'       => $rowNumber
+                                    );
+												
+												$db->insert("diary_lookup", $data);
+                                }
+                            }
+									 
+								}
                     }
                     array_push($returnArray, $numRecsInserted . ' \'Diary / Narrative\' records were inserted for the \'' . $fieldLabel . '\' field.');
                     break;
