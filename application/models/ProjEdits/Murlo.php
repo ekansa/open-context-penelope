@@ -11,6 +11,667 @@ class ProjEdits_Murlo  {
 	
     public $db;
 	 
+	 function TBScrapeClean(){
+		  
+		  $db = $this->startDB();
+		  $output = array();
+		  
+		  $sql = "SELECT uuid, content
+		  FROM z_tb_scrape
+		  WHERE CHAR_LENGTH(uuid)>1
+		  
+		  ";
+		  
+		  $result =  $db->fetchAll($sql);
+		  foreach($result as $row){
+				$uuid = $row["uuid"];
+				$rawText = $row["content"];
+				$rawText = $this->tagLowerCase($rawText);
+				
+				$useText = tidy_repair_string($rawText,
+									 array( 
+										  'doctype' => "omit",
+										  'input-xml' => true,
+										  'output-xml' => true 
+									 ));
+								
+				@$xml = simplexml_load_string($useText);
+				if($xml){
+					$validXHTML = true;
+				}
+				else{
+					 $validXHTML = false;
+				}
+				unset($xml);
+				
+				$where = "uuid = '$uuid' ";
+				$data = array("diary_text_original" => $useText);
+				$db->update("diary", $data, $where);
+				
+				$output[$label] = array("valid" => $validXHTML, "xhtml" => $useText);
+		  }
+		  
+		  return $output;
+	 }
+	 
+	 
+	 function saveFile($itemDir, $baseFilename, $fileString){
+		
+		  $success = false;
+		
+		  try{
+				
+				iconv_set_encoding("internal_encoding", "UTF-8");
+				
+				//iconv_set_encoding("internal_encoding", "UTF-8");
+				//iconv_set_encoding("output_encoding", "UTF-8");
+				$fp = fopen($itemDir."/".$baseFilename, 'w');
+				//fwrite($fp, iconv("ISO-8859-7","UTF-8",$JSON));
+				//fwrite($fp, utf8_encode($JSON));
+				fwrite($fp, $fileString);
+				fclose($fp);
+				$success = true;
+		  }
+		  catch (Zend_Exception $e){
+				$success = false; //save failure
+				echo (string)$e;
+				die;
+		  }
+		
+		  return $success;
+	 }
+	 
+	 
+	 function linkFix(){
+		  
+		  $db = $this->startDB();
+		  $sql = "SELECT tbtid, tbtdid, prevLink FROM z_tb_scrape WHERE 1";
+		 
+		  $result =  $db->fetchAll($sql);
+		  foreach($result as $row){
+				$tbtid = $row["tbtid"];
+				$tbtdid = $row["tbtdid"];
+				$urlSuffix = $row["prevLink"];
+				if(strlen($urlSuffix)>1){
+					 $url = "http://poggiocivitate.classics.umass.edu/catalog/trenchbooks/".$urlSuffix;
+					 $urlArray = parse_url($url);
+					 
+					 $qArray = explode("&", $urlArray["query"]);
+					 
+					 $where = false;
+					 foreach($qArray as $param){
+						  $pEx = explode("=", $param);
+						  $data[$pEx[0]] = $pEx[1];
+						  if(!$where){
+								$where = $param;
+						  }
+						  else{
+								$where .= " AND ".$param;
+						  }
+					 }
+					 $db = $this->startDB();
+					 $sql = "SELECT * FROM z_tb_scrape WHERE $where LIMIT 1;";
+					 //echo $sql;
+					 //die;
+					 $resultB =  $db->fetchAll($sql);
+					 if(!$resultB){
+						  $where = "tbtid = $tbtid AND tbtdid = $tbtdid";
+						  $data = array("content" => "");
+						  $db->update("z_tb_scrape", $data, $where);
+					 }
+				}
+		  }
+	 }
+	 
+	 function deleteDupes(){
+		  $db = $this->startDB();
+		  $sql = "SELECT * FROM z_tb_scrape
+		  WHERE 1 ORDER BY tbtid, tbtdid
+		  ";
+		  
+		  $result =  $db->fetchAll($sql);
+		  $prevTbtid = false;
+		  $prevTbtdid = false;
+		  foreach($result as $row){
+				$tbtid = $row["tbtid"];
+				$tbtdid = $row["tbtdid"];
+				if($tbtid == $prevTbtid && $tbtdid == $prevTbtdid){
+					 $where = "tbtid = $tbtid AND tbtdid = $tbtdid";
+					 $sql = "DELETE FROM z_tb_scrape WHERE $where LIMIT 1;";	 
+					 $resultB =  $db->query($sql);
+				}
+				$prevTbtid = $tbtid;
+				$prevTbtdid = $tbtdid;
+		  }
+	 }
+	 
+	 
+	 function TBjsonAdd(){
+		  
+		  $jsonString = file_get_contents("http://penelope.oc/csv-export/scrape.json");
+		  $jsonString = mb_convert_encoding($jsonString, 'ASCII');
+				$jsonString = str_replace("???", "", $jsonString);
+				$jsonString = str_replace("\r\n", "", $jsonString);
+		  $jarray = Zend_Json::encode($jsonString);
+		  $jarray = json_decode($jsonString, true);
+		  $db = $this->startDB();
+		  if(!is_array($jarray)){
+				echo "crap.".substr($jsonString, 0, 300);
+				die;
+		  }
+		  foreach($jarray["newData"] as $data){
+				if(is_array($data)){
+					 if(strlen($data["html"])<4){
+						  $data["html"] = "no data";
+					 }
+					 else{
+						  $db->insert("z_tb_scrape",$data);
+					 }
+				}
+		  }
+		  
+	 }
+	 
+	 
+	 //cleanup non-valid, messy HTML from original trenchbook transcripts
+	 function TBscrapeParse(){
+		  
+		  $db = $this->startDB();
+		  $output = array();
+		  $continue = true;
+		  
+		  while($continue){
+				$sql = "SELECT *
+				FROM z_tb_scrape
+				WHERE content = ''
+				LIMIT 1;
+				";
+				
+				$result =  $db->fetchAll($sql);
+				if($result){
+					 //$continue = false;
+					 foreach($result as $row){
+						  $tbtid = $row["tbtid"];
+						  $tbtdid = $row["tbtdid"];
+						  
+						  $rawText = $row["html"];
+						  
+						  if(!stristr($rawText, "</html>")){
+								if($tbtdid>0){
+									 $urlSuffix = "viewtrenchbookentry.asp?tbtdid=".$tbtdid."&tbtid=".$tbtid;
+								}
+								else{
+									 $urlSuffix = "viewtrenchbookentry.asp?tbtid=".$tbtid;
+								}
+								$url = "http://poggiocivitate.classics.umass.edu/catalog/trenchbooks/".$urlSuffix;
+								sleep(.75);
+								@$rawText = file_get_contents($url);
+								if($rawText){
+									 $rawText = $this->styleReduce($rawText, "TD");
+									 $this->saveFile("csv-export", "TB-".$tbtid."-".$tbtdid.".html", $rawText);
+									 
+									 $where = "tbtid = $tbtid AND tbtdid = $tbtdid";
+									 $data = array("html" => $rawText);
+									 $db->update("z_tb_scrape", $data, $where);
+								}
+								else{
+									 echo "not working: ".$url;
+									 die;
+								}
+						  }
+						  
+						  //$parts = $this->contentTagAdd($rawText);
+						  $parts = $this->contentTagAlt($rawText);
+						  //echo print_r($parts);
+						  //die;
+						  $rawText = $parts["before"].$parts["after"];
+						  if(!$parts["before"] || !$parts["content"] || !$parts["after"]){
+								echo print_r($parts);
+								die;
+						  }
+						  
+						  $title = false;
+						  $date = false;
+						  $StartPage = false;
+						  $EndPage = false;
+						  $content = $parts["content"];
+						  $nextLink = false;
+						  $prevLink = false;
+						  $nextLinkDate = false;
+						  $prevLinkDate = false;
+						  
+						  $useText = tidy_repair_string($rawText,
+												array( 
+													 'doctype' => "omit",
+													 'input-xml' => true,
+													 'output-xml' => true 
+												));
+										  
+						  @$xml = simplexml_load_string($useText);
+						  if($xml){
+								foreach($xml->xpath("//p[@class='title']") as $res) {
+									 $title = (string)$res;
+									 if(strstr($title, ":")){
+										  $tEx = explode(":", $title);
+										  $title = trim($tEx[0]);
+										  $tEx[1] = str_replace("Entry for", "", $tEx[1]);
+										  $date = date("Y-m-d", strtotime(trim($tEx[1])));
+									 }
+								} 
+						  
+								foreach($xml->xpath("//a") as $res) {
+									 
+									 $href = false;
+									 foreach($res->xpath("@href") as $res2){
+										  $href = (string)$res2;
+									 }
+									 $linkVal = (string)$res;
+									 if(strstr($linkVal, "/")){
+										  
+										  $linkVal = str_replace("<", "", $linkVal);
+										  $linkVal = str_replace(">", "", $linkVal);
+										  $linkVal = trim($linkVal);
+										  $linkValTime = strtotime($linkVal);
+										  
+										  if($linkValTime < strtotime($date)){
+												$prevLink = $href;
+												$prevLinkDate = date("Y-m-d", $linkValTime);
+												$output["newData"][] = $this->TBtransScrape($prevLink);
+										  }
+										  if($linkValTime >= strtotime($date)){
+												$nextLink = $href;
+												$nextLinkDate = date("Y-m-d", $linkValTime);
+												$output["newData"][] = $this->TBtransScrape($nextLink);
+										  }
+										  
+										  $output["links"][] = array("original" => $linkVal,
+																			  "link" => $href,
+																			  "prev" => $prevLink,
+																			  "next" => $nextLink);
+									 }
+								}
+						  
+								$pp = 1;
+								$maxPage = 1500;
+								
+								while($pp <= $maxPage){
+									 
+									 foreach($xml->xpath("//a[@href='#P".$pp."']") as $res) {
+										  $actPage = (string)$res;
+										  $actPage += 0;
+										  if(!$StartPage){
+												$StartPage = $actPage;
+										  }
+										  else{
+												if(!$EndPage){
+													 $EndPage = $actPage;
+												}
+												if($EndPage < $actPage){
+													 $EndPage = $actPage;
+												}
+										  }
+									 
+									 }
+									 
+									 $pp++;
+								}
+						  
+								$where = "tbtid = $tbtid AND tbtdid = $tbtdid";
+								$data = array("label" => $title,
+												  "date" => $date,
+												  "StartPage" => $StartPage,
+												  "EndPage" => $EndPage,
+												  "prevLink" => $prevLink,
+												  "prevLinkDate" => $prevLinkDate,
+												  "nextLink" => $nextLink,
+												  "nextLinkDate" => $nextLinkDate,
+												  "content" => $content
+												  );
+								
+								$db->update("z_tb_scrape", $data, $where);
+						  }
+						  
+						  $output[$tbtid][$tbtdid] = $data;
+					 }//end loop
+				}//end case with results
+				else{
+					 $continue = false;
+				}
+		  }//end loop
+		  
+		  return $output;
+	 }
+	 
+	 
+	 function styleReduce($rawText, $actTag){
+		  $replaceText = $rawText;
+		  $pos = 0;
+		  $textLen = strlen($rawText);
+		  if(strstr($rawText, "<".$actTag)){
+				$styles = array();
+				while($pos < $textLen){
+					 $TDpos = strpos($rawText, "<".$actTag, $pos);
+					 $endTD = strpos($rawText, ">", $TDpos);
+					 $tag = substr($rawText, $TDpos, ($endTD - $TDpos));
+					 $actStyle =  $this->getAttribute('style', $tag);
+					 if(strlen($actStyle)>1){
+						  $hashStyle = md5($actStyle);
+						  if(array_key_exists($hashStyle, $styles)){
+								$styleID = $styles[$hashStyle]['id'];
+						  }
+						  else{
+								$id = count($styles) + 1;
+								$styles[$hashStyle] = array("id" => $id, "style" => $actStyle);
+						  }
+					 }
+					 if($endTD > $pos){
+						  $pos = $endTD;
+					 }
+					 else{
+						  $pos++;
+					 }
+				}
+				$styleElement = "<style id=\"scrape-styles\" type=\"text/css\" >".chr(13);
+				foreach($styles as $style){
+					 $className = "scrape-st-".$style["id"];
+					 $styleElement .= $actTag.".".$className." {".chr(13).$style["style"].chr(13)."}".chr(13);
+					 $replaceText = str_replace("style=\"".$style["style"]."\"", "class=\"".$className."\"", $replaceText);
+				}
+				$styleElement .= "</style>".chr(13);
+				$endBegin = "<a href=\"trenchbookdaily.asp\">Return to Trench Book Logs</a>
+</td></tr></table><br>";
+				$replaceText = str_replace($endBegin, $endBegin." ".$styleElement, $replaceText);
+				
+		  }
+		  
+		  return $replaceText;
+	 }
+	 
+	 function getAttribute($attrib, $tag){
+		//get attribute from html tag
+		$re = '/' . preg_quote($attrib) . '=([\'"])?((?(1).+?|[^\s>]+))(?(1)\1)/is';
+		if (preg_match($re, $tag, $match)) {
+			return urldecode($match[2]);
+		}
+		return false;
+	}
+	 
+	 
+	 function contentTagAlt($rawText){
+		  
+		  $textLen = strlen($rawText);
+		  
+		  $beforeContent = "";
+		  $content = "";
+		  $afterContent = "";
+		  $pos = 0;
+		  
+		  $endBegin = "<a href=\"trenchbookdaily.asp\">Return to Trench Book Logs</a>
+</td></tr></table><br>";
+		  $textEx = explode($endBegin, $rawText);
+		  $beforeContent = $textEx[0].$endBegin;
+		  $endContent = "<p>
+
+<table width=\"100%\" cellspacing=\"0\" cellpadding=\"0\" border=\"0\">
+";
+		  $textEndEx = explode($endContent, $textEx[1]);
+		  $content = "<div>".$textEndEx[0]."</div>";
+		  if(isset($textEndEx[1])){
+				$afterContent = $endContent.$textEndEx[1];
+		  }
+		  else{
+				$endContent = "<p><a href=\"edittrenchbookdaily.asp";
+				$textEndEx = explode($endContent, $textEx[1]);
+				$content = "<div>".$textEndEx[0]."</div>";
+				$afterContent = $endContent.$textEndEx[1];
+		  }
+		  
+		  return array("before" => $beforeContent,
+							"content" => $content,
+							"after" => $afterContent);
+	 }
+	 
+	 
+	 function contentTagAdd($rawText){
+		  $cLow = 65;
+		  $cHigh = 90;
+		  $lLow = 97;
+		  $lHigh = 122;
+		  $highFound = false;
+		  $lowAgain = false;
+		  $textLen = strlen($rawText);
+		  
+		  $beforeContent = "";
+		  $content = "";
+		  $afterContent = "";
+		  $pos = 0;
+		  while($pos < $textLen){
+				$capitalTag = false;
+				$lowerTag = false;
+				$closeLen = 1;
+				$endBegin = 0;
+				if($pos == 0){
+					 $endBegin = strpos($rawText, "<a href=\"trenchbookdaily.asp\">Return to Trench Book Logs</a>
+</td></tr></table><br>");
+					 $closeLen = $endBegin;
+				}
+				elseif($pos < ($textLen - 3)){
+					 $actChars = substr($rawText, $pos, 3);
+					 if(substr($actChars, 0, 1) == "<"){
+						  if(substr($actChars, 1, 1) == "/"){
+								$charTest = substr($actChars, 2, 1);
+						  }
+						  else{
+								$charTest = substr($actChars, 1, 1);
+						  }
+						  $ordCharTest = ord($charTest);
+						  if($ordCharTest >= $cLow && $ordCharTest <= $cHigh){
+								$capitalTag = true;
+						  }
+						  /*
+						  if($ordCharTest >= $lLow && $ordCharTest <= $lHigh){
+								$lowerTag = true;
+						  }
+						  */
+					 }
+				}
+				
+				
+				
+				
+				if($capitalTag || $lowerTag){
+					 $closePos = strpos($rawText, ">", $pos);
+					 $closeLen = $closePos - $pos;
+				}
+				
+				$posBE = false;
+				if($highFound && !$lowAgain){
+					 $beginEnd = "<p>
+
+<table width=\"100%\" cellspacing=\"0\" cellpadding=\"0\" border=\"0\">
+";
+					 $lenBeginEnd = strlen($beginEnd);
+					 $posBE = strpos($rawText, $beginEnd, $pos);
+					 if($posBE > 0){
+						  $closeLen = $posBE - $pos ;
+					 }
+				}
+				
+				$addingString = substr($rawText, $pos, $closeLen);
+				if(!$highFound && !$lowAgain){
+					 if($capitalTag){
+						  $content = "<div>".$addingString;
+						  $highFound = true;
+					 }
+					 else{
+						  $beforeContent .= $addingString;
+					 }
+				}
+				elseif($highFound && !$lowAgain){
+					 
+					 if($posBE != false){
+						  $content .= $addingString."</div>";
+						  $afterContent = "";
+						  $lowAgain = true;
+					 }
+					 else{
+						  $content .= $addingString;
+					 }
+				}
+				elseif($highFound && $lowAgain){
+					 $afterContent .= $addingString;
+				}
+				
+				$pos = $pos + $closeLen;
+		  }
+		  
+		  return array("before" => $beforeContent,
+							"content" => $content,
+							"after" => $afterContent);
+	 }
+	 
+	 
+	 
+	 
+	 function TBtransScrape($urlSuffix){
+		  ini_set('default_socket_timeout',    15);    
+
+		  $url = "http://poggiocivitate.classics.umass.edu/catalog/trenchbooks/".$urlSuffix;
+		  $urlArray = parse_url($url);
+		  $qArray = explode("&", $urlArray["query"]);
+		  $data = array();
+		  $where = false;
+		  foreach($qArray as $param){
+				$pEx = explode("=", $param);
+				$data[$pEx[0]] = $pEx[1];
+				if(!$where){
+					 $where = $param;
+				}
+				else{
+					 $where .= " AND ".$param;
+				}
+		  }
+		  $db = $this->startDB();
+		  $sql = "SELECT * FROM z_tb_scrape WHERE $where LIMIT 1;";
+		  
+		  $result =  $db->fetchAll($sql);
+		  if(!$result){
+				//we don't have a database record for this, so add it!
+				sleep(.75);
+				@$html = file_get_contents($url);
+				//echo $url;
+				//die;
+				if($html != false){
+					 
+					 //$data["html"] = $html;
+					 try{
+						  $db->insert("z_tb_scrape", $data);
+					 } catch (Exception $e) {
+						  echo (string)$e;
+						  die;
+					 }
+					 return $data;
+				}
+				else{
+					 return "failed retrieve";
+				}
+		  }
+	 }
+	 
+	 
+	 //scape the live website for transcript information
+	 function TBscrape(){
+		  $output = array();
+		  $db = $this->startDB();
+		  $i = 1;
+		  $max = 1200;
+		  while($i <= $max){
+				$url = "http://poggiocivitate.classics.umass.edu/catalog/trenchbooks/viewtrenchbookentry.asp?tbtid=".$i;
+				@$html = file_get_contents($url); 
+				if($html != false){
+					 $data = array("tbtdid" => $i,
+										"html" => $html);
+					 $db->insert("z_tb_scrape", $data);
+					 $output[$i] = $url;
+				}
+				else{
+					 $output[$i] = "error";
+				}
+				
+				sleep(.75);
+				$i++;
+		  }
+		  
+		  return $output;
+	 }
+	 
+	 
+	 
+	 
+	 
+	 //Add attibution information related to trench books
+	 function TBauthorLink($typeToAttribute = "Media (various)"){
+		  
+		  $output = array();
+		  
+		  $db = $this->startDB();
+		  
+		  if($typeToAttribute != "Media (various)"){
+				
+				$sql = "SELECT links.project_id, links.targ_uuid AS newOrigin, dNewO.diary_label AS newOriginName, links.origin_uuid AS oldOrigin
+				FROM links
+				JOIN diary AS dNewO ON dNewO.uuid = links.targ_uuid
+				WHERE links.targ_type = 'Diary / Narrative'
+				AND links.origin_type = 'Diary / Narrative'
+				AND links.link_type = 'has part'
+				";
+				
+		  }
+		  else{
+				
+				$sql = "SELECT links.project_id, links.targ_uuid AS newOrigin, resource.res_label AS newOriginName, links.origin_uuid AS oldOrigin
+				FROM links
+				JOIN resource ON resource.uuid = links.targ_uuid
+				WHERE links.targ_type = 'Media (various)'
+				AND links.origin_type = 'Diary / Narrative'
+				";
+		  }
+	 
+		  $result =  $db->fetchAll($sql);
+		  $linkObj = new dataEdit_Link;
+		  $linkObj->projectUUID = $result[0]["project_id"];
+		  
+		  foreach($result as $row){
+				
+				$newOrigin = $row["newOrigin"];
+				$oldOrigin = $row["oldOrigin"];
+				
+				$sql = "SELECT users.combined_name, users.uuid
+				FROM links
+				JOIN users ON links.targ_uuid = users.uuid
+				WHERE links.origin_uuid = '$oldOrigin'
+				LIMIT 1;
+				";
+				
+				//echo print_r($row);
+				//echo "<br/>".$sql;
+				//die;
+				
+				$resultB =  $db->fetchAll($sql);
+				if($resultB){
+					 $newTarget = $resultB[0]["uuid"];
+					 $row["linkedUUID"] = $newTarget;
+					 $row["linkedName"] = $resultB[0]["combined_name"];
+					 $newLinkUUID = $linkObj->addLinkingRel($newOrigin, $typeToAttribute, $newTarget, 'Person', "Recorded by");
+					 unset($row["project_id"]);
+					 $output[$newLinkUUID] = $row;
+				}
+		  }
+		  return $output;
+	 }
+	 
+	 
+	 
 	  //cleanup non-valid, messy HTML from original trenchbook transcripts
 	 function TBmediaLink(){
 		  
@@ -557,6 +1218,82 @@ class ProjEdits_Murlo  {
 		  return $output;
 	 }
 	 
+	 
+	 
+	 
+	 function findsGeoJsonAdd($jsonFileURL){
+		  
+		  $output = false;
+		  $db = $this->startDB();
+		  $flipLatLon = false;
+		  $geoJSON = false;
+		  if($jsonFileURL != false){
+				@$jsonString = file_get_contents($jsonFileURL);
+				
+				$i = 0;
+				$jsonLen = strlen($jsonString);
+				$jsonString = mb_convert_encoding($jsonString, 'ASCII');
+				$jsonString = str_replace("???", "", $jsonString);
+				$jsonString = str_replace("\r\n", "", $jsonString);
+				
+				if($jsonString != false){
+					 $jsonString = trim($jsonString);
+					 $geoJSON = Zend_Json::decode($jsonString);
+					 
+					 if(!is_array($geoJSON)){
+						  $geoJSON = json_decode($jsonString,0);
+					 }
+					 
+					 if(is_array($geoJSON)){
+						  
+						  $idFeatures = array();
+						  $missingArray = array();
+						  foreach($geoJSON["features"] as $feature){
+								
+								$rawID = round($feature["properties"]["ArtifactID"],0);
+								$findID = "PC ".$rawID;
+								$sql = "SELECT uuid, project_id FROM space WHERE space_label = '$findID' LIMIT 1;";
+								//echo "<br/>$sql<br/>";
+								$results =  $db->fetchAll($sql);
+								if($results){
+									 $spaceUUID = $results[0]["uuid"];
+									 $projectID = $results[0]["project_id"];
+									 //echo "<br/>$trenchID is $spaceUUID ";
+									 $idFeatures["found"][$spaceUUID]["label"] = $findID;
+									 $idFeatures["found"][$spaceUUID]["project_id"] = $projectID;
+									 
+									 $idFeatures["found"][$spaceUUID]["features"][]["geometry"] = $feature["geometry"];
+									 $idFeatures["found"][$spaceUUID]["meanLon"] = $feature["geometry"]["coordinates"][0];
+									 $idFeatures["found"][$spaceUUID]["meanLat"] = $feature["geometry"]["coordinates"][1];
+								}
+								else{
+									 $missingArray[] = $findID;
+								}
+						  }
+						  $idFeatures["missing"] = $missingArray;
+						  
+						  foreach($idFeatures["found"] as $spaceUUID => $geoArray){
+								
+								$data = array("uuid" => $spaceUUID,
+												  "project_id" => $geoArray["project_id"],
+												  "source_id" => "FindsJSONfile",
+												  "latitude" => $geoArray["meanLat"],
+												  "longitude" => $geoArray["meanLon"],
+												  "geojson_data"	=> Zend_Json::encode($geoArray["features"])
+												  );
+								
+								$where = "uuid = '$spaceUUID' ";
+								$db->delete("geo_space", $where);
+								$db->insert("geo_space", $data);
+						  }
+						  
+						  $output = $idFeatures;
+					 }//end case with JSON being an array  
+				}//end case with file opened
+		  }//end case with a URL to get the file
+		  
+		  return $output;
+	 }
 	 
 	 
 	 

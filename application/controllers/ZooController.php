@@ -16,11 +16,62 @@ class ZooController extends Zend_Controller_Action {
     {  
         require_once 'App/Util/GenericFunctions.php';
     }
+	 
+	  //add links from media items back to diary items
+	 function pcTbScrapeCleanAction(){
+		  
+		  $this->_helper->viewRenderer->setNoRender();
+		  Zend_Loader::loadClass('ProjEdits_Murlo');
+		  
+		  $murloObj = new ProjEdits_Murlo;
+		  
+		  $output = $murloObj->TBScrapeClean();
+		  
+		  header('Content-Type: application/json; charset=utf8');
+		  
+		  echo Zend_Json::encode($output);
+	 }
+	 
     
+	 
+	  //add links from media items back to diary items
+	 function pcTbScrapeParseAction(){
+		  
+		  $this->_helper->viewRenderer->setNoRender();
+		  Zend_Loader::loadClass('ProjEdits_Murlo');
+		  
+		  $murloObj = new ProjEdits_Murlo;
+		  $murloObj->linkFix();
+		  $output = $murloObj->TBscrapeParse();
+		  
+		  header('Content-Type: application/json; charset=utf8');
+		  
+		  echo Zend_Json::encode($output);
+	 }
+	 
+	 
+	  //add links from media items back to diary items
+	 function pcTbAttributeAction(){
+		  
+		  $this->_helper->viewRenderer->setNoRender();
+		  Zend_Loader::loadClass('ProjEdits_Murlo');
+		  Zend_Loader::loadClass('dataEdit_Link');
+		  
+		  $murloObj = new ProjEdits_Murlo;
+		  $typeToAttribute = 'Diary / Narrative';
+		  //$typeToAttribute = 'Media (various)';
+		  
+		  $output = $murloObj->TBauthorLink($typeToAttribute );
+		  
+		  header('Content-Type: application/json; charset=utf8');
+		  
+		  echo Zend_Json::encode($output);
+	 }
+	 
+	 
 	 
 	 //add links from media items back to diary items
 	 function pcTbMediaLinkAction(){
-		  
 		  
 		  $this->_helper->viewRenderer->setNoRender();
 		  Zend_Loader::loadClass('ProjEdits_Murlo');
@@ -77,6 +128,24 @@ class ZooController extends Zend_Controller_Action {
 	 }
 	 
 	 
+	 
+	 
+	 
+	 function pcGeoJsonFindsAction(){
+		  
+		  $this->_helper->viewRenderer->setNoRender();
+		  Zend_Loader::loadClass('ProjEdits_Murlo');
+		  $jsonURL = "http://penelope.oc/csv-export/ArtifactsGeoJSON.json";
+		  //$jsonURL = "http://penelope.oc/csv-export/murlo-trenches-b.txt";
+		  
+		  $murloObj = new ProjEdits_Murlo;
+		  $output = $murloObj->findsGeoJsonAdd($jsonURL);
+		  
+		  header('Content-Type: application/json; charset=utf8');
+		  
+		  echo Zend_Json::encode($output);
+	 }
+	 
 	 function pcGeoAction(){
 		  
 		  $this->_helper->viewRenderer->setNoRender();
@@ -98,6 +167,7 @@ class ZooController extends Zend_Controller_Action {
 		  $this->_helper->viewRenderer->setNoRender();
 		  
 		  $solrQuery = "http://localhost:8983/solr/select?facet=true&facet.mincount=1&fq=%7B%21cache%3Dfalse%7Dproject_name%3AMurlo++%26%26+NOT+project_id%3A0+NOT+def_context_0%3AItaly+%26%26+%28+%28item_type%3Aspatial%29+%29&facet.field=def_context_0&facet.field=project_name&facet.field=item_class&facet.field=time_span&facet.field=geo_point&facet.query=image_media_count%3A%5B1+TO+%2A%5D&facet.query=other_binary_media_count%3A%5B1+TO+%2A%5D&facet.query=diary_count%3A%5B1+TO+%2A%5D&sort=interest_score+desc&wt=json&json.nl=map&q=%2A%3A%2A&start=0&rows=200";
+		  $solrQuery = "http://localhost:8983/solr/select?facet=true&facet.mincount=1&fq=%7B%21cache%3Dfalse%7DNOT+project_id%3A0+%26%26+%28+%28item_type%3Aspatial%29+%29&facet.field=def_context_1&facet.field=project_name&facet.field=item_class&facet.field=time_span&facet.field=geo_point&facet.field=geo_path&facet.query=image_media_count%3A%5B1+TO+%2A%5D&facet.query=other_binary_media_count%3A%5B1+TO+%2A%5D&facet.query=diary_count%3A%5B1+TO+%2A%5D&sort=interest_score+desc&wt=json&json.nl=map&q=%28+%28default_context_path%3AItaly%2F%2A+%29+%7C%7C+%28default_context_path%3AItaly+%29%29+%26%26+%28geo_path%3A12023202222130310%2A%29&start=0&rows=400";
 		  
 		  $respJSONstring = file_get_contents($solrQuery);
 		  $solrJSON = Zend_Json::decode($respJSONstring);
