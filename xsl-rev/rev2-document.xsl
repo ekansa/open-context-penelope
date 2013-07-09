@@ -39,26 +39,8 @@
 
 
 
-<xsl:template name="string-replace">
-		<xsl:param name="arg"/>
-		<xsl:param name="toReplace"/>
-		<xsl:param name="replaceWith"/>
-		<xsl:choose>
-			<xsl:when test="contains($arg, $toReplace)">
-				<xsl:variable name="prefix" select="substring-before($arg, $toReplace)"/>
-				<xsl:variable name="postfix" select="substring($arg, string-length($prefix)+string-length($toReplace)+1)"/>
-				<xsl:value-of select="concat($prefix, $replaceWith)"/>
-				<xsl:call-template name="string-replace">
-					<xsl:with-param name="arg" select="$postfix"/>
-					<xsl:with-param name="toReplace" select="$toReplace"/>
-					<xsl:with-param name="replaceWith" select="$replaceWith"/>
-				</xsl:call-template>
-			</xsl:when>
-			<xsl:otherwise>
-				<xsl:value-of select="$arg"/>
-			</xsl:otherwise>
-		</xsl:choose>
-</xsl:template>
+<!-- include other XSL files for generally used functions -->
+<xsl:include href="rev2-string-replace.xsl"/>
 
 
 
@@ -121,7 +103,7 @@
 		<xsl:if test="position() != last()">, </xsl:if>
 		<xsl:if test="position() = last()">. </xsl:if>
 		</xsl:for-each>
-	</xsl:if>&quot;<xsl:value-of select="//arch:resource/oc:metadata/dc:title"/>&quot; (Released <xsl:value-of select="//arch:resource/oc:metadata/dc:date"/>). <xsl:for-each select="//arch:resource/oc:metadata/dc:creator"> <xsl:value-of select="."/><xsl:if test="position() != last()">, </xsl:if><xsl:if test="position() = last()"><xsl:if test="$num_editors = 1"> (Ed.) </xsl:if><xsl:if test="$num_editors != 1"> (Eds.) </xsl:if></xsl:if></xsl:for-each> <em>Open Context. </em> &lt;http://opencontext.org/media/<xsl:value-of select="//arch:resource/@UUID"/>&gt; 
+	</xsl:if>&quot;<xsl:value-of select="//arch:resource/oc:metadata/dc:title"/>&quot; (Released <xsl:value-of select="//arch:resource/oc:metadata/dc:date"/>). <xsl:for-each select="//arch:resource/oc:metadata/dc:creator"> <xsl:value-of select="."/><xsl:if test="position() != last()">, </xsl:if><xsl:if test="position() = last()"><xsl:if test="$num_editors = 1"> (Ed.) </xsl:if><xsl:if test="$num_editors != 1"> (Eds.) </xsl:if></xsl:if></xsl:for-each> <em>Open Context. </em> &lt;http://opencontext.org/documents/<xsl:value-of select="//arch:resource/@UUID"/>&gt; 
 </xsl:variable>
 
 <xsl:variable name="firstOrigin">
@@ -198,7 +180,19 @@
 														<div id="preview">
 																<h5>Document Contents</h5>
 																<div id="document-content">
-																		<xsl:value-of select="arch:resource/arch:content/arch:internalDocument/arch:string" disable-output-escaping="yes"/>
+																		<xsl:choose>
+																				<xsl:when test="arch:resource/arch:content/arch:internalDocument/arch:string/@type = 'xhtml'">
+																					 <!-- <xsl:value-of select="arch:string"/> -->
+																					 <xsl:for-each select="arch:resource/arch:content/arch:internalDocument/arch:string/*">
+																						  <xsl:call-template  name="node-output" >
+																								<xsl:with-param name="root" select="."/>
+																						  </xsl:call-template>
+																					 </xsl:for-each>
+																				</xsl:when>
+																				<xsl:otherwise>
+																					 <xsl:value-of select="arch:resource/arch:content/arch:internalDocument/arch:string" disable-output-escaping="yes" />
+																				</xsl:otherwise>
+																		</xsl:choose>
 																</div>
 														</div>
 														

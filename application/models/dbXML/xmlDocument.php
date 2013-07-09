@@ -61,11 +61,19 @@ class dbXML_xmlDocument  {
 	$elementB = $doc->createElement("arch:internalDocument");
 	$elementC = $doc->createElement("arch:string");
 	if($itemObj->documentTextXMLvalid){
-	    $elementC->setAttribute("type", "xhtml");
+		  $elementC->setAttribute("type", "xhtml");
+		  $elementCC = $doc->createElement("div");
+		  $elementCC->setAttribute("xmlns", "http://www.w3.org/1999/xhtml");
+		  $contentFragment = $doc->createDocumentFragment();
+		  $contentFragment->appendXML($itemObj->documentText);  // add the XHTML fragment
+		  $elementCC->appendChild($contentFragment);
+		  $elementC->appendChild($elementCC);
+	}
+	else{
+		  $elementCtext = $doc->createTextNode($itemObj->documentText);
+		  $elementC->appendChild($elementCtext);
 	}
 	
-	$elementCtext = $doc->createTextNode($itemObj->documentText);
-	$elementC->appendChild($elementCtext);
 	$elementB->appendChild($elementC);
 	$element->appendChild($elementB);
 	$root->appendChild($element);
