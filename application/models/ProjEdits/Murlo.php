@@ -27,17 +27,38 @@ class ProjEdits_Murlo  {
 				$uuid = $row["uuid"];
 				$rawText = $row["content"];
 				$rawText = $this->tagLowerCase($rawText);
+				//$rawText = $this->selfCloseTag($rawText, "img");
+				//$rawText = $this->selfCloseTag($rawText, "br");
+				$useText = tidy_repair_string($rawText);
+				$dom= new DOMDocument();
+				@$dom->loadHTML($useText);      
+				$xpath = new DOMXPath($dom);
+				$div = $xpath->query('/html/body/div');
+				$useText = ($dom->saveXml($div->item(0)));
 				
+				/*
 				$useText = tidy_repair_string($rawText,
 									 array( 
 										  'doctype' => "omit",
 										  'input-xml' => true,
 										  'output-xml' => true 
 									 ));
-								
+				*/
+				
 				@$xml = simplexml_load_string($useText);
 				if($xml){
-					$validXHTML = true;
+					 $xml = $this->uniqueIDs($xml); //make sure the IDs are unique
+					 
+					 $xml = $this->simpleXMLlinksSrc($xml); //update the links, references to image srcs
+					 $useText = $xml->asXML();
+					 
+					 $validXHTML = true;
+					 $dom = new DOMDocument('1.0', 'UTF-8');
+					 $dom->formatOutput = true;
+					 $dom->preserveWhiteSpace = false;
+					 $dom->loadXML($useText);
+					 $useText = $dom->saveXML($dom->documentElement);
+					 unset($dom);
 				}
 				else{
 					 $validXHTML = false;
@@ -48,37 +69,227 @@ class ProjEdits_Murlo  {
 				$data = array("diary_text_original" => $useText);
 				$db->update("diary", $data, $where);
 				
-				$output[$label] = array("valid" => $validXHTML, "xhtml" => $useText);
+				$output[$uuid] = array("valid" => $validXHTML, "xhtml" => $useText);
 		  }
 		  
 		  return $output;
 	 }
 	 
 	 
-	 function saveFile($itemDir, $baseFilename, $fileString){
-		
-		  $success = false;
-		
-		  try{
-				
-				iconv_set_encoding("internal_encoding", "UTF-8");
-				
-				//iconv_set_encoding("internal_encoding", "UTF-8");
-				//iconv_set_encoding("output_encoding", "UTF-8");
-				$fp = fopen($itemDir."/".$baseFilename, 'w');
-				//fwrite($fp, iconv("ISO-8859-7","UTF-8",$JSON));
-				//fwrite($fp, utf8_encode($JSON));
-				fwrite($fp, $fileString);
-				fclose($fp);
-				$success = true;
+	 
+	 
+	 //make certain that ID attributes are unique
+	 function uniqueIDs($xml){
+		  $idArray = array();
+		  foreach($xml->xpath("//@id") as $xres){
+				$actID = (string)$xres;
+				$actID = "PC-TB-".$actID;
+				if(in_array($actID, $idArray)){
+					 $actID = $actID."-".count($idArray);
+					 $idArray[] = $actID;
+				}
+				else{
+					 $idArray[] = $actID;
+				}
+				$xres[0] = $actID;
 		  }
-		  catch (Zend_Exception $e){
-				$success = false; //save failure
-				echo (string)$e;
-				die;
+		  return $xml;
+	 }
+	 
+	 //get rid of style long information (not going to display well)
+	 function styleTweek($xml){
+		  
+		  
+		  
+	 }
+	 
+	 
+	 //update links in the XML
+	 function simpleXMLlinksSrc($xml){
+		  //$xml is a simple xml object
+		  $db = $this->startDB();
+		  foreach($xml->xpath("//a") as $xout){
+				$photo = false;
+				$findUUID = false;
+				$PCid = false;
+				foreach($xout->xpath("@href") as $xres){
+					 $href = (string)$xres;
+					 if(stristr($href, "javascript:viewPhoto")){
+						  preg_match('#\((.*?)\)#', $href, $match);
+						  $photo = $this->stripQuotes($match[1]);
+						  $uuidThumb = $this->getImageUUIDandThumb($photo);
+						  if($uuidThumb != false){
+								$xres[0] = "http://opencontext.org/media/".$uuidThumb["uuid"];
+						  }
+					 }
+					 elseif(stristr($href, "javascript:openViewer") && stristr($href, "viewartifactcatalog") ){
+						  preg_match('#\((.*?)\)#', $href, $match);
+						  $artifactLink = $this->stripQuotes($match[1]);
+						  $PCid = $this->getPCIDfromArtifactLink($artifactLink);
+						  if($PCid != false){
+								$findUUID = $this->getPCuuid($PCid); //get the UUID from the artifact's PC number
+						  }
+						  if($findUUID != false){
+								$xres[0] = "http://opencontext.org/subjects/".$findUUID;
+						  }
+					 }
+				}
+				if($photo != false){
+					 $xout->addAttribute("title", "Link to photo ".$photo);
+					 $xout->addAttribute("target", "_blank");
+				}
+				if($findUUID != false){
+					 $xout->addAttribute("title", "Link to find PC ".$PCid);
+					 $xout->addAttribute("target", "_blank");
+				}
 		  }
-		
-		  return $success;
+		  foreach($xml->xpath("//img") as $xout){
+				$photo = false;
+				foreach($xout->xpath("//@src") as $xres){
+					 $src = (string)$xres;
+					 if(stristr($src, ".jpg")){
+						  $uuidThumb = $this->getImageUUIDandThumb($src);
+						  if($uuidThumb != false){
+								$xres[0] = $uuidThumb["thumb"];
+						  }
+					 }
+				}
+				if($photo != false){
+					 $xout->addAttribute("title", "Photo ".$photo);	 
+				}
+		  }
+		  return $xml;
+	 }
+	 
+	 //get artifact link from old artifact url
+	 function getPCIDfromArtifactLink($artifactLink){
+		  $output = false;
+		  $urlParams = $this->getURLparams($artifactLink);
+		  if(is_array($urlParams)){
+				if(isset($urlParams["aid"])){
+					 $output = $urlParams["aid"];
+				}
+		  }
+		  
+		  return $output;
+	 }
+	 
+	 //get the parameters in a URL
+	 function getURLparams($url){
+		  $output = false;
+		  $urlArray = parse_url($url);
+		  if(isset($urlArray["query"])){
+				$qArray = explode("&", $urlArray["query"]);
+				$output = array();
+				foreach($qArray as $param){
+					 $pEx = explode("=", $param);
+					 $output[$pEx[0]] = $pEx[1];
+				}
+		  }
+		  return $output;
+	 }
+	 
+	 
+	 //get image uuid and current thumbnail
+	 function getImageUUIDandThumb($photoPath){
+		  $db = $this->startDB();
+		  if(strstr($photoPath, "/")){
+				$pEx = explode("/", $photoPath);
+				$photo = $pEx[(count($pEx) - 1)];
+		  }
+		  else{
+				$photo = $photoPath;
+		  }
+		  
+		  $photoCap = str_replace(".jpg", ".JPG", $photo);
+		  $photoLow = str_replace(".JPG", ".jpg", $photo);
+		  
+		  $sql = "SELECT uuid, ia_thumb AS thumb
+		  FROM resource
+		  WHERE res_path_source LIKE '%$photoCap'
+		  OR res_path_source LIKE '%$photoLow'
+		  LIMIT 1;
+		  ";
+		  
+		  $result =  $db->fetchAll($sql);
+		  if($result){
+				return $result[0];
+		  }
+		  else{
+				return false;
+		  }
+	 }
+	 
+	 
+	 
+	 
+	 //get rid of quotes around text
+	 function stripQuotes($text){
+		  $text = str_replace("\"", "", $text);
+		  $text = str_replace("'", "", $text);
+		  $text = trim($text);
+		  return $text;
+	 }
+	 
+	 
+	 function substr_unicode($str, $s, $l = null) {
+		  return join("", array_slice(
+				preg_split("//u", $str, -1, PREG_SPLIT_NO_EMPTY), $s, $l));
+	 }
+	 
+	 function quoteAttributes($tag){
+		  
+		  if(strstr($tag, "=")){
+				
+		  }
+		  
+	 }
+	 
+	 
+	 //puts close tags on images
+	 function selfCloseTag($rawText, $actTag){
+		  $replaceText = $rawText;
+		  $pos = 0;
+		  $textLen = strlen($rawText);
+		  $tagStart = "<".$actTag;
+		  if(strstr($rawText, $tagStart)){
+				
+				while($pos < $textLen){
+					 $TDpos = strpos($rawText, $tagStart, $pos);
+					 $TDpos = $TDpos + 0;
+					 $endTD = strpos($rawText, ">", $TDpos);
+					 $endTD  = $endTD  +0;
+					 $tagLen = ($endTD - $TDpos) + 1;
+					 $foundTag = substr($rawText, $TDpos, $tagLen);
+					 //$foundTag = $this->substr_unicode($rawText, 0, $textLen);
+					 
+					 //echo $actTag.' is at '.$TDpos.' end: '.$endTD.' ('.$tagLen.')('.$textLen.') for '.$foundTag."|";
+					 //die;
+					 if(!strstr($foundTag, "/>")){
+						  $fixedTag = str_replace(">", "/>", $foundTag);
+						  $fixedTag = tidy_repair_string($fixedTag,
+									 array( 
+										  'doctype' => "omit",
+										  'input-xml' => true,
+										  'output-xml' => true 
+									 ));
+						  
+						  $replaceText = str_replace($foundTag, $fixedTag, $replaceText);
+						  //echo $foundTag.' replaced by '.$fixedTag;
+						  //die;
+					 }
+					 
+					 if($endTD > $pos){
+						  $pos = $endTD;
+					 }
+					 else{
+						  $pos++;
+					 }
+				}
+				
+		  }
+		  
+		  return $replaceText;
 	 }
 	 
 	 
@@ -432,106 +643,6 @@ class ProjEdits_Murlo  {
 	 }
 	 
 	 
-	 function contentTagAdd($rawText){
-		  $cLow = 65;
-		  $cHigh = 90;
-		  $lLow = 97;
-		  $lHigh = 122;
-		  $highFound = false;
-		  $lowAgain = false;
-		  $textLen = strlen($rawText);
-		  
-		  $beforeContent = "";
-		  $content = "";
-		  $afterContent = "";
-		  $pos = 0;
-		  while($pos < $textLen){
-				$capitalTag = false;
-				$lowerTag = false;
-				$closeLen = 1;
-				$endBegin = 0;
-				if($pos == 0){
-					 $endBegin = strpos($rawText, "<a href=\"trenchbookdaily.asp\">Return to Trench Book Logs</a>
-</td></tr></table><br>");
-					 $closeLen = $endBegin;
-				}
-				elseif($pos < ($textLen - 3)){
-					 $actChars = substr($rawText, $pos, 3);
-					 if(substr($actChars, 0, 1) == "<"){
-						  if(substr($actChars, 1, 1) == "/"){
-								$charTest = substr($actChars, 2, 1);
-						  }
-						  else{
-								$charTest = substr($actChars, 1, 1);
-						  }
-						  $ordCharTest = ord($charTest);
-						  if($ordCharTest >= $cLow && $ordCharTest <= $cHigh){
-								$capitalTag = true;
-						  }
-						  /*
-						  if($ordCharTest >= $lLow && $ordCharTest <= $lHigh){
-								$lowerTag = true;
-						  }
-						  */
-					 }
-				}
-				
-				
-				
-				
-				if($capitalTag || $lowerTag){
-					 $closePos = strpos($rawText, ">", $pos);
-					 $closeLen = $closePos - $pos;
-				}
-				
-				$posBE = false;
-				if($highFound && !$lowAgain){
-					 $beginEnd = "<p>
-
-<table width=\"100%\" cellspacing=\"0\" cellpadding=\"0\" border=\"0\">
-";
-					 $lenBeginEnd = strlen($beginEnd);
-					 $posBE = strpos($rawText, $beginEnd, $pos);
-					 if($posBE > 0){
-						  $closeLen = $posBE - $pos ;
-					 }
-				}
-				
-				$addingString = substr($rawText, $pos, $closeLen);
-				if(!$highFound && !$lowAgain){
-					 if($capitalTag){
-						  $content = "<div>".$addingString;
-						  $highFound = true;
-					 }
-					 else{
-						  $beforeContent .= $addingString;
-					 }
-				}
-				elseif($highFound && !$lowAgain){
-					 
-					 if($posBE != false){
-						  $content .= $addingString."</div>";
-						  $afterContent = "";
-						  $lowAgain = true;
-					 }
-					 else{
-						  $content .= $addingString;
-					 }
-				}
-				elseif($highFound && $lowAgain){
-					 $afterContent .= $addingString;
-				}
-				
-				$pos = $pos + $closeLen;
-		  }
-		  
-		  return array("before" => $beforeContent,
-							"content" => $content,
-							"after" => $afterContent);
-	 }
-	 
-	 
-	 
 	 
 	 function TBtransScrape($urlSuffix){
 		  ini_set('default_socket_timeout',    15);    
@@ -774,7 +885,8 @@ class ProjEdits_Murlo  {
 		  $tags = array("P" => "p",
 							 "A" => "a",
 							 "STRONG" => "strong",
-							 "strongLOCKQUOTE" => "strong",
+							 "strongLOCKQUOTE" => "blockquote",
+							 "BLOCKQUOTE" => "blockquote",
 							 "EM" => "em",
 							 "OL" => "ol",
 							 "UL" => "ul",
@@ -1295,6 +1407,31 @@ class ProjEdits_Murlo  {
 		  return $output;
 	 }
 	 
+	 function saveFile($itemDir, $baseFilename, $fileString){
+		
+		  $success = false;
+		
+		  try{
+				
+				iconv_set_encoding("internal_encoding", "UTF-8");
+				
+				//iconv_set_encoding("internal_encoding", "UTF-8");
+				//iconv_set_encoding("output_encoding", "UTF-8");
+				$fp = fopen($itemDir."/".$baseFilename, 'w');
+				//fwrite($fp, iconv("ISO-8859-7","UTF-8",$JSON));
+				//fwrite($fp, utf8_encode($JSON));
+				fwrite($fp, $fileString);
+				fclose($fp);
+				$success = true;
+		  }
+		  catch (Zend_Exception $e){
+				$success = false; //save failure
+				echo (string)$e;
+				die;
+		  }
+		
+		  return $success;
+	 }
 	 
 	 
 	 function startDB(){

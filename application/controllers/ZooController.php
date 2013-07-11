@@ -181,10 +181,11 @@ class ZooController extends Zend_Controller_Action {
 				$pubResp = array();
 				$resp = file_get_contents($localPubBaseURI.$uuid);
 				$pubResp["local"] = Zend_Json::decode($resp);
-				sleep(1);
+				//sleep(1);
+				/*
 				$resp = file_get_contents($ocPubBaseURI.$uuid);
 				$pubResp["oc"] = Zend_Json::decode($resp);
-				
+				*/
 				$output[$uuid] = $pubResp;
 				unset($pubResp);
 		  }
