@@ -66,8 +66,11 @@ class dbXML_xmlDocument  {
 		  $elementCC->setAttribute("xmlns", "http://www.w3.org/1999/xhtml");
 		  $contentFragment = $doc->createDocumentFragment();
 		  $contentFragment->appendXML($itemObj->documentText);  // add the XHTML fragment
+		  $contentFragment->preserveWhiteSpace = FALSE;
+		  $contentFragment->formatOutput = TRUE;
 		  $elementCC->appendChild($contentFragment);
 		  $elementC->appendChild($elementCC);
+		  
 	}
 	else{
 		  $elementCtext = $doc->createTextNode($itemObj->documentText);
