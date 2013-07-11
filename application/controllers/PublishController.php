@@ -264,7 +264,7 @@ class PublishController extends Zend_Controller_Action
                               "pubdest" => $clientURI,
                               "project_id" => $projectUUID,
                                   "item_uuid" => $itemUUID,
-                                  "item_type" => $type);
+                                  "item_type" => $itemType);
                 $data["status"] = "Error HTTP bad response";
                 $output["error"] = "Error HTTP bad response";
                 $output["pubStatus"] = "Error HTTP bad response";
