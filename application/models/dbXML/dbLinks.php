@@ -275,7 +275,7 @@ class dbXML_dbLinks  {
 	    WHERE links.origin_uuid = '".$id."'
 	    AND (links.targ_type LIKE '%diary%' OR links.targ_type LIKE '%narrative%' OR links.targ_type LIKE '%document%' )
 	    $obsTerm
-	    ORDER BY diary.diary_label	
+	    ORDER BY diary.sort, diary.diary_label	
 	    ";
 	}
 	else{
@@ -294,7 +294,7 @@ class dbXML_dbLinks  {
 	    WHERE links.origin_uuid = '".$id."'
 	    AND (links.targ_type LIKE '%diary%' OR links.targ_type LIKE '%narrative%' OR links.targ_type LIKE '%document%' )
 	    $obsTerm
-	    ORDER BY diary.diary_label";
+	    ORDER BY diary.sort, diary.diary_label";
 	    
 	}
 	
