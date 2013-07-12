@@ -657,54 +657,51 @@ class ProjEdits_Murlo  {
 	 
 	 //get UUID for trench book based on TrenchBook ID and search page
 	 function getUUIDfromTrenchBookIDs($tbIDs){
+		  $output = false;
 		  $db = $this->startDB();
 		  
 		  if(isset($tbIDs["searchpage"]) && isset($tbIDs["tbID"])){
-				
-				if(!is_numeric($tbIDs["searchpage"])){
-					 $tbIDs["searchpage"] = 1;
-				}
-				$StartPage = $tbIDs["searchpage"];
-				
-				if($StartPage > 1){
-					 
-					 $sql = "SELECT uuid, label, pagedLabel
-					 FROM z_tb_scrape
-					 WHERE TrenchBookID = ".$tbIDs["tbID"]."
-					 AND
-						  (
-								(StartPage >= ".$StartPage." )
-						  )
-					 ORDER BY tbtdid, StartPage, EndPage	
-					 LIMIT 1;
-					 ";
-				}
-				else{
-					 //just get the main diary (home page for a trench book)
-					 
-					 $sql = "SELECT uuid, label, pagedLabel
-					 FROM z_tb_scrape
-					 WHERE TrenchBookID = ".$tbIDs["tbID"]."
-					 ORDER BY tbtdid, StartPage, EndPage	
-					 LIMIT 1;
-					 ";
-				}
-				
-				$result =  $db->fetchAll($sql);
-				if($result){
-					 $output = $result[0];
-					 if(strlen($result[0]["pagedLabel"]) > strlen($result[0]["label"])){
-						  $output["label"] = $result[0]["pagedLabel"]; 
+				if(is_numeric($tbIDs["tbID"])){
+					 if(!is_numeric($tbIDs["searchpage"])){
+						  $tbIDs["searchpage"] = 1;
 					 }
-					 return $output;
-				}
-				else{
-					 return false;
+					 $StartPage = $tbIDs["searchpage"];
+					 
+					 if($StartPage > 1){
+						  
+						  $sql = "SELECT uuid, label, pagedLabel
+						  FROM z_tb_scrape
+						  WHERE TrenchBookID = ".$tbIDs["tbID"]."
+						  AND
+								(
+									 (StartPage >= ".$StartPage." )
+								)
+						  ORDER BY tbtdid, StartPage, EndPage	
+						  LIMIT 1;
+						  ";
+					 }
+					 else{
+						  //just get the main diary (home page for a trench book)
+						  
+						  $sql = "SELECT uuid, label, pagedLabel
+						  FROM z_tb_scrape
+						  WHERE TrenchBookID = ".$tbIDs["tbID"]."
+						  ORDER BY tbtdid, StartPage, EndPage	
+						  LIMIT 1;
+						  ";
+					 }
+					 
+					 $result =  $db->fetchAll($sql);
+					 if($result){
+						  $output = $result[0];
+						  if(strlen($result[0]["pagedLabel"]) > strlen($result[0]["label"])){
+								$output["label"] = $result[0]["pagedLabel"]; 
+						  }
+					 }
 				}
 		  }
-		  else{
-				return false;
-		  }
+		  
+		  return $output;
 	 }
 	 
 	 
