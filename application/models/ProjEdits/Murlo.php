@@ -11,8 +11,53 @@ class ProjEdits_Murlo  {
 	
     public $db;
 	 
-	 function TB
-	 
+	 function TBaddDiaryProperties(){
+		  
+		  $output = array();
+		  
+		  $db = $this->startDB();
+		  $propObj = new dataEdit_Property;
+		  $propObj->projectUUID = "DF043419-F23B-41DA-7E4D-EE52AF22F92F";
+		  $propObj->sourceID = "scrape-props";
+		  
+		  $varArray = array("date" => "6A359C65-9F07-417A-37F1-881E48669140",
+								  "StartPage" => "BECAD1AF-0245-44E0-CD2A-F2F7BD080443",
+								  "EndPage" => "506924AA-B53D-41B5-9D02-9A7929EA6D6D",
+								  "TrenchBookID" => "DDE6114E-9BB4-40A4-AD80-55FBEAB6663A",
+								  "pcURI" => "403CE884-AA17-4932-8507-66E4FD145294"
+								  );
+		  
+		  $TBnote =
+		  "<p>The Poggio Civitate team scanned and transcribed Trench Books starting in 2001. These were originally
+		  made available online at the Poggio Civitate Excavations project <a href=\"http://poggiocivitate.classics.umass.edu/\">website</a>.</p>
+		  <p>To improve data longevity and standards compliance, the HTML of the transcribed Trench Books
+		  was substantially processed and edited prior to publication in Open Context.
+		  </p>
+		  ";
+		  
+		  $sql = "SELECT uuid, tbtid, tbtdid, TrenchBookID, label, pagedLabel, StartPage, EndPage,
+		  pcURI, prevLink, nextLink
+		  FROM z_tb_scrape
+		  WHERE CHAR_LENGTH(uuid) > 1
+		  ORDER BY sort
+		  ";
+		  
+		  $result =  $db->fetchAll($sql);
+		  foreach($result as $row){
+				$subjectUUID = $row["uuid"];
+				foreach($varArray as $varKey => $variableUUID){
+					 $valText = $row[$varKey];
+					 $add = $propObj->add_obs_varUUID_value($valText, $variableUUID, $subjectUUID, "Diary / Narrative");
+					 $output[$subjectUUID][$variableUUID] = array("value" => $valText,
+																				 "added" => $add);
+				}
+				
+				$add = $propObj->add_obs_varUUID_value($TBnote, "NOTES", $subjectUUID, "Diary / Narrative");
+				$output[$subjectUUID]["note"] = $add;
+		  }
+		  
+		  return $output;
+	 }
 	 
 	 
 	 //load the Diary table with scrapped trench books, add links 
@@ -341,8 +386,8 @@ class ProjEdits_Murlo  {
 		  FROM z_tb_scrape AS sc
 		  LEFT JOIN z_tb_cleaning AS cl ON sc.uuid = cl.uuid
 		  WHERE CHAR_LENGTH(sc.uuid)>1
-		 
 		  AND cl.uuid IS NULL
+		  ORDER BY sort
 		  ";
 		  
 		  $result =  $db->fetchAll($sql);
