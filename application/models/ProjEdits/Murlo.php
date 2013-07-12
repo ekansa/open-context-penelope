@@ -11,30 +11,355 @@ class ProjEdits_Murlo  {
 	
     public $db;
 	 
-	 function TBScrapeClean(){
+	 function TB
+	 
+	 
+	 
+	 //load the Diary table with scrapped trench books, add links 
+	 function TBscrapeDiary(){
 		  
 		  $db = $this->startDB();
 		  $output = array();
+		  $source = "scraped-data";
 		  
-		  $sql = "SELECT uuid, content
+		  $linkObj = new dataEdit_Link;
+		  $linkObj->projectUUID = 'DF043419-F23B-41DA-7E4D-EE52AF22F92F';
+		  
+		  $sql = "SELECT uuid, tbtid, tbtdid, TrenchBookID, label, pagedLabel, StartPage, EndPage,
+		  pcURI, prevLink, nextLink
 		  FROM z_tb_scrape
-		  WHERE CHAR_LENGTH(uuid)>1
-		  
+		  WHERE CHAR_LENGTH(uuid) > 1
+		  ORDER BY TrenchBookID, tbtid, tbtdid
 		  ";
 		  
 		  $result =  $db->fetchAll($sql);
 		  foreach($result as $row){
 				$uuid = $row["uuid"];
+				$label = $row["label"];
+				$pagedLabel = $row["pagedLabel"];
+				if(strlen($pagedLabel) < 1){
+					 $diaryLabel = $label;
+				}
+				else{
+					 $diaryLabel = $pagedLabel;
+				}
+				
+				$TrenchBookID = $row["TrenchBookID"];
+				$StartPage = $row["StartPage"];
+				$EndPage = $row["EndPage"];
+				$prevLink = $row["prevLink"];
+				$nextLink = $row["nextLink"];
+				$tbtdid = $row["tbtdid"];
+				$trenchID = $row["tbtid"];
+				
+				$linkedPictures = $this->getLinkedTBscans($TrenchBookID, $StartPage, $EndPage, $tbtdid, $label);
+				if(is_array($linkedPictures)){
+					 $source = "scrape-scans"; 
+					 foreach($linkedPictures as $targUUID){
+						  $output[$uuid]["scrape-scans"][] = $targUUID;
+						  $newLinkUUID = $linkObj->addLinkingRel($uuid, "Diary / Narrative", $targUUID, 'Media (various)', "link", $source);
+						  if($tbtdid != 0){
+								//add the reciprocal link
+								$newLinkUUID = $linkObj->addLinkingRel($targUUID, 'Media (various)', $uuid, "Diary / Narrative", "Scan of", $source);
+						  }
+					 }
+				}
+				
+				$trenchUUID = $this->getLinkedTrench($trenchID);
+				if($trenchUUID != false){
+					 
+					 $source = "scrape-trench";
+					 $output[$uuid]["scrape-trench"][] = $trenchUUID;
+					 if($tbtdid == 0){
+						  $newLinkUUID = $linkObj->addLinkingRel($trenchUUID, "Locations or Objects", $uuid, "Diary / Narrative", "link", $source);
+					 }
+					 else{
+						  $newLinkUUID = $linkObj->addLinkingRel($uuid, "Diary / Narrative", $trenchUUID, "Locations or Objects", "Documents", $source);
+					 }
+				}
+				
+				/*
+				$data = array(
+					"uuid" => $uuid, 
+					 "project_id" => 'DF043419-F23B-41DA-7E4D-EE52AF22F92F',
+					 "source_id" => 'z_4_e8169555e',
+					 "diary_hash" => md5('DF043419-F23B-41DA-7E4D-EE52AF22F92F'."_".$diaryLabel),
+					 "diary_label" => $diaryLabel,
+					 "diary_text_original" => "pending"
+				);
+				
+				try{
+					 $db->insert("diary", $data);
+					 $output[] = $data;
+				} catch (Exception $e) {
+					 $output[] = "UUID: ".$uuid." Failed";
+				}
+				*/
+				
+				/*
+				if($row["tbtdid"] == 0){ //first page of a trench book, gets lots of links
+					 $sql = "SELECT uuid, tbtid, tbtdid, TrenchBookID, label, pagedLabel, StartPage, EndPage,
+					 pcURI, prevLink, NextLink
+					 FROM z_tb_scrape
+					 WHERE CHAR_LENGTH(uuid) > 1
+					 AND tbtdid != 0
+					 AND TrenchBookID = $TrenchBookID
+					 ORDER BY tbtid, tbtdid
+					 ";
+					 
+					 $resB =  $db->fetchAll($sql);
+					 foreach($resB as $rowB){
+						  //for the first page of a given trench book, add linking relations to all the later pages
+						  $targUUID = $rowB["uuid"];
+						  $newLinkUUID = $linkObj->addLinkingRel($uuid, "Diary / Narrative", $targUUID, 'Diary / Narrative', "Has part", $source);
+						  $newLinkUUID = $linkObj->addLinkingRel($targUUID, "Diary / Narrative", $uuid, 'Diary / Narrative', "Is part of", $source);
+					 }
+				}
+				
+				
+				if(strlen($prevLink) > 1){
+					 //add a previous link
+					 
+					 $sql = "SELECT uuid, tbtid, tbtdid, TrenchBookID, label, pagedLabel, StartPage, EndPage,
+					 pcURI, prevLink, NextLink
+					 FROM z_tb_scrape
+					 WHERE CHAR_LENGTH(uuid) > 1
+					 AND tbtdid != 0
+					 AND TrenchBookID = $TrenchBookID
+					 AND pcURI LIKE '%".$prevLink."'
+					 ORDER BY tbtid, tbtdid
+					 ";
+					 
+					 $resB =  $db->fetchAll($sql);
+					 foreach($resB as $rowB){
+						  //for the first page of a given trench book, add linking relations to all the later pages
+						  $targUUID = $rowB["uuid"];
+						  $newLinkUUID = $linkObj->addLinkingRel($uuid, "Diary / Narrative", $targUUID, 'Diary / Narrative', "Previous", $source);
+					 }
+					 
+				}
+				
+				
+				if(strlen($nextLink) > 1){
+					 //add a previous link
+					 
+					 $sql = "SELECT uuid, tbtid, tbtdid, TrenchBookID, label, pagedLabel, StartPage, EndPage,
+					 pcURI, prevLink, NextLink
+					 FROM z_tb_scrape
+					 WHERE CHAR_LENGTH(uuid) > 1
+					 AND tbtdid != 0
+					 AND TrenchBookID = $TrenchBookID
+					 AND pcURI LIKE '%".$nextLink."'
+					 ORDER BY tbtid, tbtdid
+					 ";
+					 
+					 $resB =  $db->fetchAll($sql);
+					 foreach($resB as $rowB){
+						  //for the first page of a given trench book, add linking relations to all the later pages
+						  $targUUID = $rowB["uuid"];
+						  $newLinkUUID = $linkObj->addLinkingRel($uuid, "Diary / Narrative", $targUUID, 'Diary / Narrative', "Next", $source);
+						  if($row["tbtdid"] == 0){
+								$newLinkUUID = $linkObj->addLinkingRel($targUUID, "Diary / Narrative", $uuid, 'Diary / Narrative', "Previous", $source);
+						  }
+					 }
+					 
+				}
+				*/
+		  }
+		  
+		  $sql = "
+		  
+		  SET @new_ordering = 0;
+
+		  UPDATE z_tb_scrape AS sc
+		  SET sc.sort = (@new_ordering := @new_ordering + 1)
+		  WHERE CHAR_LENGTH(sc.uuid) > 1
+		  ORDER BY sc.TrenchBookID, sc.StartPage, sc.EndPage;
+		  
+		  UPDATE diary
+		  JOIN z_tb_scrape AS sc ON sc.uuid = diary.uuid
+		  SET diary.sort = sc.sort;
+		  
+		  ";
+		  
+		  $db->query($sql); //add sorting information
+		  
+		  return $output;
+	 }
+	 
+	 //get linked trench UUIDs
+	 function getLinkedTrench($trenchID){
+		  $output = false;
+		  $db = $this->startDB();
+		  $trench = "Tr-ID ".$trenchID;
+		  
+		  $sql = "SELECT uuid FROM space WHERE space_label = '$trench' LIMIT 1; ";
+		  
+		  $result =  $db->fetchAll($sql);
+		  if($result){
+				$output = $result[0]["uuid"];
+		  }
+		  
+		  return $output;
+	 }
+	 
+	 
+	 //get linked trench book scans.
+	 function getLinkedTBscans($TrenchBookID, $StartPage, $EndPage, $tbtdid, $TBLabel){
+		 
+		  $output = false; 
+		  $db = $this->startDB();
+		  $OrStart = "";
+		  if($StartPage == 1){
+				$OrStart = " OR StartPage = 0 ";
+		  }
+		  
+		  
+		  $sql = "SELECT uuid, label
+				FROM z_tb_images
+				WHERE (TrenchBookID = ".$TrenchBookID."
+				OR TB_Label = '$TBLabel')
+				AND
+					 (
+						  ((StartPage >= ".$StartPage." $OrStart)
+						  AND EndPage <= ".$EndPage."
+						  AND EndPage != 0
+						  )
+					 OR
+						  (StartPage = ".$StartPage." $OrStart)
+						  AND (EndPage = 0)
+					 )
+				";
+		  
+		  if($tbtdid == 0){
+				
+				$sql = "SELECT uuid, label
+				FROM z_tb_images
+				WHERE TrenchBookID = ".$TrenchBookID."
+				OR TB_Label = '$TBLabel' ";
+				
+		  }
+		  
+		  //echo " ---  $sql  ---  ";
+		  $result =  $db->fetchAll($sql);
+		  if($result){
+				$output = array();
+				foreach($result as $row){
+					 $output[] = $row["uuid"];
+				}
+		  }
+		  return $output;
+	 }
+	 
+	 
+	 
+	 
+	 
+	 
+	 
+	 
+	 
+	 
+	 
+	 function TBscrapePagesUUID(){
+		  
+		  $db = $this->startDB();
+		  $output = array();
+		  $sql = "SELECT * FROM
+		  z_tb_scrape
+		  WHERE CHAR_LENGTH(uuid) < 1
+		  AND tbtdid != 0
+		  ORDER BY tbtid, tbtdid
+		  ";
+		  
+		  $result =  $db->fetchAll($sql);
+		  foreach($result as $row){
+				$pcURI = $row["pcURI"];
+				$label = $row["label"];
+				$TrenchBookID = $row["TrenchBookID"];
+				$StartPage = $row["StartPage"];
+				$EndPage = $row["EndPage"];
+				$pagedLabel = $row["label"];
+				if($StartPage > 0){
+					 $suffix = ":".$StartPage;
+					 if($EndPage > $StartPage){
+						  $suffix .= "-".$EndPage;
+					 }
+					 
+					 $pagedLabel = $label.$suffix;
+				}
+				
+				$where = "pcURI = '$pcURI' ";
+				$data = array("pagedLabel" => $pagedLabel);
+					 
+				$sql = "SELECT uuid FROM diary WHERE diary_label = '".$pagedLabel."' LIMIT 1;";
+				$resultB =  $db->fetchAll($sql);
+				if($resultB){
+					 $uuid = $resultB[0]["uuid"];
+					 $data["uuid"] = $uuid;
+					 $db->update("z_tb_scrape", $data, $where);
+					 $output[$pcURI] = $data;
+				}
+				else{
+					 //check to make sure we don't have exactly the same page range for the
+					 //same item twice. 
+					 $sql = "SELECT *
+					 FROM z_tb_scrape
+					 WHERE tbtdid = 0
+					 AND StartPage = $StartPage
+					 AND EndPage = $EndPage
+					 AND TrenchBookID = $TrenchBookID
+					 LIMIT 1;
+					 ";
+					 
+					 $resultC =  $db->fetchAll($sql);
+					 if(!$resultC){
+						  //create a UUID for the item if it's not the same as the first trenchbook page
+						  $uuid = GenericFunctions::generateUUID();
+						  $data["uuid"] = $uuid;
+						  $db->update("z_tb_scrape", $data, $where);
+						  $output[$pcURI] = $data;
+					 }
+					 else{
+						  $output[$pcURI] = "Duplicate of first page";
+					 }
+				}
+				
+		  }
+		  
+		  return $output;
+	 }
+	 
+	 
+	 
+	 function TBScrapeClean(){
+		  
+		  $db = $this->startDB();
+		  $output = array();
+		  
+		  $sql = "SELECT sc.uuid, sc.pcURI ,sc.content
+		  FROM z_tb_scrape AS sc
+		  LEFT JOIN z_tb_cleaning AS cl ON sc.uuid = cl.uuid
+		  WHERE CHAR_LENGTH(sc.uuid)>1
+		 
+		  AND cl.uuid IS NULL
+		  ";
+		  
+		  $result =  $db->fetchAll($sql);
+		  foreach($result as $row){
+				$uuid = $row["uuid"];
+				$pcURI = $row["pcURI"];
 				$rawText = $row["content"];
+				$rawText = $this->TBtagFix($rawText);
 				$rawText = $this->tagLowerCase($rawText);
-				//$rawText = $this->selfCloseTag($rawText, "img");
-				//$rawText = $this->selfCloseTag($rawText, "br");
-				$useText = tidy_repair_string($rawText);
+	 
+				$useText = tidy_repair_string($rawText); //make the text parsable
 				$dom= new DOMDocument();
-				@$dom->loadHTML($useText);      
+				@$dom->loadHTML($useText);      //load it into a dom as html
 				$xpath = new DOMXPath($dom);
+				$dom = $this->styleTweek($xpath, $dom); //get rid of unwanted style information
 				$div = $xpath->query('/html/body/div');
-				$useText = ($dom->saveXml($div->item(0)));
+				$useText = ($dom->saveXml($div->item(0))); //get rid of the html and body
 				
 				/*
 				$useText = tidy_repair_string($rawText,
@@ -48,16 +373,19 @@ class ProjEdits_Murlo  {
 				@$xml = simplexml_load_string($useText);
 				if($xml){
 					 $xml = $this->uniqueIDs($xml); //make sure the IDs are unique
-					 
-					 $xml = $this->simpleXMLlinksSrc($xml); //update the links, references to image srcs
+					 $xml = $this->simpleXMLlinksSrc($xml, $uuid); //update the links, references to image srcs
 					 $useText = $xml->asXML();
 					 
 					 $validXHTML = true;
 					 $dom = new DOMDocument('1.0', 'UTF-8');
 					 $dom->formatOutput = true;
 					 $dom->preserveWhiteSpace = false;
-					 $dom->loadXML($useText);
+					 if(!@$dom->loadXML($useText)){
+						  echo $uuid." ".$useText;
+						  die;
+					 }
 					 $useText = $dom->saveXML($dom->documentElement);
+					 $useText = str_replace("&#13;", "", $useText);
 					 unset($dom);
 				}
 				else{
@@ -69,7 +397,15 @@ class ProjEdits_Murlo  {
 				$data = array("diary_text_original" => $useText);
 				$db->update("diary", $data, $where);
 				
-				$output[$uuid] = array("valid" => $validXHTML, "xhtml" => $useText);
+				$data = array("uuid" => $uuid, "content" => $useText);
+				try{
+					 $db->insert("z_tb_cleaning", $data);
+				} catch (Exception $e) {
+					 $output["bad-inserts"] = "UUID: ".$uuid." Failed";
+				}
+		  
+				
+				$output[$uuid] = array("pcURI" => $pcURI, "xhtml" => $useText);
 		  }
 		  
 		  return $output;
@@ -97,27 +433,49 @@ class ProjEdits_Murlo  {
 	 }
 	 
 	 //get rid of style long information (not going to display well)
-	 function styleTweek($xml){
+	 function styleTweek($xpath, $dom){
+		  $okStyles = array("text-decoration:underline;",
+		  "color:#FF0000;",
+		  "color:#009900;",
+		  "color:#0000FF;");
 		  
+		  //get rid of presentation style attributes. this won't look very nice
+		  $badAttributes = array("dir", "align", "face", "lang", "height", "width", "clear", "size");
+		  foreach($badAttributes as $attrib){
+				$query = "//@".$attrib;
+				foreach($xpath->query($query) as $node) {
+					 $node->parentNode->removeAttributeNode($node);
+				}
+		  }
 		  
+		  $query = "//@style";
+		  foreach($xpath->query($query) as $node) {
+				$actStyle = $node->nodeValue;
+				if(!in_array($actStyle, $okStyles)){
+					 $node->parentNode->removeAttributeNode($node);
+				}
+		  }
 		  
+		  return $dom;
 	 }
 	 
 	 
 	 //update links in the XML
-	 function simpleXMLlinksSrc($xml){
+	 function simpleXMLlinksSrc($xml, $uuid){
 		  //$xml is a simple xml object
 		  $db = $this->startDB();
 		  foreach($xml->xpath("//a") as $xout){
 				$photo = false;
 				$findUUID = false;
+				$scanFound = false;
+				$tbFound = false;
 				$PCid = false;
 				foreach($xout->xpath("@href") as $xres){
 					 $href = (string)$xres;
 					 if(stristr($href, "javascript:viewPhoto")){
 						  preg_match('#\((.*?)\)#', $href, $match);
 						  $photo = $this->stripQuotes($match[1]);
-						  $uuidThumb = $this->getImageUUIDandThumb($photo);
+						  $uuidThumb = $this->getImageUUIDandThumb($photo, $uuid);
 						  if($uuidThumb != false){
 								$xres[0] = "http://opencontext.org/media/".$uuidThumb["uuid"];
 						  }
@@ -132,6 +490,47 @@ class ProjEdits_Murlo  {
 						  if($findUUID != false){
 								$xres[0] = "http://opencontext.org/subjects/".$findUUID;
 						  }
+						  else{
+								$this->recordMissingRef($uuid, $PCid, "space");
+						  }
+					 }
+					 elseif(stristr($href, "javascript:openViewer") && stristr($href, "trenchbookviewer.asp") ){
+						  preg_match('#\((.*?)\)#', $href, $match);
+						  $scanLink = $this->stripQuotes($match[1]);
+						  $scanIDs = $this->getScanIDsfromLink($scanLink);
+						  if(is_array($scanIDs)){
+								$scanFound = $this->getUUIDfromScanIDs($scanIDs); //get the UUID from the artifact's PC number
+								if($scanFound != false){
+									 $newLink = "http://opencontext.org/media/".$scanFound['uuid'];
+									 $xres[0] = $newLink;
+									 
+									 foreach($xml->xpath("//a[@href='$newLink']") as $xresB){
+										  $linkVal = (string)$xresB;
+										  if(is_numeric(trim($linkVal))){
+												$xresB[0] = "Page $linkVal scan";
+										  }
+									 }
+									 
+								}
+								else{
+									 $this->recordMissingRef($uuid, $scanLink, "scan");
+								}
+						  }
+					 }
+					 elseif(stristr($href, "javascript:openViewer") && stristr($href, "viewtrenchbookreference.asp") ){
+						  preg_match('#\((.*?)\)#', $href, $match);
+						  $tbLink = $this->stripQuotes($match[1]);
+						  $tbIDs = $this->getTbIDsfromLink($tbLink);
+						  if(is_array($tbIDs)){
+								$tbFound = $this->getUUIDfromTrenchBookIDs($tbIDs); //get the UUID from the artifact's PC number
+								if($tbFound != false){
+									 $newLink = "http://opencontext.org/documents/".$tbFound['uuid'];
+									 $xres[0] = $newLink;
+								}
+								else{
+									 $this->recordMissingRef($uuid, $tbLink, "diary");
+								}
+						  }
 					 }
 				}
 				if($photo != false){
@@ -142,13 +541,21 @@ class ProjEdits_Murlo  {
 					 $xout->addAttribute("title", "Link to find PC ".$PCid);
 					 $xout->addAttribute("target", "_blank");
 				}
+				if($scanFound != false){
+					 $xout->addAttribute("title", "Link to scan of ".$scanFound['label']);
+					 $xout->addAttribute("target", "_blank");
+				}
+				if($tbFound != false){
+					 $xout->addAttribute("title", "Link to transcript of ".$tbFound['label']);
+					 $xout->addAttribute("target", "_blank");
+				}
 		  }
 		  foreach($xml->xpath("//img") as $xout){
 				$photo = false;
 				foreach($xout->xpath("//@src") as $xres){
 					 $src = (string)$xres;
 					 if(stristr($src, ".jpg")){
-						  $uuidThumb = $this->getImageUUIDandThumb($src);
+						  $uuidThumb = $this->getImageUUIDandThumb($src, $uuid);
 						  if($uuidThumb != false){
 								$xres[0] = $uuidThumb["thumb"];
 						  }
@@ -174,6 +581,123 @@ class ProjEdits_Murlo  {
 		  return $output;
 	 }
 	 
+	 //get trench book page scan from link
+	 function getScanIDsfromLink($scanLink){
+		  $output = false;
+		  $urlParams = $this->getURLparams($scanLink);
+		  if(is_array($urlParams)){
+				$output = $urlParams;
+		  }
+		  
+		  return $output;
+	 }
+	 
+	 //get trench book transcript id parameters from link
+	 function getTbIDsfromLink($tbLink){
+		  $output = false;
+		  $urlParams = $this->getURLparams($tbLink);
+		  if(is_array($urlParams)){
+				$output = $urlParams;
+		  }
+		  
+		  return $output;
+	 }
+	 
+	 //get UUID for trench book based on TrenchBook ID and search page
+	 function getUUIDfromTrenchBookIDs($tbIDs){
+		  $db = $this->startDB();
+		  
+		  if(isset($tbIDs["searchpage"]) && isset($tbIDs["tbID"])){
+				
+				if(!is_numeric($tbIDs["searchpage"])){
+					 $tbIDs["searchpage"] = 1;
+				}
+				$StartPage = $tbIDs["searchpage"];
+				
+				if($StartPage > 1){
+					 
+					 $sql = "SELECT uuid, label, pagedLabel
+					 FROM z_tb_scrape
+					 WHERE TrenchBookID = ".$tbIDs["tbID"]."
+					 AND
+						  (
+								(StartPage >= ".$StartPage." )
+						  )
+					 ORDER BY tbtdid, StartPage, EndPage	
+					 LIMIT 1;
+					 ";
+				}
+				else{
+					 //just get the main diary (home page for a trench book)
+					 
+					 $sql = "SELECT uuid, label, pagedLabel
+					 FROM z_tb_scrape
+					 WHERE TrenchBookID = ".$tbIDs["tbID"]."
+					 ORDER BY tbtdid, StartPage, EndPage	
+					 LIMIT 1;
+					 ";
+				}
+				
+				$result =  $db->fetchAll($sql);
+				if($result){
+					 $output = $result[0];
+					 if(strlen($result[0]["pagedLabel"]) > strlen($result[0]["label"])){
+						  $output["label"] = $result[0]["pagedLabel"]; 
+					 }
+					 return $output;
+				}
+				else{
+					 return false;
+				}
+		  }
+		  else{
+				return false;
+		  }
+	 }
+	 
+	 
+	 //get the scanned trench book media uuid
+	 function getUUIDfromScanIDs($scanIDs){
+		  $db = $this->startDB();
+		  
+		  if(isset($scanIDs["searchpage"]) && isset($scanIDs["tbID"])){
+				
+				if(!is_numeric($scanIDs["searchpage"])){
+					 $scanIDs["searchpage"] = 0;
+				}
+				$StartPage = $scanIDs["searchpage"];
+				$EndPage = $scanIDs["searchpage"];
+				$OrEnd = "";
+				$OrStart = "";
+				if($StartPage == 1){
+					 $OrStart = " OR StartPage = 0";
+				}
+				
+				$sql = "SELECT uuid, label
+				FROM z_tb_images
+				WHERE TrenchBookID = ".$scanIDs["tbID"]."
+				AND
+					 (
+						  StartPage >= ".$StartPage." $OrStart
+					 )
+				ORDER BY StartPage, EndPage
+				LIMIT 1;
+				";
+				
+				$result =  $db->fetchAll($sql);
+				if($result){
+					 return $result[0];
+				}
+				else{
+					 return false;
+				}
+		  }
+		  else{
+				return false;
+		  }
+	 }
+	 
+	 
 	 //get the parameters in a URL
 	 function getURLparams($url){
 		  $output = false;
@@ -191,7 +715,7 @@ class ProjEdits_Murlo  {
 	 
 	 
 	 //get image uuid and current thumbnail
-	 function getImageUUIDandThumb($photoPath){
+	 function getImageUUIDandThumb($photoPath, $uuid){
 		  $db = $this->startDB();
 		  if(strstr($photoPath, "/")){
 				$pEx = explode("/", $photoPath);
@@ -216,10 +740,26 @@ class ProjEdits_Murlo  {
 				return $result[0];
 		  }
 		  else{
+				$this->recordMissingRef($uuid, $photo, "media");
 				return false;
 		  }
 	 }
 	 
+	 
+	 function recordMissingRef($uuid, $ref, $refType){
+		  
+		  $db = $this->startDB();
+		  $data = array("uuid" => $uuid,
+							 "refType" => $refType,
+							 "refID" => $ref
+							 );
+		  try{
+				$db->insert("z_miss_docrefs", $data);
+		  } catch (Exception $e) {
+		  
+		  }
+		  
+	 }
 	 
 	 
 	 
@@ -237,62 +777,161 @@ class ProjEdits_Murlo  {
 				preg_split("//u", $str, -1, PREG_SPLIT_NO_EMPTY), $s, $l));
 	 }
 	 
-	 function quoteAttributes($tag){
-		  
-		  if(strstr($tag, "=")){
-				
-		  }
-		  
-	 }
 	 
-	 
-	 //puts close tags on images
-	 function selfCloseTag($rawText, $actTag){
-		  $replaceText = $rawText;
-		  $pos = 0;
+	 function TBtagFix($rawText){
+		  $fixedText = $rawText;
 		  $textLen = strlen($rawText);
-		  $tagStart = "<".$actTag;
-		  if(strstr($rawText, $tagStart)){
-				
+		  if(strstr($rawText, "<TB")){
+				$pos = 0;
 				while($pos < $textLen){
-					 $TDpos = strpos($rawText, $tagStart, $pos);
-					 $TDpos = $TDpos + 0;
+					 $TDpos = strpos($rawText, "<TB", $pos);
 					 $endTD = strpos($rawText, ">", $TDpos);
-					 $endTD  = $endTD  +0;
-					 $tagLen = ($endTD - $TDpos) + 1;
-					 $foundTag = substr($rawText, $TDpos, $tagLen);
-					 //$foundTag = $this->substr_unicode($rawText, 0, $textLen);
-					 
-					 //echo $actTag.' is at '.$TDpos.' end: '.$endTD.' ('.$tagLen.')('.$textLen.') for '.$foundTag."|";
+					 $tag = substr($rawText, $TDpos, ($endTD - $TDpos)+1);
+					 $replaceTag = str_replace("<TB", "", $tag);
+					 $replaceTag = str_replace(">", "", $replaceTag);
+					 $replaceTag = $this->rootTrenchBookLookup($replaceTag);
+					 $replaceTag = "[".$replaceTag."] ";
+					 $replaceTag = str_replace(",]", "]", $replaceTag);
+					 $replaceTag = "<span class=\"pc-trench-ref\">".$replaceTag."</span>";
+					 $fixedText = str_replace($tag, $replaceTag, $fixedText);
+					 //echo "This replaced $tag replaced by: $replaceTag ";
 					 //die;
-					 if(!strstr($foundTag, "/>")){
-						  $fixedTag = str_replace(">", "/>", $foundTag);
-						  $fixedTag = tidy_repair_string($fixedTag,
-									 array( 
-										  'doctype' => "omit",
-										  'input-xml' => true,
-										  'output-xml' => true 
-									 ));
-						  
-						  $replaceText = str_replace($foundTag, $fixedTag, $replaceText);
-						  //echo $foundTag.' replaced by '.$fixedTag;
-						  //die;
-					 }
-					 
-					 if($endTD > $pos){
+					 if($endTD>$pos){
 						  $pos = $endTD;
 					 }
 					 else{
-						  $pos++;
+						  $pos ++;
 					 }
 				}
-				
 		  }
-		  
-		  return $replaceText;
+		  return $fixedText;
 	 }
 	 
 	 
+	 function rootTrenchBookLookup($refs){
+		  
+		  if(strstr($refs, " ")){
+				$refsEx = explode(" ", $refs);
+		  }
+		  else{
+				$refsEx = array($refs);
+		  }
+		  $db = $this->startDB();
+		  $output = false;
+		  foreach($refsEx as $ref){
+				if($ref != "TB"){
+					 $comma = false;
+					 $actRef = str_replace("_", " ", $ref);
+					 if(strstr($actRef, ",")){
+						  $comma = true;
+						  $actRef = str_replace(",", "", $actRef);
+					 }
+					 $sql = "SELECT uuid, label FROM z_tb_scrape WHERE label = 'Trench Book ".$actRef."' AND tbtdid = 0 LIMIT 1; ";
+					 $result =  $db->fetchAll($sql);
+					 if($result){
+						  $actOut = "<a href=\"http://opencontext.org/documents/".$result[0]["uuid"]."\" title=\"Link to ".$result[0]["label"]."\" target=\"_blank\">".$result[0]["label"]."</a>";
+						  if($comma){
+								$actOut .= ",";
+						  }
+					 }
+					 else{
+						  $actOut = $ref;
+					 }
+					 
+					 
+					 
+					 if(!$output){
+						  $output = $actOut;
+					 }
+					 else{
+						  $output .= " ".$actOut;
+					 }
+				}
+		  }
+		  
+		  return $output;
+	 }
+	 
+	 
+	 
+	 function tagLowerCase($text){
+		  
+		  $remNumTags = array("p", "P", "F");
+		  $maxNum = 10;
+		  $i = 1;
+		  while($i <= $maxNum){
+				
+				foreach($remNumTags as $numTag){
+					 $bad = array();
+					 $bad[0] = "<".$numTag.$i.">";
+					 $bad[1] = "</".$numTag.$i.">";
+					 $text = str_replace($bad[0], "",  $text);
+					 $text = str_replace($bad[1], "",  $text);
+				}
+				$i++;
+		  }
+		  
+		  $atribs = array(" face=\"" => " style=\"font-family:");
+		  
+		  foreach($atribs as $key => $atrib){
+				
+				$text = str_replace($key, $atrib,  $text);
+		  }
+		  
+		  $tags = array("P" => "p",
+							 "A" => "a",
+							 "STRONG" => "strong",
+							 "strongLOCKQUOTE" => "blockquote",
+							 "BLOCKQUOTE" => "blockquote",
+							 "EM" => "em",
+							 "OL" => "ol",
+							 "UL" => "ul",
+							 "LI" => "li",
+							 "TABLE" => "table",
+							 "TBODY" => "tbody",
+							 "TR" => "tr",
+							 "TD" => "td",
+							 "SPAN" => "span",
+							 "B" => "strong",
+							 "FONT" => "span",
+							 "L" => "span class=\"locus\" ",
+							 //"TB" => "span class=\"trench-book\" ",
+							 "U" => "span style=\"text-decoration:underline;\"",
+							 "RED" => "span style=\"color:#FF0000;\"",
+							 "GREEN" => "span style=\"color:#009900;\"",
+							 "BLUE" => "span style=\"color:#0000FF;\"",
+							 );
+		  
+		  foreach($tags as $key => $tag){
+				
+				$bad = array();
+				$bad[0] = "<".$key;
+				$bad[1] = "</".$key;
+				
+				$good = array();
+				$good[0] = "<".$tag;
+				if(strstr($tag, " ")){
+					 $tEx = explode(" ", $tag);
+					 $good[1] = "</".$tEx[0];
+				}
+				else{
+					 $good[1] = "</".$tag;
+				}
+				
+				$text = str_replace($bad[0], $good[0],  $text);
+				$text = str_replace($bad[1], $good[1],  $text);
+		  }
+		  
+		  return $text;
+	 }
+	 
+	 
+	 
+	 
+	 
+	 
+	 
+	 	 
 	 function linkFix(){
 		  
 		  $db = $this->startDB();
@@ -734,7 +1373,7 @@ class ProjEdits_Murlo  {
 				JOIN diary AS dNewO ON dNewO.uuid = links.targ_uuid
 				WHERE links.targ_type = 'Diary / Narrative'
 				AND links.origin_type = 'Diary / Narrative'
-				AND links.link_type = 'has part'
+				AND links.link_type = 'Has part'
 				";
 				
 		  }
@@ -855,77 +1494,6 @@ class ProjEdits_Murlo  {
 		  }
 		  
 		  return $output;
-	 }
-	 
-	 
-	 function tagLowerCase($text){
-		  
-		  $remNumTags = array("p", "P", "F");
-		  $maxNum = 10;
-		  $i = 1;
-		  while($i <= $maxNum){
-				
-				foreach($remNumTags as $numTag){
-					 $bad = array();
-					 $bad[0] = "<".$numTag.$i.">";
-					 $bad[1] = "</".$numTag.$i.">";
-					 $text = str_replace($bad[0], "",  $text);
-					 $text = str_replace($bad[1], "",  $text);
-				}
-				$i++;
-		  }
-		  
-		  $atribs = array(" face=\"" => " style=\"font-family:");
-		  
-		  foreach($atribs as $key => $atrib){
-				
-				$text = str_replace($key, $atrib,  $text);
-		  }
-		  
-		  $tags = array("P" => "p",
-							 "A" => "a",
-							 "STRONG" => "strong",
-							 "strongLOCKQUOTE" => "blockquote",
-							 "BLOCKQUOTE" => "blockquote",
-							 "EM" => "em",
-							 "OL" => "ol",
-							 "UL" => "ul",
-							 "LI" => "li",
-							 "TABLE" => "table",
-							 "TBODY" => "tbody",
-							 "TR" => "tr",
-							 "TD" => "td",
-							 "SPAN" => "span",
-							 "B" => "strong",
-							 "U" => "span style=\"text-decoration:underline;\"",
-							 "FONT" => "span",
-							 "L" => "span class=\"locus\" ",
-							 "RED" => "span style=\"color:#FF0000;\"",
-							 "GREEN" => "span style=\"color:#009900;\"",
-							 "BLUE" => "span style=\"color:#0000FF;\"",
-							 );
-		  
-		  foreach($tags as $key => $tag){
-				
-				$bad = array();
-				$bad[0] = "<".$key;
-				$bad[1] = "</".$key;
-				
-				$good = array();
-				$good[0] = "<".$tag;
-				if(strstr($tag, " ")){
-					 $tEx = explode(" ", $tag);
-					 $good[1] = "</".$tEx[0];
-				}
-				else{
-					 $good[1] = "</".$tag;
-				}
-				
-				$text = str_replace($bad[0], $good[0],  $text);
-				$text = str_replace($bad[1], $good[1],  $text);
-		  }
-		  
-		  return $text;
 	 }
 	 
 	 
