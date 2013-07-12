@@ -31,15 +31,16 @@ class ProjEdits_Murlo  {
 		  "<p>The Poggio Civitate team scanned and transcribed Trench Books starting in 2001. These were originally
 		  made available online at the Poggio Civitate Excavations project <a href=\"http://poggiocivitate.classics.umass.edu/\">website</a>.</p>
 		  <p>To improve data longevity and standards compliance, the HTML of the transcribed Trench Books
-		  was substantially processed and edited prior to publication in Open Context.
-		  </p>
+		  was substantially processed and edited prior to publication in Open Context.</p>
 		  ";
 		  
-		  $sql = "SELECT uuid, tbtid, tbtdid, TrenchBookID, label, pagedLabel, StartPage, EndPage,
-		  pcURI, prevLink, nextLink
-		  FROM z_tb_scrape
-		  WHERE CHAR_LENGTH(uuid) > 1
-		  ORDER BY sort
+		  $sql = "SELECT sc.uuid, sc.TrenchBookID, sc.StartPage, sc.EndPage,
+		  sc.pcURI
+		  FROM z_tb_scrape AS sc
+		  LEFT JOIN observe ON observe.subject_uuid = sc.uuid
+		  WHERE CHAR_LENGTH(sc.uuid) > 1
+		  AND observe.subject_uuid IS NULL
+		  ORDER BY sc.sort
 		  ";
 		  
 		  $result =  $db->fetchAll($sql);
@@ -47,7 +48,13 @@ class ProjEdits_Murlo  {
 				$subjectUUID = $row["uuid"];
 				foreach($varArray as $varKey => $variableUUID){
 					 $valText = $row[$varKey];
+					 
+					 if(strstr($valText, "http://")){
+						  $valText = "<div>U-Mass site version: <a href=\"".$valText."\">".$valText."</a></div>";
+					 }
+					 
 					 $add = $propObj->add_obs_varUUID_value($valText, $variableUUID, $subjectUUID, "Diary / Narrative");
+					 
 					 $output[$subjectUUID][$variableUUID] = array("value" => $valText,
 																				 "added" => $add);
 				}
@@ -1689,11 +1696,13 @@ class ProjEdits_Murlo  {
 	 function getPCuuid($numericLabel){
 		  $db = $this->startDB();
 		  $output = false;
-		  $label = "PC ".$numericLabel;
-		  $sql = "SELECT uuid FROM space WHERE space_label = '$label' LIMIT 1;";
-		  $result =  $db->fetchAll($sql);
-		  if($result){
-				$output = $result[0]["uuid"];
+		  if(is_numeric($numericLabel)){
+				$label = "PC ".$numericLabel;
+				$sql = "SELECT uuid FROM space WHERE space_label = '$label' LIMIT 1;";
+				$result =  $db->fetchAll($sql);
+				if($result){
+					 $output = $result[0]["uuid"];
+				}
 		  }
 		  return $output;
 	 }
