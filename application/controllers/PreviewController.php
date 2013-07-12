@@ -116,6 +116,16 @@ class PreviewController extends Zend_Controller_Action
             echo $data;
         }
         else{
+            
+            $urlFixes = array("http://opencontext.org/subjects/" => "/preview/space?UUID=",
+                              "http://opencontext.org/media/" => "/preview/media?UUID=",
+                              "http://opencontext.org/documents/" => "/preview/document?UUID="
+                              );
+            
+            foreach($urlFixes as $searchKey => $replace){
+                $data = str_replace($searchKey, $this->baseURL.$replace, $data);
+            }
+            
             $this->view->OChost = $this->OChost;
             $this->view->XML  = $data;
             $this->render("view-document");
