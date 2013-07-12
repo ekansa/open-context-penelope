@@ -27,6 +27,20 @@ class dataEdit_Property  {
 		  return $output;
 	 }
 	 
+	 //delete a given variable from the obserevations
+	 function delete_obs_varUUID($variableUUID, $subjectUUID){
+		  
+		  $db = $this->startDB();
+		  
+		  $sql = "DELETE observe
+		  FROM observe
+		  JOIN properties ON properties.property_uuid = observe.property_uuid
+		  WHERE properties.variable_uuid = '$variableUUID'
+		  AND observe.subject_uuid = '$subjectUUID'
+		  ";
+		  
+		  $db->query($sql);
+	 }
 	 
 	 
 	 
