@@ -6,11 +6,72 @@ This is for doing some random edits to space items
 class dataEdit_Property  {
     
 	 public $projectUUID;
+	 public $sourceID;
     public $db;
 	 
+	 
+	 //if you know the variable UUID, and the subjectUUID you can create and add a property.
+	 function add_obs_varUUID_value($valText, $variableUUID, $subjectUUID, $subjectType, $obs = 1, $projectUUID = false, $sourceID = 'manual'){
+		  
+		  if($this->projectUUID){
+				$projectUUID = $this->projectUUID;
+		  }
+		  if($this->sourceID){
+				$sourceID = $this->sourceID;
+		  }
+		  
+		  $valueUUID = $this->get_make_ValID($valText, $projectUUID, $sourceID); //get the UUID for the value
+		  $propertyUUID = $this->get_make_PropID($variableUUID, $valueUUID, $projectUUID, $sourceID);
+		  $output = $this->add_obs_property($propertyUUID, $subjectUUID, $subjectType, $obs, $projectUUID, $sourceID);
+		  
+		  return $output;
+	 }
+	 
+	 
+	 
+	 
+	 //add a property to an observation
+	 function add_obs_property($propertyUUID, $subjectUUID, $subjectType, $obs = 1, $projectUUID = false, $sourceID = 'manual'){
+		  
+		  if($this->projectUUID){
+				$projectUUID = $this->projectUUID;
+		  }
+		  if($this->sourceID){
+				$sourceID = $this->sourceID;
+		  }
+		  
+        $db = $this->startDB();
+		  $data = array();
+		  $data["project_id"] = $projectUUID;
+		  $data["source_id"] = $sourceID;
+		  $data["subject_type"] = $subjectType;
+		  $data["subject_uuid"] = $subjectUUID;
+		  $data["obs_num"] = $obs;
+		  $data["property_uuid"] = $propertyUUID;
+		  $data["hash_obs"] = md5($projectUUID . "_" . $subjectUUID . "_" . $obs . "_" . $propertyUUID);
+		  
+		  try{
+				$db->insert("observe", $data);
+				$output = true;
+		  } catch (Exception $e) {
+				$output = false;
+		  }
+		  return $output;
+	 }
+	 
+	 
+	 
 	 //get make a property
-	 function get_make_PropID($variableUUID, $valueUUID, $projectUUID, $dataTableName = 'manual'){
+	 function get_make_PropID($variableUUID, $valueUUID, $projectUUID = false, $sourceID = 'manual'){
         
+		  if($this->projectUUID){
+				$projectUUID = $this->projectUUID;
+		  }
+		  if($this->sourceID){
+				$sourceID = $this->sourceID;
+		  }
+		  
+		  
         $db = $this->startDB();
 		  
         $propHash   = md5($projectUUID . $variableUUID . $valueUUID);
@@ -33,7 +94,7 @@ class dataEdit_Property  {
                         //insert the property into the properties table:
             $data = array(
                 'project_id'   => $projectUUID,
-                'source_id'          => $dataTableName,
+                'source_id'          => $sourceID,
                 'prop_hash'         => $propHash,
                 'property_uuid'     => $propUUID,
                 'variable_uuid'     => $variableUUID,
@@ -49,8 +110,15 @@ class dataEdit_Property  {
 	 
 	 
     //this function gets a valueID or makes a new valueID for a given string of text
-    function get_make_ValID($valText, $projectUUID, $dataTableName = 'manual'){
+    function get_make_ValID($valText, $projectUUID = false, $sourceID = 'manual'){
         
+		  if($this->projectUUID){
+				$projectUUID = $this->projectUUID;
+		  }
+		  if($this->sourceID){
+				$sourceID = $this->sourceID;
+		  }
+		  
         $db = $this->startDB();
 		  
         $valText = trim($valText);
@@ -91,7 +159,7 @@ class dataEdit_Property  {
             //insert the value into the val_tab table:
             $data = array(
                     'project_id'   => $projectUUID,
-                    'source_id'          => $dataTableName,
+                    'source_id'          => $sourceID,
                     'text_scram'        => $valScram,
                     'val_text'          => $valText,
                     'value_uuid'        => $valueUUID,
@@ -107,8 +175,13 @@ class dataEdit_Property  {
 	 
 	 
 	 //this function returns the variable and value id for a property
-    function propID_VarVal($variableUUID, $valueUUID, $projectUUID){
+    function propID_VarVal($variableUUID, $valueUUID, $projectUUID = false){
         
+		  if($this->projectUUID){
+				$projectUUID = $this->projectUUID;
+		  }
+		  
+		  
         $db = $this->startDB();
 		  
         $sql = "SELECT properties.property_uuid
