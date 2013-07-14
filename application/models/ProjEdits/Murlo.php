@@ -27,6 +27,9 @@ class ProjEdits_Murlo  {
 								  "pcURI" => "403CE884-AA17-4932-8507-66E4FD145294"
 								  );
 		  
+		  $varArray = array("pcURI" => "403CE884-AA17-4932-8507-66E4FD145294"
+								  );
+		  
 		  $TBnote =
 		  "<p>The Poggio Civitate team scanned and transcribed Trench Books starting in 2001. These were originally
 		  made available online at the Poggio Civitate Excavations project <a href=\"http://poggiocivitate.classics.umass.edu/\">website</a>.</p>
@@ -35,11 +38,20 @@ class ProjEdits_Murlo  {
 		  ";
 		  
 		  $sql = "SELECT sc.uuid, sc.TrenchBookID, sc.StartPage, sc.EndPage,
-		  sc.pcURI
+		  sc.pcURI, sc.date
 		  FROM z_tb_scrape AS sc
 		  LEFT JOIN observe ON observe.subject_uuid = sc.uuid
 		  WHERE CHAR_LENGTH(sc.uuid) > 1
 		  AND observe.subject_uuid IS NULL
+		  ORDER BY sc.sort
+		  ";
+		  
+		  $sql = "SELECT sc.uuid, sc.TrenchBookID, sc.StartPage, sc.EndPage,
+		  sc.pcURI, sc.date
+		  FROM z_tb_scrape AS sc
+		  
+		  WHERE CHAR_LENGTH(sc.uuid) > 1
+		 
 		  ORDER BY sc.sort
 		  ";
 		  
@@ -50,6 +62,7 @@ class ProjEdits_Murlo  {
 					 $valText = $row[$varKey];
 					 
 					 if(strstr($valText, "http://")){
+						  $propObj->delete_obs_varUUID($variableUUID, $subjectUUID);
 						  $valText = "<div>U-Mass site version: <a href=\"".$valText."\">".$valText."</a></div>";
 					 }
 					 
@@ -59,7 +72,7 @@ class ProjEdits_Murlo  {
 																				 "added" => $add);
 				}
 				
-				$add = $propObj->add_obs_varUUID_value($TBnote, "NOTES", $subjectUUID, "Diary / Narrative");
+				//$add = $propObj->add_obs_varUUID_value($TBnote, "NOTES", $subjectUUID, "Diary / Narrative");
 				$output[$subjectUUID]["note"] = $add;
 		  }
 		  
