@@ -25,6 +25,7 @@ $tablePubObj = $this->tablePubObj;
                             <th>Number of Fields</th>
                             <th>Table Name</th>
                             <th>Time</th>
+                            <th>Delete</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -38,6 +39,12 @@ $tablePubObj = $this->tablePubObj;
                             <td><?php echo $row["fieldCount"]; ?></td>
                             <td><?php echo $row["title"]; ?></td>
                             <td><?php echo $row["updated"]; ?></td>
+                            <td>
+                                <form action="../table/delete-table" method="post" >
+                                    <input type="hidden" name="table" value="<?php echo $row["source_id"]; ?>" />
+                                    <button type="submit" class="btn btn-danger">DELETE</button>
+                                </form>
+                            </td>
                         </tr>
                     <?php
                         $i++;

@@ -76,6 +76,21 @@ class TabOut_Tables  {
 		  return $this->classes;
 	 }
 	 
+	 function deleteTable($tableID){
+		  
+		  $db = $this->startDB();
+		  
+		  $where = "source_id = '$tableID' ";
+		  $whereB = "tableID = '$tableID' ";
+		  
+		  $db->delete("export_tabs_fields", $where);
+		  $db->delete("export_tabs_meta", $where);
+		  $db->delete("export_tabs_records", $whereB);
+		  
+		  $sql = "DROP TABLE $tableID ";
+		  $db->query($sql);
+	 }
+	 
 	 
 	 function startDB(){
 		  if(!$this->db){

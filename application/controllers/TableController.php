@@ -1133,6 +1133,7 @@ class TableController extends Zend_Controller_Action {
 		  Zend_Loader::loadClass('TabOut_Table');
 		 
 		  $tableObj = new TabOut_Table;
+		  $tableObj->showTable = false;
 		  $tableObj->setSize = $setSize;
 		  $tableObj->page = $page;
 		  $tableObj->limitingProjArray = $projArray;
@@ -1451,6 +1452,24 @@ class TableController extends Zend_Controller_Action {
 		  echo Zend_Json::encode($output);
 		  
 	 }
+	 
+	 
+	 //deletes a table
+	  function deleteTableAction(){
+		  $this->_helper->viewRenderer->setNoRender();
+		  
+		  $requestParams =  $this->_request->getParams();
+		  Zend_Loader::loadClass('TabOut_Tables');
+		  $tablePubObj = new TabOut_Tables;
+		  
+		  if(isset($requestParams['table'])){
+				$tablePubObj->deleteTable($requestParams['table']);
+		  }
+		  
+		  $location = "../table/";
+		  header("Location: ".$location);
+	 }
+	 
 	 
 	 
 	 
