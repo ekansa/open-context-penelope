@@ -847,6 +847,7 @@ class TabOut_TablePublish  {
 		  }
 		  
 		  if($result){
+				
 				$rawCreators = array();
 				$rawContributors = array();
 				$persons = array();
@@ -884,6 +885,8 @@ class TabOut_TablePublish  {
 					 
 				}
 				
+				
+				
 				//combine URIs for the same person, choose the URI with the most associated items
 				$rawCreators = $this->consolidateRelatedURIs($rawCreators);
 				$rawContributors = $this->consolidateRelatedURIs($rawContributors);
@@ -893,7 +896,6 @@ class TabOut_TablePublish  {
 				$rawCreators = $this->orderURIs($rawCreators);
 				$rawContributors = $this->orderURIs($rawContributors);
 				$persons = $this->orderURIs($persons);
-				
 				
 				$this->rawCreators = $rawCreators;
 				$this->rawContributors = $rawContributors;
