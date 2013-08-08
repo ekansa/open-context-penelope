@@ -212,8 +212,11 @@ class ZooController extends Zend_Controller_Action {
 		  
 		  $this->_helper->viewRenderer->setNoRender();
 		  
-		  $solrQuery = "http://localhost:8983/solr/select?facet=true&facet.mincount=1&fq=%7B%21cache%3Dfalse%7Dproject_name%3AMurlo++%26%26+NOT+project_id%3A0+NOT+def_context_0%3AItaly+%26%26+%28+%28item_type%3Aspatial%29+%29&facet.field=def_context_0&facet.field=project_name&facet.field=item_class&facet.field=time_span&facet.field=geo_point&facet.query=image_media_count%3A%5B1+TO+%2A%5D&facet.query=other_binary_media_count%3A%5B1+TO+%2A%5D&facet.query=diary_count%3A%5B1+TO+%2A%5D&sort=interest_score+desc&wt=json&json.nl=map&q=%2A%3A%2A&start=0&rows=200";
+		  $solrQuery = "http://opencontext.org:8983/solr/select?facet=true&facet.mincount=1&fq=%7B%21cache%3Dfalse%7Dproject_name%3AMurlo++%26%26+NOT+project_id%3A0+NOT+def_context_0%3AItaly+%26%26+%28+%28item_type%3Aspatial%29+%29&facet.field=def_context_0&facet.field=project_name&facet.field=item_class&facet.field=time_span&facet.field=geo_point&facet.query=image_media_count%3A%5B1+TO+%2A%5D&facet.query=other_binary_media_count%3A%5B1+TO+%2A%5D&facet.query=diary_count%3A%5B1+TO+%2A%5D&sort=interest_score+desc&wt=json&json.nl=map&q=%2A%3A%2A&start=0&rows=200";
+		  
+		  /*
 		  $solrQuery = "http://localhost:8983/solr/select?facet=true&facet.mincount=1&fq=%7B%21cache%3Dfalse%7DNOT+project_id%3A0+%26%26+%28+%28item_type%3Aspatial%29+%29&facet.field=def_context_1&facet.field=project_name&facet.field=item_class&facet.field=time_span&facet.field=geo_point&facet.field=geo_path&facet.query=image_media_count%3A%5B1+TO+%2A%5D&facet.query=other_binary_media_count%3A%5B1+TO+%2A%5D&facet.query=diary_count%3A%5B1+TO+%2A%5D&sort=interest_score+desc&wt=json&json.nl=map&q=%28+%28default_context_path%3AItaly%2F%2A+%29+%7C%7C+%28default_context_path%3AItaly+%29%29+%26%26+%28geo_path%3A12023202222130310%2A%29&start=0&rows=400";
+		  */
 		  
 		  $respJSONstring = file_get_contents($solrQuery);
 		  $solrJSON = Zend_Json::decode($respJSONstring);
@@ -227,17 +230,94 @@ class ZooController extends Zend_Controller_Action {
 				$pubResp = array();
 				$resp = file_get_contents($localPubBaseURI.$uuid);
 				$pubResp["local"] = Zend_Json::decode($resp);
-				//sleep(1);
-				/*
+				sleep(1);
+				
 				$resp = file_get_contents($ocPubBaseURI.$uuid);
 				$pubResp["oc"] = Zend_Json::decode($resp);
-				*/
+				
 				$output[$uuid] = $pubResp;
 				unset($pubResp);
 		  }
 		  
 		  header('Content-Type: application/json; charset=utf8');
 		  echo Zend_Json::encode($output);
+	 }
+	 
+	 
+	 function republishSolrImagesAction(){
+		  
+		  $this->_helper->viewRenderer->setNoRender();
+		  
+		  $solrQuery = "http://opencontext.org:8983/solr/select?facet=true&facet.mincount=1&fq=%7B%21cache%3Dfalse%7Dproject_name%3AMurlo++%26%26+NOT+project_id%3A0+NOT+def_context_0%3AItaly+%26%26+%28+%28item_type%3Aimage%29+%29&facet.field=def_context_0&facet.field=project_name&facet.field=item_class&facet.field=time_span&facet.field=geo_point&facet.query=image_media_count%3A%5B1+TO+%2A%5D&facet.query=other_binary_media_count%3A%5B1+TO+%2A%5D&facet.query=diary_count%3A%5B1+TO+%2A%5D&sort=interest_score+desc&wt=json&json.nl=map&q=%2A%3A%2A&start=0&rows=1000";
+		  
+		  /*
+		  $solrQuery = "http://localhost:8983/solr/select?facet=true&facet.mincount=1&fq=%7B%21cache%3Dfalse%7DNOT+project_id%3A0+%26%26+%28+%28item_type%3Aspatial%29+%29&facet.field=def_context_1&facet.field=project_name&facet.field=item_class&facet.field=time_span&facet.field=geo_point&facet.field=geo_path&facet.query=image_media_count%3A%5B1+TO+%2A%5D&facet.query=other_binary_media_count%3A%5B1+TO+%2A%5D&facet.query=diary_count%3A%5B1+TO+%2A%5D&sort=interest_score+desc&wt=json&json.nl=map&q=%28+%28default_context_path%3AItaly%2F%2A+%29+%7C%7C+%28default_context_path%3AItaly+%29%29+%26%26+%28geo_path%3A12023202222130310%2A%29&start=0&rows=400";
+		  */
+		  
+		  $respJSONstring = file_get_contents($solrQuery);
+		  $solrJSON = Zend_Json::decode($respJSONstring);
+		  $output = array();
+		  $localPubBaseURI = "http://penelope.oc/publish/publishdoc?projectUUID=DF043419-F23B-41DA-7E4D-EE52AF22F92F&itemType=media&doUpdate=true&itemUUID=";
+		  $ocPubBaseURI = "http://penelope.oc/publish/publishdoc?projectUUID=DF043419-F23B-41DA-7E4D-EE52AF22F92F&itemType=media&doUpdate=true&pubURI=http://opencontext.org/publish/item-publish&itemUUID=";
+		  
+		  foreach($solrJSON["response"]["docs"] as $doc){
+				
+				$uuid = $doc["uuid"];
+				$pubResp = array();
+				$resp = file_get_contents($localPubBaseURI.$uuid);
+				$pubResp["local"] = Zend_Json::decode($resp);
+				sleep(1);
+				
+				$resp = file_get_contents($ocPubBaseURI.$uuid);
+				$pubResp["oc"] = Zend_Json::decode($resp);
+				
+				$output[$uuid] = $pubResp;
+				unset($pubResp);
+		  }
+		  
+		  header('Content-Type: application/json; charset=utf8');
+		  echo Zend_Json::encode($output);
+	 }
+	 
+	 function addSpaceApiAction(){
+		  
+		  //this line is necessary for ajax calls:
+        $this->_helper->viewRenderer->setNoRender();        
+        
+        //get selected root item then add it and all children to database
+        $baseURL = "http://opencontext/subjects/";
+		  $baseMediaURL = "http://opencontext/media/";
+       
+		  Zend_Loader::loadClass('PublishedData_Hierarchy');
+        Zend_Loader::loadClass('PublishedData_Space');
+        Zend_Loader::loadClass('PublishedData_Observe');
+		  Zend_Loader::loadClass('PublishedData_Properties');
+		  Zend_Loader::loadClass('PublishedData_Links');
+		  Zend_Loader::loadClass('PublishedData_Resource');
+		  Zend_Loader::loadClass('dbXML_xmlSpace');
+		  Zend_Loader::loadClass('dbXML_xmlMedia');
+		  
+		  
+		  $this->_helper->viewRenderer->setNoRender();
+		  
+		  $solrQuery = "http://localhost:8983/solr/select?facet=true&facet.mincount=1&fq=NOT+project_id%3A0+%26%26+%28+%28item_type%3Aspatial%29+%29&facet.field=def_context_1&facet.field=project_name&facet.field=item_class&facet.field=time_span&facet.field=geo_point&facet.query=image_media_count%3A%5B1+TO+%2A%5D&facet.query=other_binary_media_count%3A%5B1+TO+%2A%5D&facet.query=diary_count%3A%5B1+TO+%2A%5D&sort=interest_score+desc&wt=json&json.nl=map&q=+%28default_context_path%3AIsrael%2F%2A+%29+%7C%7C+%28default_context_path%3AIsrael+%29&start=0&rows=10000";
+		  
+		  $respJSONstring = file_get_contents($solrQuery);
+		  $solrJSON = Zend_Json::decode($respJSONstring);
+		  $output = array();
+		  $hierarchyObj = new PublishedData_Hierarchy;
+		  $hierarchyObj->baseSpaceURI = $baseURL;
+		  $hierarchyObj->baseMediaURI = $baseMediaURL;
+		  foreach($solrJSON["response"]["docs"] as $doc){
+				
+				$uuid = $doc["uuid"];
+				$hierarchyObj->addHierarchy($uuid);
+		  }
+		  
+		  header('Content-Type: application/json; charset=utf8');
+		  echo Zend_Json::encode(array("done" => $hierarchyObj->doneURIs, "errors" => $hierarchyObj->errors));
+		  
+		  
 	 }
 	 
 	 
@@ -250,7 +330,7 @@ class ZooController extends Zend_Controller_Action {
         //get selected root item then add it and all children to database
         $baseURL = "http://opencontext/subjects/";
 		  $baseMediaURL = "http://opencontext/media/";
-        $rootUUID = "5D6B6454-017A-43C1-9F15-6DFE36C3558F";
+        $rootUUID = "HazorZooSPA00000main";
 		  
 		  if(isset($_GET["root"])){
 				$rootUUID = $_GET["root"];
@@ -294,6 +374,10 @@ class ZooController extends Zend_Controller_Action {
 		  FROM space
 		  WHERE 1 ";
 		  
+		  $sql = "SELECT uuid, project_id, source_id
+		  FROM space
+		  WHERE uuid = 'HazorZooSPA0000008447' ";
+		  
 		  
 		  $result = $db->fetchAll($sql);
 		  foreach($result as $row){
@@ -304,6 +388,8 @@ class ZooController extends Zend_Controller_Action {
 				$itemURL = $baseURL.$uuid.".xml";
 				@$xmlString = file_get_contents($itemURL);
 				if($xmlString != false){
+					 echo "here";
+					 die;
 					 @$itemXML = simplexml_load_string($xmlString);
 					 if($itemXML != false){
 						  
