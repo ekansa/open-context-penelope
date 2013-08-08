@@ -5,7 +5,8 @@ class TabOut_Tables  {
 	 public $db;
 	 public $tables;
 	 public $projects;
-	 public $classes; 
+	 public $classes;
+	 public $sourceTables;
 	 
 	 //get tables for outputs
 	 function getTables(){
@@ -75,6 +76,44 @@ class TabOut_Tables  {
 		  
 		  return $this->classes;
 	 }
+	 
+	 
+	 function getSourceTablesListCount(){
+		  
+		  $db = $this->startDB();
+		  
+		  $sql = "SELECT project_list.project_name, file_summary.source_id,  file_summary.description
+		  
+		  FROM file_summary
+		  JOIN project_list ON file_summary.project_id = project_list.project_id
+		  ORDER BY project_list.project_name
+		  ";
+		  
+		  $result = $db->fetchAll($sql);
+		  if($result){
+				$reResult = array();
+				foreach($result as $row){
+					 $sourceID = $row["source_id"];
+					 $sql = "SELECT count(variable_uuid) as varCount FROM var_tab WHERE source_id = '$sourceID' LIMIT 1; ";
+					 $resB = $db->fetchAll($sql);
+					 if($resB){
+						  $row["varCount"] = $resB[0]["varCount"];
+					 }
+					 else{
+						  $row["varCount"] = 0;
+					 }
+					 $reResult[] = $row;
+				}
+				$this->sourceTables = $reResult;
+		  }
+		  else{
+				$this->sourceTables = array();
+		  }
+		  
+		  return $this->sourceTables;
+	 }
+	 
+	 
 	 
 	 function deleteTable($tableID){
 		  

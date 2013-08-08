@@ -105,6 +105,28 @@ $tablePubObj = $this->tablePubObj;
                                     </div>
                                 </div>
                             </div>
+                            <div class="divCell">
+                                <div class="control-group">
+                                    <label class="control-label">Source-Tables</label>
+                                    <div class="controls">
+                                        <?php
+                                        $sourceTables = $tablePubObj->getSourceTablesListCount();
+                                        $i = 1;
+                                        foreach($sourceTables as $row){
+                                            $inputID = "sourceTab_".$i;
+                                        ?>
+                                        <label class="checkbox">
+                                            <input type="checkbox" name="sourceID[]" id="<?php echo $inputID ; ?>" value="<?php echo $row["source_id"]; ?>" />
+                                            <?php echo $row["description"]." (".$row["varCount"]." vars, ".$row["project_name"].")"; ?>
+                                        </label>
+                                            
+                                        <?php    
+                                            $i++;
+                                        }
+                                        ?>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     <div class="control-group">

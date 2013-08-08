@@ -30,8 +30,10 @@ class TabOut_TableFiles  {
 		  $tablePublishObj->penelopeTabID = $this->penelopeTabID;
 		  
 		  $tablePublishObj->getSavedMetadata();
-		  
+		  $tablePublishObj->getTableSize();
+		  $recordCount = $tablePublishObj->recordCount; //total number of records
 		  $baseFilename = $tablePublishObj->tableID;
+		  $sampleBatchSize = $tablePublishObj->getDefaultSampleSize(); //get the total number of records retrieved in a sample
 		  $this->tableID = $tablePublishObj->tableID;
 		  $tablePublishObj->getTableFields();
 		  
@@ -48,39 +50,54 @@ class TabOut_TableFiles  {
 		  
 		  $data.="\n";
 		  
-		  $records = $tablePublishObj->getAllRecords();
+		  //$records = $tablePublishObj->getAllRecords();
 		  //$records = $tablePublishObj->getSampleRecords();
 		  $JSONrecs = array();
 	 
-		  foreach($records as $row){
-				
-				$actJSONrec = array();
-				foreach($tablePublishObj->tableFieldsTemp as $fieldKey => $fieldLabel){
-					 $actJSONrec[$fieldLabel] = $row[$fieldKey];
-				}
-				$JSONrecs[] = $actJSONrec;
-				
-				$this->insertTabRecord($row['uuid']); //save record of item association to a record.
-				
-				$i = 1;
-				foreach($row as $fieldKey => $value){
-					 if(array_key_exists($fieldKey, $tablePublishObj->tableFieldsTemp)){
-						  $data.= $this->escape_csv_value($value);
-						  if($i < $fieldCount){
-								$data .= ",";	 
+		  $doneRecords = 0;
+		  while($doneRecords < $recordCount){
+				$records = $tablePublishObj->getSampleRecords($doneRecords);
+				foreach($records as $row){
+					 $actJSONrec = array();
+					 foreach($tablePublishObj->tableFieldsTemp as $fieldKey => $fieldLabel){
+						  if($doneRecords == 0){
+								//first few rows have all the field names, even if blank
+								$actJSONrec[$fieldLabel] = $row[$fieldKey];
 						  }
-						  $i++;
+						  else{
+								if(strlen($row[$fieldKey])>0){
+									 //skip blanks to save memory
+									 $actJSONrec[$fieldLabel] = $row[$fieldKey];
+								}
+						  }
 					 }
-				}
-				
-				$data.="\n";
-		  }
+					 $JSONrecs[] = $actJSONrec;
+					 
+					 $this->insertTabRecord($row['uuid']); //save record of item association to a record.
+					 
+					 $i = 1;
+					 foreach($row as $fieldKey => $value){
+						  if(array_key_exists($fieldKey, $tablePublishObj->tableFieldsTemp)){
+								$data.= $this->escape_csv_value($value);
+								if($i < $fieldCount){
+									 $data .= ",";	 
+								}
+								$i++;
+						  }
+					 }
+					 
+					 $data.="\n";
+					 
+				}//end loop through row of sample records
+				unset($records);
+				$doneRecords = count($JSONrecs);
+		  }//end loop through 
 		  
 		  $this->saveJSON(self::CSVdirectory, $baseFilename, $JSONrecs);
 		  $this->saveCSV(self::CSVdirectory, $baseFilename, $data);
 		  $this->saveGZIP(self::CSVdirectory, $baseFilename, $data);
 		  $this->saveZIP(self::CSVdirectory, $baseFilename, $data);
-		  
+
 		  return $data;
 	 }
 	 

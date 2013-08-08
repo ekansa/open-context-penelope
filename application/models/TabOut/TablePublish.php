@@ -1079,13 +1079,13 @@ class TabOut_TablePublish  {
 	 }
 	 
 	 
-	 function getSampleRecords(){
+	 function getSampleRecords($start = 0){
 		  
 		  $db = $this->startDB();
 		  
 		  $sql = "SELECT *
 		  FROM ".$this->penelopeTabID."
-		  LIMIT 1,".self::defaultSample." ;
+		  LIMIT ".$start.",".self::defaultSample." ;
 		  ";
 		  
 		  $result = $db->fetchAll($sql);
@@ -1096,8 +1096,12 @@ class TabOut_TablePublish  {
 		  else{
 				return false;
 		  }
-		  
-		  
+
+	 }
+	 
+	 //return the number of records in the sample
+	 function getDefaultSampleSize(){
+		  return self::defaultSample;
 	 }
 	 
 	 

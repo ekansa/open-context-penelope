@@ -39,6 +39,7 @@ class TabOut_Table  {
 	 
 	 public $limitingProjArray = false; //make an array of project UUIDs to limit the results to
 	 public $limitingVarArray = false; //an array of variables that limit the output
+	 public $limitingSourceTabArray = false;
 	 public $limitingTypeURIs = false; //an array of URIs (for certain taxa, elements say) to limit the output
 	 
 	 public $geoTimeArray; //array of lat / lon and start / end values for different projects and containment paths
@@ -620,16 +621,27 @@ class TabOut_Table  {
 		  $db = $this->startDB();
 		  
 		  $projCondition = "";
+		  $limitingSourceTabCoundition = "";
+		  $limitingSourceTabJoin = "";
 		  if(is_array($this->limitingProjArray)){
 				$projCondition = $this->makeORcondition($this->limitingProjArray, "project_id", "space");
 				$projCondition = " AND (". $projCondition .") ";
+		  }
+		  if(is_array($this->limitingSourceTabArray)){
+				/*
+				$limitingSourceTabJoin = " JOIN observe ON space.uuid = observe.subject_uuid ";
+				$limitingSourceTabCoundition = $this->makeORcondition($this->limitingSourceTabArray, "source_id", "observe");
+				$limitingSourceTabCoundition = " AND (". $limitingSourceTabCoundition .") ";
+				//$limitingSourceTabJoin = " JOIN observe ON (space.uuid = observe.subject_uuid $limitingSourceTabCoundition )";
+				*/
 		  }
 		  
 		  $this->recStart = ($this->page - 1) * $this->setSize;
 		  
 		  $sql = "SELECT space.uuid, space.project_id, space.space_label, space.full_context
 		  FROM space
-		  WHERE space.class_uuid = '$classUUID'  $projCondition
+		  $limitingSourceTabJoin
+		  WHERE space.class_uuid = '$classUUID'  $projCondition $limitingSourceTabCoundition
 		  ORDER BY space.project_id, space.label_sort, space.full_context
 		  LIMIT ".($this->recStart ).",".($this->setSize)."
 		  ;
@@ -651,6 +663,24 @@ class TabOut_Table  {
 		  
 		  
 		  $result =  $db->fetchAll($sql);
+		  
+		  if(is_array($this->limitingSourceTabArray)){
+				//cull results without observations. this is slow, but for giant tables, memory issues mean it can't be done with a join
+				$limitingSourceTabCoundition = $this->makeORcondition($this->limitingSourceTabArray, "source_id", "observe");
+				$limitingSourceTabCoundition = " AND (". $limitingSourceTabCoundition .") ";
+				$oldResult = $result;
+				unset($result);
+				$result = array();
+				foreach($oldResult as $row){
+					 $uuid = $row["uuid"];
+					 $sql = "SELECT subject_uuid FROM observe WHERE subject_uuid = '$uuid' $limitingSourceTabCoundition LIMIT 1; ";
+					 $resB = $db->fetchAll($sql);
+					 if($resB){
+						  $result[] = $row;
+					 }
+				}
+				
+		  }
 		  return $result;
 	 }
 	 
@@ -666,6 +696,11 @@ class TabOut_Table  {
 				$projCondition = $this->makeORcondition($this->limitingProjArray, "project_id", "space");
 				$projCondition = " AND (". $projCondition .") ";
 		  }
+		  $limitingSourceTabCoundition = "";
+		  if(is_array($this->limitingSourceTabArray)){
+				$limitingSourceTabCoundition = $this->makeORcondition($this->limitingSourceTabArray, "source_id", "observe");
+				$limitingSourceTabCoundition = " AND (". $limitingSourceTabCoundition .") ";
+		  }
 		  
 		  $this->recStart = ($this->page - 1) * $this->setSize;
 		  
@@ -674,7 +709,7 @@ class TabOut_Table  {
 		  JOIN observe ON space.uuid = observe.subject_uuid
 		  JOIN properties ON properties.property_uuid = observe.property_uuid
 		  JOIN linked_data ON (properties.variable_uuid = linked_data.itemUUID AND linked_data.linkedType LIKE '%Measurement type%')
-		  WHERE space.class_uuid = '$classUUID'  $projCondition
+		  WHERE space.class_uuid = '$classUUID'  $projCondition $limitingSourceTabCoundition
 		  ORDER BY space.project_id, space.label_sort, space.full_context
 		  LIMIT ".($this->recStart ).",".($this->setSize)."
 		  ;
@@ -689,7 +724,7 @@ class TabOut_Table  {
 					 JOIN properties ON properties.property_uuid = observe.property_uuid
 					 JOIN linked_data ON (properties.variable_uuid = linked_data.itemUUID AND linked_data.linkedType LIKE '%Measurement type%')
 					 LEFT JOIN ".$this->DBtableID." AS ex ON space.uuid = ex.uuid
-					 WHERE space.class_uuid = '$classUUID' AND ex.uuid IS NULL $projCondition
+					 WHERE space.class_uuid = '$classUUID' AND ex.uuid IS NULL $projCondition $limitingSourceTabCoundition
 					 ORDER BY space.project_id, space.label_sort, space.full_context
 					 LIMIT ".($this->recStart ).",".($this->setSize)."
 					 ;
@@ -718,6 +753,11 @@ class TabOut_Table  {
 				$varCondition = $this->makeORcondition($this->limitingVarArray, "variable_uuid", "properties");
 				$varCondition = " AND (". $varCondition .") ";
 		  }
+		  $limitingSourceTabCoundition = "";
+		  if(is_array($this->limitingSourceTabArray)){
+				$limitingSourceTabCoundition = $this->makeORcondition($this->limitingSourceTabArray, "source_id", "observe");
+				$limitingSourceTabCoundition = " AND (". $limitingSourceTabCoundition .") ";
+		  }
 		  
 		  $this->recStart = ($this->page - 1) * $this->setSize;
 		  
@@ -725,7 +765,7 @@ class TabOut_Table  {
 		  FROM space
 		  JOIN observe ON space.uuid = observe.subject_uuid
 		  JOIN properties ON properties.property_uuid = observe.property_uuid
-		  WHERE space.class_uuid = '$classUUID'  $projCondition $varCondition 
+		  WHERE space.class_uuid = '$classUUID'  $projCondition $varCondition $limitingSourceTabCoundition
 		  ORDER BY space.project_id, space.label_sort, space.full_context
 		  LIMIT ".($this->recStart ).",".($this->setSize)."
 		  ;
@@ -739,7 +779,7 @@ class TabOut_Table  {
 					 JOIN observe ON space.uuid = observe.subject_uuid
 					 JOIN properties ON properties.property_uuid = observe.property_uuid
 					 LEFT JOIN ".$this->DBtableID." AS ex ON space.uuid = ex.uuid
-					 WHERE space.class_uuid = '$classUUID' AND ex.uuid IS NULL $projCondition $varCondition
+					 WHERE space.class_uuid = '$classUUID' AND ex.uuid IS NULL $projCondition $varCondition $limitingSourceTabCoundition
 					 ORDER BY space.project_id, space.label_sort, space.full_context
 					 LIMIT ".($this->recStart ).",".($this->setSize)."
 					 ;
@@ -773,6 +813,14 @@ class TabOut_Table  {
 				$varCondition = $this->makeORcondition($this->limitingVarArray, "variable_uuid", "properties");
 				$varCondition = " AND (". $varCondition .") ";
 		  }
+		  $limitingSourceTabCoundition = "";
+		  if(is_array($this->limitingSourceTabArray)){
+				if(strlen($obsJoins)< 2){
+					 $obsJoins = " JOIN observe ON space.uuid = observe.subject_uuid ";
+				}
+				$limitingSourceTabCoundition = $this->makeORcondition($this->limitingSourceTabArray, "source_id", "observe");
+				$limitingSourceTabCoundition = " AND (". $limitingSourceTabCoundition .") ";
+		  }
 		  if(is_array($this->limitingTypeURIs)){
 				$varCondition = "";
 				$obsJoins = "";
@@ -790,7 +838,7 @@ class TabOut_Table  {
 		  $sql = "SELECT DISTINCT space.uuid, space.project_id, space.space_label, space.full_context
 		  FROM space
 		  $obsJoins
-		  WHERE space.class_uuid = '$classUUID'  $projCondition $varCondition $limitingTypeCondition
+		  WHERE space.class_uuid = '$classUUID'  $projCondition $varCondition $limitingTypeCondition $limitingSourceTabCoundition
 		  ORDER BY space.project_id, space.label_sort, space.full_context
 		  LIMIT ".($this->recStart ).",".($this->setSize)."
 		  ;
@@ -807,7 +855,7 @@ class TabOut_Table  {
 					 JOIN properties ON properties.property_uuid = observe.property_uuid
 					 JOIN linked_data ON observe.property_uuid = linked_data.itemUUID
 					 LEFT JOIN ".$this->DBtableID." AS ex ON space.uuid = ex.uuid
-					 WHERE space.class_uuid = '$classUUID' AND ex.uuid IS NULL $projCondition $varCondition  $limitingTypeCondition
+					 WHERE space.class_uuid = '$classUUID' AND ex.uuid IS NULL $projCondition $varCondition  $limitingTypeCondition $limitingSourceTabCoundition
 					 ORDER BY space.project_id, space.label_sort, space.full_context
 					 LIMIT ".($this->recStart ).",".($this->setSize)."
 					 ;
@@ -835,6 +883,7 @@ class TabOut_Table  {
 				$varCondition = "";
 				$linkedDataJoin = " ";
 				$limitingTypeCondition = "";
+				$limitingSourceTabCoundition = "";
 				if(is_array($this->limitingProjArray)){
 					 $projCondition = $this->makeORcondition($this->limitingProjArray, "project_id", "space");
 					 $projCondition = " AND (". $projCondition .") ";
@@ -863,6 +912,10 @@ class TabOut_Table  {
 						  $i++;
 					 }
 				}
+				if(is_array($this->limitingSourceTabArray)){
+					 $limitingSourceTabCoundition = $this->makeORcondition($this->limitingSourceTabArray, "source_id", "var_tab");
+					 $limitingSourceTabCoundition = " AND (". $limitingSourceTabCoundition .") ";
+				}
 				
 				$sql = "SELECT round(COUNT(observe.subject_uuid)/10,0) as sCount, var_tab.variable_uuid, var_tab.var_label, var_tab.sort_order
 				FROM space
@@ -870,7 +923,7 @@ class TabOut_Table  {
 				JOIN properties ON observe.property_uuid = properties.property_uuid
 				JOIN var_tab ON properties.variable_uuid = var_tab.variable_uuid
 				$linkedDataJoin
-				WHERE space.class_uuid = '$classUUID' $projCondition $varCondition $limitingTypeCondition
+				WHERE space.class_uuid = '$classUUID' $projCondition $varCondition $limitingTypeCondition $limitingSourceTabCoundition
 				GROUP BY var_tab.variable_uuid
 				ORDER BY sCount DESC, var_tab.sort_order, var_tab.var_label
 				";
@@ -881,7 +934,7 @@ class TabOut_Table  {
 				JOIN properties ON observe.property_uuid = properties.property_uuid
 				JOIN var_tab ON properties.variable_uuid = var_tab.variable_uuid
 				$linkedDataJoin
-				WHERE space.class_uuid = '$classUUID' $projCondition $varCondition $limitingTypeCondition
+				WHERE space.class_uuid = '$classUUID' $projCondition $varCondition $limitingTypeCondition $limitingSourceTabCoundition
 				GROUP BY var_tab.variable_uuid
 				ORDER BY ".$this->sortForSourceVars."
 				";

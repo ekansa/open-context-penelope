@@ -6,7 +6,7 @@
 
 //error_reporting(E_ALL ^ E_NOTICE);
 // increase the memory limit
-ini_set("memory_limit", "4024M");
+ini_set("memory_limit", "6024M");
 // set maximum execution time to no limit
 ini_set("max_execution_time", "0");
 
@@ -1116,6 +1116,13 @@ class TableController extends Zend_Controller_Action {
 				}
 		  }
 		  
+		  if(isset($_REQUEST["sourceID"])){
+				$sourceIDarray = $requestParams["sourceID"];
+		  }
+		  else{
+				$sourceIDarray = false;
+		  }
+		  
 		  if(isset($_REQUEST["projectUUID"])){
 				$projArray = $requestParams["projectUUID"];
 		  }
@@ -1137,6 +1144,7 @@ class TableController extends Zend_Controller_Action {
 		  $tableObj->setSize = $setSize;
 		  $tableObj->page = $page;
 		  $tableObj->limitingProjArray = $projArray;
+		  $tableObj->limitingSourceTabArray = $sourceIDarray; //if false, do not limit by source tables
 		  $tableObj->showUnitTypeFields = $showUnitTypeFields;
 		  $tableObj->limitUnitTypeFields = $limitUnitTypeFields;
 		  $tableObj->showSourceFields = $showSourceFields;
