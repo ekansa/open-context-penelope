@@ -540,7 +540,7 @@ function postPublish(response){
 
 
 function delayIterate(){
-    setTimeout("IterateActItems()", 1000);
+    setTimeout("IterateActItems()", 1);
 }
 
 
