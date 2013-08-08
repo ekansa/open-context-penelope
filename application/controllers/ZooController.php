@@ -18,6 +18,44 @@ class ZooController extends Zend_Controller_Action {
     }
 	 
 	 
+	 private function kml_to_geojson ($text) {
+		  $decoder = new gisconverter\KML();
+		  return $decoder->geomFromText($text)->toGeoJSON();
+	 }
+	 
+	 
+	 //test conversion of KML to GeoJSON
+	 function kmlGeojsonAction(){
+		  $this->_helper->viewRenderer->setNoRender();
+		  require ('/application/models/GeoSpace/gisconverter.php'); // first, include gisconverter.php library, but not as a Zend include
+		  /*
+		  $text = "<Polygon>
+          <outerBoundaryIs><LinearRing><coordinates> 40.815559,37.831376 40.815589,37.831362 40.815602,37.831379 40.815572,37.831395 40.815559,37.831376</coordinates></LinearRing></outerBoundaryIs>
+        </Polygon>";
+		  
+		  echo $this->kml_to_geojson($text);
+		  */
+		  
+		  Zend_Loader::loadClass('GeoSpace_ToGeoJSON');
+		  $geoObj = new GeoSpace_ToGeoJSON;
+		  $output = $geoObj->convertKMLtoGeoJSON();
+		  header('Content-Type: application/json; charset=utf8');
+		  
+		  echo Zend_Json::encode($output);
+	 }
+	 
+	 
+	 
+	 
+	 
+	 
+	 
+	 
+	 
+	 
+	 
+	 
+	 
 	 
 	  //add links from media items back to diary items
 	 function pcTbScrapePropsAction(){
