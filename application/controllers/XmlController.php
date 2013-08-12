@@ -207,6 +207,7 @@ class xmlController extends Zend_Controller_Action {
 			$metadataObj->initialize($db);
 			$metadataObj->dbPenelope = true;
 			$metadataObj->getMetadata($itemObj->projectUUID);
+			$metadataObj->getProjectLicense($itemObj->projectUUID);
 			$itemObj->metadataObj = $metadataObj;
 			
 			if(!isset($_GET['xml'])){
@@ -230,7 +231,7 @@ class xmlController extends Zend_Controller_Action {
     
     
     
-public function propertyAction(){
+	public function propertyAction(){
 	$this->_helper->viewRenderer->setNoRender();
 	Zend_Loader::loadClass('dbXML_dbProject');
 	Zend_Loader::loadClass('dbXML_dbPropitem');
@@ -292,7 +293,7 @@ public function propertyAction(){
     }
     
     
-    public function personAction(){
+   public function personAction(){
 	$this->_helper->viewRenderer->setNoRender();
 	Zend_Loader::loadClass('dbXML_dbPerson');
 	Zend_Loader::loadClass('dbXML_dbSpace');
@@ -355,88 +356,88 @@ public function propertyAction(){
     
     
     
-     public function documentAction(){
-	$this->_helper->viewRenderer->setNoRender();
-	Zend_Loader::loadClass('dbXML_dbDocument');
-	Zend_Loader::loadClass('dbXML_dbSpace');
-	Zend_Loader::loadClass('dbXML_dbLinks');
-	Zend_Loader::loadClass('dbXML_dbProperties');
-	Zend_Loader::loadClass('dbXML_dbMetadata');
-	Zend_Loader::loadClass('dbXML_xmlDocument');
-	Zend_Loader::loadClass('dbXML_xmlProperties');
-	Zend_Loader::loadClass('dbXML_xmlLinks');
-	Zend_Loader::loadClass('dbXML_xmlNotes');
-	Zend_Loader::loadClass('dbXML_xmlContext');
-	Zend_Loader::loadClass('dbXML_xmlMetadata');
-	
-	$db = Zend_Registry::get('db');
-	$this->setUTFconnection($db);
-	
-	$itemObj = new dbXML_dbDocument;
-	$itemObj->initialize($db);
-	$itemObj->dbPenelope = true;
-	$itemObj->getByID($_GET['id']);
-	
-	$propsObj = new dbXML_dbProperties;
-	$propsObj->initialize($db);
-	$propsObj->dbPenelope = true;
-	$propsObj->getProperties($itemObj->itemUUID);
-	$itemObj->propertiesObj = $propsObj;
-	$itemObj->setDocumentText();
-	
-	
-	$linksObj = new dbXML_dbLinks;
-	$linksObj->initialize($db);
-	$linksObj->dbPenelope = true;
-	$linksObj->getLinks($itemObj->itemUUID);
-	$linksObj->getSpaceFromTarg($itemObj->itemUUID);
-	$itemObj->linksObj = $linksObj;
-	
-	if(is_array($linksObj->firstSpaceObj)){
+   public function documentAction(){
+		$this->_helper->viewRenderer->setNoRender();
+		Zend_Loader::loadClass('dbXML_dbDocument');
+		Zend_Loader::loadClass('dbXML_dbSpace');
+		Zend_Loader::loadClass('dbXML_dbLinks');
+		Zend_Loader::loadClass('dbXML_dbProperties');
+		Zend_Loader::loadClass('dbXML_dbMetadata');
+		Zend_Loader::loadClass('dbXML_xmlDocument');
+		Zend_Loader::loadClass('dbXML_xmlProperties');
+		Zend_Loader::loadClass('dbXML_xmlLinks');
+		Zend_Loader::loadClass('dbXML_xmlNotes');
+		Zend_Loader::loadClass('dbXML_xmlContext');
+		Zend_Loader::loadClass('dbXML_xmlMetadata');
 		
-		$firstSpace = $linksObj->firstSpaceObj;
-		$spaceObj = new dbXML_dbSpace;
-		$spaceObj->initialize($db);
-		$spaceObj->dbPenelope = true;
-		$spaceObj->getByID($firstSpace["linkedUUID"]);
-		$spaceObj->getParents();
-		$spaceObj->getGeo();
-		$spaceObj->getChrono();
+		$db = Zend_Registry::get('db');
+		$this->setUTFconnection($db);
 		
-		$itemObj->geoLat = $spaceObj->geoLat;
-		$itemObj->geoLon = $spaceObj->geoLon;
-		$itemObj->geoGML = $spaceObj->geoGML;
-		$itemObj->geoKML = $spaceObj->geoKML;
-		$itemObj->geoSource = $spaceObj->geoSource;
-		$itemObj->geoSourceName = $spaceObj->geoSourceName;
-		$itemObj->chronoArray = $spaceObj->chronoArray; //array of chronological tags, handled differently from Geo because can have multiple
-		unset($spaceObj);
-	}
-	
-	$metadataObj = new dbXML_dbMetadata;
-	$metadataObj->initialize($db);
-	$metadataObj->dbPenelope = true;
-	$metadataObj->getMetadata($itemObj->projectUUID, $itemObj->sourceID);
-	$itemObj->metadataObj = $metadataObj;
-	
-	if(!isset($_GET['xml'])){
-		header('Content-Type: application/json; charset=utf8');
-		echo Zend_Json::encode($itemObj);
-	}
-	else{
-		$xmlItem = new dbXML_xmlDocument;
-		$xmlItem->itemObj = $itemObj;
-		$xmlItem->initialize();
-		$xmlItem->addName();
-		$xmlItem->addPropsLinks();
-		$xmlItem->addDocText();
-		$xmlItem->addMetadata();
+		$itemObj = new dbXML_dbDocument;
+		$itemObj->initialize($db);
+		$itemObj->dbPenelope = true;
+		$itemObj->getByID($_GET['id']);
 		
-		$doc = $xmlItem->doc;
-		header('Content-Type: application/xml; charset=utf8');
-		echo $doc->saveXML();
-	}
-    }
+		$propsObj = new dbXML_dbProperties;
+		$propsObj->initialize($db);
+		$propsObj->dbPenelope = true;
+		$propsObj->getProperties($itemObj->itemUUID);
+		$itemObj->propertiesObj = $propsObj;
+		$itemObj->setDocumentText();
+		
+		
+		$linksObj = new dbXML_dbLinks;
+		$linksObj->initialize($db);
+		$linksObj->dbPenelope = true;
+		$linksObj->getLinks($itemObj->itemUUID);
+		$linksObj->getSpaceFromTarg($itemObj->itemUUID);
+		$itemObj->linksObj = $linksObj;
+		
+		if(is_array($linksObj->firstSpaceObj)){
+			
+			$firstSpace = $linksObj->firstSpaceObj;
+			$spaceObj = new dbXML_dbSpace;
+			$spaceObj->initialize($db);
+			$spaceObj->dbPenelope = true;
+			$spaceObj->getByID($firstSpace["linkedUUID"]);
+			$spaceObj->getParents();
+			$spaceObj->getGeo();
+			$spaceObj->getChrono();
+			
+			$itemObj->geoLat = $spaceObj->geoLat;
+			$itemObj->geoLon = $spaceObj->geoLon;
+			$itemObj->geoGML = $spaceObj->geoGML;
+			$itemObj->geoKML = $spaceObj->geoKML;
+			$itemObj->geoSource = $spaceObj->geoSource;
+			$itemObj->geoSourceName = $spaceObj->geoSourceName;
+			$itemObj->chronoArray = $spaceObj->chronoArray; //array of chronological tags, handled differently from Geo because can have multiple
+			unset($spaceObj);
+		}
+		
+		$metadataObj = new dbXML_dbMetadata;
+		$metadataObj->initialize($db);
+		$metadataObj->dbPenelope = true;
+		$metadataObj->getMetadata($itemObj->projectUUID, $itemObj->sourceID);
+		$itemObj->metadataObj = $metadataObj;
+		
+		if(!isset($_GET['xml'])){
+			header('Content-Type: application/json; charset=utf8');
+			echo Zend_Json::encode($itemObj);
+		}
+		else{
+			$xmlItem = new dbXML_xmlDocument;
+			$xmlItem->itemObj = $itemObj;
+			$xmlItem->initialize();
+			$xmlItem->addName();
+			$xmlItem->addPropsLinks();
+			$xmlItem->addDocText();
+			$xmlItem->addMetadata();
+			
+			$doc = $xmlItem->doc;
+			header('Content-Type: application/xml; charset=utf8');
+			echo $doc->saveXML();
+		}
+   }
     
     
     

@@ -134,78 +134,116 @@ class dbXML_dbMetadata {
     //get license information from penelope
     public function pen_getLicense($sourceID = false){
 	
-	$db = $this->db;
-	if($this->dbPenelope){
-		
-		//first try, based on linking old licence lookup to the tableID
-	    $sql = "SELECT licenses.license_name, licenses.license_url, licenses.lic_pict_url, licenses.license_vers
-	    FROM file_summary
-	    JOIN licenses ON licenses.license_id = file_summary.fk_license
-	    WHERE file_summary.source_id = '$sourceID' ";
-	
-	    $result = $db->fetchAll($sql, 2);
-		
-	    if(!$result){
-			
-			//second try, based on linking new lincense lookup to the tableID
-			
-			$sql = "SELECT w_lu_creative_commons.NAME AS license_name,
-			w_lu_creative_commons.LINK_DEED AS license_url,
-			w_lu_creative_commons.IMAGE_LINK AS lic_pict_url,
-			w_lu_creative_commons.VERSION AS license_vers
-			FROM file_summary
-			JOIN w_lu_creative_commons  ON w_lu_creative_commons.PK_LICENSE = file_summary.fk_license
-			WHERE file_summary.source_id = '$sourceID' ";
-			
-			$result = $db->fetchAll($sql, 2);
-			
-			if(!$result){
-				//third try, getting the most frequently used license from the project
-				
-				$sql = "SELECT w_lu_creative_commons.NAME AS license_name,
-				w_lu_creative_commons.LINK_DEED AS license_url,
-				w_lu_creative_commons.IMAGE_LINK AS lic_pict_url,
-				w_lu_creative_commons.VERSION AS license_vers,
-				COUNT( file_summary.source_id ) AS LicCount
+		  $db = $this->db;
+		  if($this->dbPenelope){
+			  
+			  //first try, based on linking old licence lookup to the tableID
+				$sql = "SELECT licenses.license_name, licenses.license_url, licenses.lic_pict_url, licenses.license_vers
 				FROM file_summary
-				JOIN w_lu_creative_commons  ON w_lu_creative_commons.PK_LICENSE = file_summary.fk_license
-				WHERE file_summary.project_id = '".$this->projectUUID."'
-				AND file_summary.fk_license > 0
-				GROUP BY file_summary.fk_license
-				ORDER BY COUNT(file_summary.source_id)
-				";
-				
-			}
-			
-	    }
-	    //echo $sql;
-	    if($result){
-			$this->licenseName = $result[0]["license_name"];
-			$this->licenseURI = $result[0]["license_url"];
-			$this->licenseIconURI = $result[0]["lic_pict_url"];
-			$this->licenseVersion = $result[0]["license_vers"];
-	    }
-	}
+				JOIN licenses ON licenses.license_id = file_summary.fk_license
+				WHERE file_summary.source_id = '$sourceID' ";
+		  
+				$result = $db->fetchAll($sql, 2);
+			  
+				if(!$result){
+				  
+				  //second try, based on linking new lincense lookup to the tableID
+				  
+				  $sql = "SELECT w_lu_creative_commons.NAME AS license_name,
+				  w_lu_creative_commons.LINK_DEED AS license_url,
+				  w_lu_creative_commons.IMAGE_LINK AS lic_pict_url,
+				  w_lu_creative_commons.VERSION AS license_vers
+				  FROM file_summary
+				  JOIN w_lu_creative_commons  ON w_lu_creative_commons.PK_LICENSE = file_summary.fk_license
+				  WHERE file_summary.source_id = '$sourceID' ";
+				  
+				  $result = $db->fetchAll($sql, 2);
+				  
+				  if(!$result){
+					  //third try, getting the most frequently used license from the project
+					  
+					  $sql = "SELECT w_lu_creative_commons.NAME AS license_name,
+					  w_lu_creative_commons.LINK_DEED AS license_url,
+					  w_lu_creative_commons.IMAGE_LINK AS lic_pict_url,
+					  w_lu_creative_commons.VERSION AS license_vers,
+					  COUNT( file_summary.source_id ) AS LicCount
+					  FROM file_summary
+					  JOIN w_lu_creative_commons  ON w_lu_creative_commons.PK_LICENSE = file_summary.fk_license
+					  WHERE file_summary.project_id = '".$this->projectUUID."'
+					  AND file_summary.fk_license > 0
+					  GROUP BY file_summary.fk_license
+					  ORDER BY COUNT(file_summary.source_id)
+					  ";
+					  
+				  }
+				  
+				}
+				//echo $sql;
+				if($result){
+				  $this->licenseName = $result[0]["license_name"];
+				  $this->licenseURI = $result[0]["license_url"];
+				  $this->licenseIconURI = $result[0]["lic_pict_url"];
+				  $this->licenseVersion = $result[0]["license_vers"];
+				}
+		  }
 	
     }
+	 
+	 
+	 
+	 //get project license information from penelope
+    public function getProjectLicense($projectUUID){
+	
+		  $db = $this->db;
+		 
+		  //get the most restrictive license for the project
+			$sql = "SELECT w_lu_creative_commons.NAME AS license_name,
+					  w_lu_creative_commons.LINK_DEED AS license_url,
+					  w_lu_creative_commons.IMAGE_LINK AS lic_pict_url,
+					  w_lu_creative_commons.VERSION AS license_vers,
+					  COUNT( file_summary.source_id ) AS LicCount
+					  FROM file_summary
+					  JOIN w_lu_creative_commons  ON w_lu_creative_commons.PK_LICENSE = file_summary.fk_license
+					  WHERE file_summary.project_id = '".$projectUUID."'
+					  AND file_summary.fk_license > 0
+					  GROUP BY file_summary.fk_license
+					  ORDER BY COUNT(file_summary.source_id)
+					  ";
+		  
+		  //echo $sql;
+		  //die;
+		  $result = $db->fetchAll($sql, 2);
+		
+		  if($result){
+				$this->licenseName = $result[0]["license_name"];
+				$this->licenseURI = $result[0]["license_url"];
+				$this->licenseIconURI = $result[0]["lic_pict_url"];
+				$this->licenseVersion = $result[0]["license_vers"];
+		  }
+	
+    }
+	 
+	 
+	 
+	 
     
     //get license information from Open Context
     public function oc_getLicense($licenseID){
 	
-	$db = $this->db;
-	if(!$this->dbPenelope){
-	    $sql = "SELECT *
-	    FROM licenses
-	    WHERE license_id = $licenseID ";
-	
-	    $result = $db->fetchAll($sql, 2);
-	    if($result){
-		$this->licenseName = $result[0]["license_name"];
-		$this->licenseURI = $result[0]["license_url"];
-		$this->licenseIconURI = $result[0]["lic_pict_url"];
-		$this->licenseVersion = $result[0]["license_vers"];
-	    }
-	}
+		  $db = $this->db;
+		  if(!$this->dbPenelope){
+				$sql = "SELECT *
+				FROM licenses
+				WHERE license_id = $licenseID ";
+		  
+				$result = $db->fetchAll($sql, 2);
+				if($result){
+			  $this->licenseName = $result[0]["license_name"];
+			  $this->licenseURI = $result[0]["license_url"];
+			  $this->licenseIconURI = $result[0]["lic_pict_url"];
+			  $this->licenseVersion = $result[0]["license_vers"];
+				}
+		  }
     }
   
   
