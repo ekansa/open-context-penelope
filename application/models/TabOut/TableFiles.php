@@ -12,6 +12,8 @@ class TabOut_TableFiles  {
 	 public $tableID; //ID for the table
 	 public $tablePage = 1; //table for the table segment.
 	 
+	 public $projects; //table projects
+	 
 	 public $savedFileSizes; //array of the saved files names and sizes in bytes
 	 
 	 
@@ -35,6 +37,8 @@ class TabOut_TableFiles  {
 		  $baseFilename = $tablePublishObj->tableID;
 		  $sampleBatchSize = $tablePublishObj->getDefaultSampleSize(); //get the total number of records retrieved in a sample
 		  $this->tableID = $tablePublishObj->tableID;
+		  $this->projects  =  $tablePublishObj->projects;
+
 		  $tablePublishObj->getTableFields();
 		  
 		  $data = "";
@@ -112,6 +116,7 @@ class TabOut_TableFiles  {
 				
 				$data = array("hashID" => md5($uuid."_".$this->tableID),
 								  "uuid" => $uuid,
+								  "project_id" => $this->getItemProjectID($uuid),
 								  "tableID" => $this->tableID,
 								  "page" => $this->tablePage
 								  );
@@ -127,7 +132,29 @@ class TabOut_TableFiles  {
 	 }
 	 
 	 
-	 
+	 //get the item's project ID.
+	 function getItemProjectID($uuid){
+		  $output = false;
+		  if(is_array($this->projects)){
+				if(count($this->projects) == 1){
+					 foreach($this->projects as $uri => $projArray){
+						  $outEx = explode("/", $uri);
+						  $output = $outEx[count($outEx) - 1 ]; //last part of a URI construction
+					 }
+				}
+		  }
+		  if(!$output){
+				
+				$db = $this->startDB();
+				$sql = "SELECT project_id FROM space WHERE uuid = '$uuid' LIMIT 1; ";
+				
+				$result = $db->fetchAll($sql);
+				if($result){
+					 $output = $result[0]["project_id"];
+				}
+		  }
+		  return $output;
+	 }
 	 
 	 
 	 // clean_csv function
