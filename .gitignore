@@ -1,6 +1,7 @@
 *.ini
 cache/
 csv-export/
+db-export/
 .svn/
 xml/
 
