@@ -48,7 +48,70 @@ class ZooController extends Zend_Controller_Action {
 	 
 	 
 	 
-	 
+	 function catalMetricsDocAction(){
+		  $this->_helper->viewRenderer->setNoRender();
+		  
+		  $teeth = array(" C ",
+							  " C::",
+							  " C,",
+							  "tooth",
+							  "teeth",
+							  "M1 ",
+							  "M1::",
+							  "P1 ",
+							  "M2 ",
+							  "M2::",
+							  "P2 ",
+							  "P3 ",
+							  "M3 ",
+							  "M3::",
+							  "M3-P2",
+							  "P4 ",
+							  "P2-P4",
+							  "P2&P3",
+							  "dp3"
+							  );
+		  
+		  $cranialNote =
+		  '
+<div>
+	 <p>The document <a href="http://opencontext.org/documents/C34ECB9E-33C9-43CB-906D-24410F85ED0F">Cranial Elements Data Documentation</a> has additional information about
+the fields used to describe cranial and tooth measurements at Çatalhöyük.
+	 </p>
+</div>';
+		  
+		  $postCranialNote =
+		  '
+<div>
+	 <p>The document <a href="http://opencontext.org/documents/D1B075BF-DD3E-4824-0957-310263DEEFA1">Post-Cranial Elements Data Documentation</a> has additional information about
+the fields used to describe post-cranial element measurements at Çatalhöyük.
+	 </p>
+</div> ';
+		  
+		  $rawFieldList = file_get_contents("http://penelope.oc/editorial/var-lookup?q=%3A%3A&projectUUID=1B426F7C-99EC-4322-4069-E8DBD927CCF1&varType=0&classUUID=0");
+		  $fieldList = Zend_Json::decode($rawFieldList);
+		  foreach($fieldList as $field){
+				$actNote = $postCranialNote;
+				$pc = true;
+				foreach($teeth as $tooth){
+					 if(strstr($field["varLabel"], $tooth)){
+						  $actNote = $cranialNote;
+						  $pc = false;
+					 }
+				}
+				$noteReq = "http://penelope.oc/editorial/var-add-note?varUUID=".$field["varUUID"]."&varNote=".urlencode($actNote);
+				
+				if($pc){
+					 echo "<p>Post cranial: ".$field["varLabel"]." ";
+				}
+				else{
+					  echo "<p><b>Cranial: ".$field["varLabel"]."</b> ";
+				}
+				$done = file_get_contents($noteReq);
+				echo $done." </p>";
+		  }
+		  echo "done";
+	 }
 	 
 	 
 	 

@@ -41,6 +41,7 @@ class TabOut_TablePublish  {
 	 public $numSegments; //number of segments a large table is divided into
 	 public $recsPerTable; //number of records per table
 	 
+	 public $versionControl; //link to a the data under version control (like GitHub)
 	 public $license; //array with URI to the copyright license for the table
 	 public $file; //array of filenames and their sizes
 	 
@@ -177,6 +178,10 @@ class TabOut_TablePublish  {
 		  $this->rawLinkedPersons = $metadata["rawLinkedPersons"];
 		  $this->projects = $metadata["projects"];
 		  
+		  if(isset($metadata["versionControl"])){
+				$this->versionControl = $metadata["versionControl"];
+		  }
+		  
 		  if(isset($metadata["tableFields"])){
 				 $this->tableFields = $metadata["tableFields"];
 		  }
@@ -232,6 +237,7 @@ class TabOut_TablePublish  {
 		  $metadata["tags"] = $this->tableTags;
 		  $metadata["doi"] = $this->tableDOI;
 		  $metadata["ark"] = $this->tableARK;
+		  $metadata["versionControl"] = $this->versionControl;
 		  $metadata["license"] = $this->license;
 		  $metadata["recordCount"] = $this->recordCount+0;
 		  $metadata["rawCreators"] = $this->rawCreators;
@@ -263,6 +269,7 @@ class TabOut_TablePublish  {
 				"updated" => "http://purl.org/dc/terms/modified",
 				"doi" => "http://purl.org/ontology/bibo/doi",
 				"ark" => "http://en.wikipedia.org/wiki/Archival_Resource_Key",
+				"versionControl" => "http://purl.org/dc/terms/hasVersion",
 				"editorList" => "http://purl.org/ontology/bibo/editorList",
 				"editor" => "http://purl.org/ontology/bibo/editor",
 				"contributorList" => "http://purl.org/ontology/bibo/contributorList",
@@ -295,6 +302,12 @@ class TabOut_TablePublish  {
 		  if($metadata["ark"] != false){
 				$JSON_LD["ark"] = $metadata["ark"];
 		  }
+		  if(isset($metadata["versionControl"])){
+				if($metadata["versionControl"] != false){
+					 $JSON_LD["versionControl"] = $metadata["versionControl"];
+				}
+		  }
+		  
 		  if(count($metadata["rawCreators"])>0){
 				foreach($metadata["rawCreators"] as $uriKey => $nameArray){
 					 $JSON_LD["editorList"][]["editor"] = array("name" => $nameArray["name"],
@@ -436,6 +449,11 @@ class TabOut_TablePublish  {
 		  $chValue = $this->checkParam("ark"); 
 		  if($chValue != false ){
 				$this->tableARK = $chValue;
+		  }
+		  
+		  $chValue = $this->checkParam("versionControl");
+		  if($chValue != false){
+				$this->versionControl = $chValue;
 		  }
 		  
 		  $chValue = $this->checkParam("tags"); 

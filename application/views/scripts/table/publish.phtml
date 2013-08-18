@@ -57,6 +57,10 @@ $tablePubObj = $this->tablePubObj;
                         <h2>Table ARK</h2>
                         <input name="ark" type="text" id="tabARK" value="<?php echo $tablePubObj->tableARK; ?>" />
                         <br/>
+                        
+                        <h2>Table Version Control</h2>
+                        <input name="versionControl" type="text" id="versionControl" value="<?php echo $tablePubObj->versionControl; ?>" />
+                        <br/>
                         <div id="subDiv">
                             <input type="submit" />
                         </div>
@@ -95,6 +99,22 @@ $tablePubObj = $this->tablePubObj;
                                     </li>
                                 
                         </ul>
+                        <h6>Creators (for Citation)</h6>
+                        <p>
+                             <?php
+                            $cfirst = true;
+                            foreach($tablePubObj->rawCreators as $uri => $persArray){
+                                if($cfirst){
+                                    echo $persArray["name"];
+                                }
+                                else{
+                                     echo ", ".$persArray["name"];
+                                }
+                                $cfirst = false;
+                            }//end loop through the table array  
+                            ?>
+                        </p>
+                        <p><small>[Reload to regenerate list]</small></p>
                         <br/>
                         <h2>Dublin Core Contributors</h2>
                         <ul>

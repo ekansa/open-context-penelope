@@ -7,7 +7,7 @@ ini_set("max_execution_time", "0");
 
 class EditDatasetController extends Zend_Controller_Action
 {
-    
+    public $db;
     //public $host = "http://penelope.opencontext.org";
     public $host = "http://penelope.oc";
     //public $host = "http://".$_SERVER["SERVER_NAME"];
@@ -31,44 +31,17 @@ class EditDatasetController extends Zend_Controller_Action
     }
     
     
+	 
+	 
+	 
+	 
+	 
+	 
+	 
     function boneFixAction(){
         $this->_helper->viewRenderer->setNoRender();
-        $db = Zend_Registry::get('db');
         
-        /*
-        $bad_data_uri = "http://about.oc/oc_xmlgen/xml_docs/badData.xml";
-        $bad_data_string = file_get_contents($bad_data_uri); //good data is SAVED in the published docs table.
-        $xml = simplexml_load_string($bad_data_string);
-        unset($good_data_string);
-        
-        foreach($xml->xpath("//uuid") as $item_result) {
-	    $uuid = $item_result."";
-            $data = array("uuid" => $uuid);
-            try{
-                $db->insert('badBones', $data);
-            } catch (Exception $e) {
-                    echo $e->getMessage(), "\n";
-                }
-        }
-        */
-        
-        /*
-        $good_data_uri = "http://about.oc/oc_xmlgen/xml_docs/goodData.xml";
-        $good_data_string = file_get_contents($good_data_uri); //good data is SAVED in the published docs table.
-        $xml = simplexml_load_string( $good_data_string);
-        unset($good_data_string);
-        
-        foreach($xml->xpath("//uuid") as $item_result) {
-	    $uuid = $item_result."";
-            $data = array("uuid" => $uuid);
-            try{
-                $db->insert('goodBones', $data);
-            } catch (Exception $e) {
-                    //echo $e->getMessage(), "\n";
-                }
-        }
-        */
-        
+        $db = $this->startDB();
         
         $sql = "DELETE published_docs
         FROM published_docs
@@ -111,18 +84,11 @@ class EditDatasetController extends Zend_Controller_Action
     }
     
     
-    private function setUTFconnection($db){
-		  $sql = "SET collation_connection = utf8_unicode_ci;";
-		  $db->query($sql, 2);
-		  $sql = "SET NAMES utf8;";
-		  $db->query($sql, 2);
-    }
-    
     
     //this function makes values of a given variable the basis of links
     function variableLinkAction(){
         $this->_helper->viewRenderer->setNoRender();
-        $db = Zend_Registry::get('db');
+        $db = $this->startDB();
 		  $this->setUTFconnection($db);
         
         $projectUUID = $_REQUEST['projectUUID'];
@@ -545,7 +511,7 @@ class EditDatasetController extends Zend_Controller_Action
             $dateLabel = "(".$this->makeNiceDate($tStart).")";
         }
         
-        $db = Zend_Registry::get('db');
+        $db = $this->startDB();
      
         //first create undo and redo for removing the old item
         $select = $db->select()
@@ -692,7 +658,7 @@ class EditDatasetController extends Zend_Controller_Action
             $dateLabel = "(".$this->makeNiceDate($tStart).")";
         }
     
-        $db = Zend_Registry::get('db');
+        $db = $this->startDB();
         
         if($itemUUID != false){
 	    $sql = 'SELECT space.uuid
@@ -784,7 +750,7 @@ class EditDatasetController extends Zend_Controller_Action
             $dateLabel = "(".$this->makeNiceDate($tStart).")";
         }
     
-        $db = Zend_Registry::get('db');
+        $db = $this->startDB();
         
         
         $sql = 'SELECT space.uuid
@@ -858,7 +824,7 @@ class EditDatasetController extends Zend_Controller_Action
         }
         
         
-        $db = Zend_Registry::get('db');
+        $db = $this->startDB();
         
         
         $sql = 'SELECT space.uuid
@@ -942,7 +908,7 @@ class EditDatasetController extends Zend_Controller_Action
             $dateLabel = "(".$this->makeNiceDate($tStart).")";
         }
     
-        $db = Zend_Registry::get('db');
+        $db = $this->startDB();
         
         
         $sql = 'SELECT DISTINCT space.uuid
@@ -990,7 +956,7 @@ class EditDatasetController extends Zend_Controller_Action
         $projectUUID = $_REQUEST['projectUUID'];
         $varUUID = $_REQUEST['varUUID'];
         
-        $db = Zend_Registry::get('db');
+        $db = $this->startDB();
         $sql = "SELECT DISTINCT properties.property_uuid,
         val_tab.val_text
         FROM properties
@@ -1090,7 +1056,7 @@ class EditDatasetController extends Zend_Controller_Action
             $posBCE = false;
         }
 
-        $db = Zend_Registry::get('db');
+        $db = $this->startDB();
         
         $sql = "SELECT DISTINCT space.uuid, stProps.val_num AS StartDate, endProps.val_num AS EndDate
                 FROM space
@@ -1180,7 +1146,7 @@ class EditDatasetController extends Zend_Controller_Action
         }
         
         
-        $db = Zend_Registry::get('db');
+        $db = $this->startDB();
         
         $sql = "SELECT var_tab.var_label, var_tab.variable_uuid, var_tab.var_type
         FROM var_tab
@@ -1252,7 +1218,7 @@ class EditDatasetController extends Zend_Controller_Action
         
         $this->_helper->viewRenderer->setNoRender();
         $projectUUID = $_REQUEST['projectUUID'];
-        $db = Zend_Registry::get('db');
+        $db = $this->startDB();
         
         
         $sql = "SELECT DISTINCT var_tab.var_label, var_tab.variable_uuid, var_tab.var_type, field_summary.field_num
@@ -1323,7 +1289,7 @@ class EditDatasetController extends Zend_Controller_Action
     
         $obsHash = md5($projectUUID."_".$source_id."_".$obs_num);
         
-        $db = Zend_Registry::get('db');
+        $db = $this->startDB();
 		  $this->setUTFconnection($db);
         $where = array();
         $where[] = "obs_id  = '$obsHash' ";
@@ -1347,7 +1313,7 @@ class EditDatasetController extends Zend_Controller_Action
     
     private function item_obs_data($itemUUID){
         
-         $db = Zend_Registry::get('db');
+         $db = $this->startDB();
          $sql = "SELECT DISTINCT observe.source_id, observe.obs_num, file_summary.description 
          FROM observe
          LEFT JOIN file_summary ON (observe.project_id = file_summary.project_id
@@ -1397,7 +1363,7 @@ class EditDatasetController extends Zend_Controller_Action
             $targType = 'Persons';
         }
     
-        $db = Zend_Registry::get('db');
+        $db = $this->startDB();
         
         $sql = "SELECT space.uuid
                 FROM space
@@ -1441,7 +1407,7 @@ class EditDatasetController extends Zend_Controller_Action
         $obsNum = $_REQUEST["obsNum"];
         
         
-        $db = Zend_Registry::get('db');
+        $db = $this->startDB();
         $this->setUTFconnection($db);
         //select items that have new observations
         $sql = "SELECT DISTINCT observe.subject_uuid
@@ -1503,7 +1469,7 @@ class EditDatasetController extends Zend_Controller_Action
             $targType = 'Persons';
         }
     
-        $db = Zend_Registry::get('db');
+        $db = $this->startDB();
         $this->setUTFconnection($db);
 		  
         $sql = "SELECT resource.uuid
@@ -1612,7 +1578,7 @@ class EditDatasetController extends Zend_Controller_Action
         $newLinkIDs = array();
         $classWhere = " AND space.class_uuid = '".$_REQUEST['classUUID']."' ";
         
-        $db = Zend_Registry::get('db');
+        $db = $this->startDB();
         $sql = 'SELECT space.uuid
             FROM space
             WHERE space.project_id = "'.$projectUUID.'"
@@ -1664,7 +1630,7 @@ class EditDatasetController extends Zend_Controller_Action
         $newLinkIDs = array();
         $classWhere = " AND space.class_uuid = '".$_REQUEST['classUUID']."' ";
         
-        $db = Zend_Registry::get('db');
+        $db = $this->startDB();
         $sql = 'SELECT space.uuid
             FROM space
             WHERE space.project_id = "'.$projectUUID.'"
@@ -1708,7 +1674,7 @@ class EditDatasetController extends Zend_Controller_Action
         $propUUID = false;
     
         if(!$itemType == false){
-            $db = Zend_Registry::get('db');
+            $db = $this->startDB();
 				$this->setUTFconnection($db);
             $valueUUID = $this->get_make_ValID($newText, $projectUUID);
             $propUUID = $this->get_make_PropID("NOTES", $valueUUID, $projectUUID);
@@ -1771,7 +1737,7 @@ class EditDatasetController extends Zend_Controller_Action
         }
         
         
-        $db = Zend_Registry::get('db');
+        $db = $this->startDB();
         $this->setUTFconnection($db);
         if(!$addLink){
             //delete other containment relations, if addlink is false
@@ -1844,7 +1810,7 @@ class EditDatasetController extends Zend_Controller_Action
 	}
 	
         
-        $db = Zend_Registry::get('db');
+        $db = $this->startDB();
         $this->setUTFconnection($db);
         $sql = "SELECT resource.uuid
                 FROM resource
@@ -2579,7 +2545,7 @@ class EditDatasetController extends Zend_Controller_Action
     
     
 	function moveMediaAction(){
-        $db = Zend_Registry::get('db');
+        $db = $this->startDB();
 		Zend_Loader::loadClass('dataEdit_editMedia');
         $this->_helper->viewRenderer->setNoRender();
         
@@ -2618,7 +2584,7 @@ class EditDatasetController extends Zend_Controller_Action
             $metaMod = false;
         }
         
-        $db = Zend_Registry::get('db');
+        $db = $this->startDB();
         $sql = "SELECT DISTINCT observe.obs_num
                 FROM observe
                 WHERE (observe.source_id  = '$source_id' )
@@ -2673,7 +2639,7 @@ class EditDatasetController extends Zend_Controller_Action
         $projectUUID = $_REQUEST['projectUUID'];
         $varUUID = $_REQUEST['varID'];
         
-        $db = Zend_Registry::get('db');
+        $db = $this->startDB();
         
         $sql="SELECT space.space_label, observe.subject_uuid, var_tab.var_label, count(observe.property_uuid) as varCount  
         FROM observe 
@@ -2726,7 +2692,7 @@ class EditDatasetController extends Zend_Controller_Action
     
     //determines the item type based on its id
     private function itemTypeCheck($itemUUID){
-        $db = Zend_Registry::get('db');
+        $db = $this->startDB();
         
         $typeArray = array("diary"        => array("id"=>"uuid", "type"=>"Diary / Narrative"),
                            "users"          => array("id"=>"uuid", "type"=>"Person"),
@@ -2773,7 +2739,7 @@ class EditDatasetController extends Zend_Controller_Action
         }
     
         if(!$itemType == false){
-            $db = Zend_Registry::get('db');
+            $db = $this->startDB();
             
             $obsHashText = md5($projectUUID . "_" . $itemUUID . "_" . "1" . "_" . $propUUID);
                         
@@ -2819,7 +2785,7 @@ class EditDatasetController extends Zend_Controller_Action
         if(!$itemType == false && strlen($variableUUID)>1){
             
 			$changes = array();
-			$db = Zend_Registry::get('db');
+			$db = $this->startDB();
          $this->setUTFconnection($db);
 			//check to see if the item already has a property for this variable
 			
@@ -2945,7 +2911,7 @@ class EditDatasetController extends Zend_Controller_Action
         $propUUID = false;
     
         if(!$itemType == false){
-            $db = Zend_Registry::get('db');
+            $db = $this->startDB();
 				$this->setUTFconnection($db);
             $valueUUID = $this->get_make_ValID($newText, $projectUUID, $source);
             $propUUID = $this->get_make_PropID("NOTES", $valueUUID, $projectUUID, $source);
@@ -2981,7 +2947,7 @@ class EditDatasetController extends Zend_Controller_Action
         $projectUUID = $_REQUEST['projectUUID'];
         $newNote = $_REQUEST['newNote'];
         
-        $db = Zend_Registry::get('db');
+        $db = $this->startDB();
 		  $this->setUTFconnection($db);
         $where = array();
         $where[] = "project_id  = '".$projectUUID."' ";
@@ -3008,7 +2974,7 @@ class EditDatasetController extends Zend_Controller_Action
         //$projectUUID = $_REQUEST['projectUUID'];
         $propUUID = $_REQUEST['propertyUUID'];
         $projectUUID = $_REQUEST['projectUUID'];
-        $db = Zend_Registry::get('db');
+        $db = $this->startDB();
         $where = array();
         $where[] = "project_id  = '".$projectUUID."' ";
         $where[] = "property_uuid  = '".$propUUID."' ";
@@ -3024,7 +2990,7 @@ class EditDatasetController extends Zend_Controller_Action
         $projectUUID = $_REQUEST['projectUUID'];
 		$varUUID = $_REQUEST['varUUID'];
 		
-		$db = Zend_Registry::get('db');
+		$db = $this->startDB();
 		
 		$output = array();
 		$varArray = array();
@@ -3142,7 +3108,7 @@ class EditDatasetController extends Zend_Controller_Action
     
 	
 	
-		$db = Zend_Registry::get('db');
+		$db = $this->startDB();
 		$this->setUTFconnection($db);
 		if($newText != $altPropComps["valText"]){
 			
@@ -3215,7 +3181,7 @@ class EditDatasetController extends Zend_Controller_Action
         $newPropComps = $this->propID_Components($KeepPropUUID);
 		
 		if(($OldPropUUID != $KeepPropUUID) && (strlen($OldPropUUID)>4 && strlen($KeepPropUUID)>4 )) {
-			$db = Zend_Registry::get('db');
+			$db = $this->startDB();
 			
 			//change var totals
 			$data = array("var_sum" => "");
@@ -3309,7 +3275,7 @@ class EditDatasetController extends Zend_Controller_Action
 		  }
 		  
 		  
-		  $db = Zend_Registry::get('db');
+		  $db = $this->startDB();
 		  $this->setUTFconnection($db);
 		  $hashID = md5($projectUUID.$relType.$varUUID.$classUUID.$docType.$tabName );
 		  $data["hashID"] = $hashID;
@@ -3334,7 +3300,7 @@ class EditDatasetController extends Zend_Controller_Action
     //variable id and value id pair
     private function get_make_PropID($variableUUID, $valueUUID, $projectUUID, $dataTableName = 'manual'){
         
-        $db = Zend_Registry::get('db');
+        $db = $this->startDB();
         $this->setUTFconnection($db);
         $propHash   = md5($projectUUID . $variableUUID . $valueUUID);
         
@@ -3375,7 +3341,7 @@ class EditDatasetController extends Zend_Controller_Action
     //this function returns the variable and value id for a property
     private function propID_VarVal($variableUUID, $valueUUID, $projectUUID){
         
-        $db = Zend_Registry::get('db');
+        $db = $this->startDB();
 		  $this->setUTFconnection($db);
         $sql = "SELECT properties.property_uuid
         FROM properties
@@ -3395,7 +3361,7 @@ class EditDatasetController extends Zend_Controller_Action
     //this function returns the variable and value id for a property
     private function propID_Components($propUUID){
         
-        $db = Zend_Registry::get('db');
+        $db = $this->startDB();
 		  $this->setUTFconnection($db);
         $sql = "SELECT properties.variable_uuid, properties.value_uuid,
         properties.project_id, val_tab.val_text, var_tab.var_label
@@ -3422,7 +3388,7 @@ class EditDatasetController extends Zend_Controller_Action
     //it returns a different valueid if the text already exists in a project
     private function alter_ValID($valNewText, $oldValID, $projectUUID, $dataTableName = 'manual'){
         
-        $db = Zend_Registry::get('db');
+        $db = $this->startDB();
         $this->setUTFconnection($db);
 		  
         $valText = trim($valNewText);
@@ -3459,7 +3425,7 @@ class EditDatasetController extends Zend_Controller_Action
     //this function changes a the value ID associated with a prop id
     private function alter_propID_valID($oldValID, $newValID, $variableUUID, $propUUID, $projectUUID, $subjectUUID = false){
         
-        $db = Zend_Registry::get('db');
+        $db = $this->startDB();
     
         if($oldValID != $newValID){
             
@@ -3534,7 +3500,7 @@ class EditDatasetController extends Zend_Controller_Action
     //this function gets a valueID or makes a new valueID for a given string of text
     private function get_make_ValID($valText, $projectUUID, $dataTableName = 'manual'){
         
-        $db = Zend_Registry::get('db');
+        $db = $this->startDB();
         $this->setUTFconnection($db);
         $valText = trim($valText);
         $qvalText = addslashes($valText);
@@ -3593,7 +3559,7 @@ class EditDatasetController extends Zend_Controller_Action
     
     private function addLinkingRel($originUUID, $originType, $targetUUID, $targetType, $linkFieldValue, $projectUUID, $dataTableName = 'manual', $obsNum = 1){
                 
-        $db = Zend_Registry::get('db');
+        $db = $this->startDB();
         $this->setUTFconnection($db);
         //add origin and targget for this resource
         $hashLink       = md5($originUUID . '_' . $obsNum . '_' . $targetUUID . '_' . $linkFieldValue);
@@ -3658,7 +3624,7 @@ class EditDatasetController extends Zend_Controller_Action
         $OldVariableUUID = $_REQUEST['oldvarUUID'];
         $NewVariableUUID =  $_REQUEST['newvarUUID'];
         
-        $db = Zend_Registry::get('db');
+        $db = $this->startDB();
         
         $sql = "SELECT var_tab.var_label
         FROM var_tab
@@ -3731,7 +3697,7 @@ class EditDatasetController extends Zend_Controller_Action
     //this function changes a the value ID associated with a prop id
     private function alter_propID_varID($OldVariableUUID, $NewVariableUUID, $propUUID, $projectUUID, $subjectUUID = false){
         
-        $db = Zend_Registry::get('db');
+        $db = $this->startDB();
     
         if($OldVariableUUID != $NewVariableUUID){
             
@@ -3820,10 +3786,26 @@ class EditDatasetController extends Zend_Controller_Action
     
     
     
+    private function startDB(){
+		  if(!$this->db){
+				$db = Zend_Registry::get('db');
+				$this->setUTFconnection($db);
+				$this->db = $db;
+		  }
+		  else{
+				$db = $this->db;
+		  }
+		  
+		  return $db;
+	 }
     
     
-    
-    
+    private function setUTFconnection($db){
+		  $sql = "SET collation_connection = utf8_unicode_ci;";
+		  $db->query($sql, 2);
+		  $sql = "SET NAMES utf8;";
+		  $db->query($sql, 2);
+    }
     
     
     
