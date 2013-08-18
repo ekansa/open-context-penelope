@@ -18,8 +18,8 @@ class dataEdit_VarPropNotes  {
 	function getProperties($varID){
 	 
 	 $this->varUUID = $varID;
-	 $db = Zend_Registry::get('db');
-    $this->setUTFconnection($db);
+	  
+	 $db = $this->startDB();
 	 
 	 $sql = "SELECT var_tab.project_id, var_tab.var_label, linked_data.linkedLabel, linked_data.linkedURI
 		  FROM var_tab
@@ -87,8 +87,7 @@ class dataEdit_VarPropNotes  {
 	 //update the note for a property
 	 function updatePropNote($propertyUUID, $note){
 		  
-		  $db = Zend_Registry::get('db');
-		  $this->setUTFconnection($db);
+		  $db = $this->startDB();
 		  $note = trim($note);
 		  $note = addslashes($note);
 		  
@@ -98,12 +97,24 @@ class dataEdit_VarPropNotes  {
 	 }
 	 
 	 
-	 //preps for utf8
+	 function startDB(){
+		  if(!$this->db){
+				$db = Zend_Registry::get('db');
+				$this->setUTFconnection($db);
+				$this->db = $db;
+		  }
+		  else{
+				$db = $this->db;
+		  }
+		  
+		  return $db;
+	 }
+	 
 	 function setUTFconnection($db){
 		  $sql = "SET collation_connection = utf8_unicode_ci;";
 		  $db->query($sql, 2);
 		  $sql = "SET NAMES utf8;";
 		  $db->query($sql, 2);
-	 }
+    }
 	 
 }  

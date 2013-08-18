@@ -1,0 +1,375 @@
+<?php
+
+$varObj = $this->varObj;
+$requestParams = $this->requestParams;
+
+
+
+?>
+<html>
+    <head>
+        <meta charset="UTF-8" />
+        <title>Editorial Functions for Variables</title>
+        <link href="../public/css/bootstrap.css"  rel="stylesheet" type="text/css" />
+        <link href="../public/css/bootstrap-responsive.css"  rel="stylesheet" type="text/css" />
+        <link href="../public/css/rev2-general.css"  rel="stylesheet" type="text/css" />
+        <link href="../public/css/rev2-ex-tables.css"  rel="stylesheet" type="text/css" />
+        
+        
+        <script src="../public/scripts/application/editorial/widgets.js" type="text/javascript" ></script>
+        <script src="../public/scripts/application/editorial/jquery.js" type="text/javascript" ></script>
+        <script src="../public/scripts/application/editorial/bootstrap-tab.js" type="text/javascript" ></script>
+        
+        <script type="text/javascript" src="/public/scripts/json2.js"></script>
+        <script type="text/javascript" src="/public/scripts/utils.js"></script>
+        <script type="text/javascript" src="../public/scripts/application/editorial/prototype.js"></script>
+        
+        <script src="../public/scripts/application/editorial/variableEdits.js" type="text/javascript" ></script>
+        
+        
+        <script type="text/javascript">
+           
+            
+            
+        </script>
+        
+    </head>
+    <body>
+        <div id="main">
+            <div id="main_content">
+                <h2>Editorial Functions for Variables:</h2>
+                
+                <div style="padding:5%;">
+                    <?php 
+                    
+                    if($varObj->varUUID){
+                    ?>    
+                        
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Label</th>
+                                    <th>UUID</th>
+                                    <th>Type</th>
+                                    <th>Project</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr class="info">
+                                    <td><h4><?php echo $varObj->varLabel; ?></h4></td>
+                                    <td><p><small><?php echo $varObj->varUUID; ?></small></p></td>
+                                    <td><?php echo $varObj->varType; ?></td>
+                                    <td><p class="muted">
+                                        <?php echo $varObj->projectName; ?>
+                                        </p>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        
+                    <?php    
+                    } // end case with a variable
+                    
+                    ?>
+                </div>
+                
+                
+                <ul class="nav nav-tabs">
+                    <li <?php echo $varObj->makeTabLiClass("varsList");?> ><a href="#varsList" data-toggle="tab">Variables</a></li>
+                    <li <?php echo $varObj->makeTabLiClass("notes");?> ><a href="#notes" data-toggle="tab">Notes</a></li>
+                </ul>
+                   
+                  <div class="tab-content">
+                    
+                    <div <?php echo $varObj->makeTabDivClass("varsList");?> id="varsList">
+                        <h4>Find a variable</h4>
+                        <div class="divTab" style="width:100%;">
+                            <div class="divRow" style="background-color:#f7f7f7;">
+                                <div class="divCell" style="width:40%;">
+                                    <h6>Search for a variable</h6>
+                                    <form class="form-search">
+                                        <div class="input-append">
+                                            <input class="span2" id="varLook" type="text" >
+                                            <button class="btn" type="button" onclick="varLookUp();">Find</button>
+                                        </div>
+                                    </form>
+                                    <div id="vars" style="padding-top:10%;padding-left:5%;padding-right:5%;">
+                                    
+                                    </div>
+                                </div>
+                                <div class="divCell">
+                                    <h6>Limit by Project:</h6>
+                                    <form class="form-horizontal">
+                                    <?php
+                                    
+                                    $varProjs = $varObj->getRepresentedProjects();
+                                    if(is_array($varProjs)){
+                                        $projChecked = false;
+                                        foreach($varProjs as $proj){
+                                        
+                                        if($proj["projectUUID"] != $varObj->projectUUID){
+                                        ?>    
+                                        <label class="radio">
+                                            <input type="radio" name="varProj" value="<?php echo $proj["projectUUID"]; ?>">
+                                            <?php echo $proj["projectName"]; ?>
+                                        </label>
+                                        <?php
+                                        }//end case where the project ID is not the same as the active variable's projectUUID
+                                        else{
+                                        ?>
+                                        
+                                        <label class="radio">
+                                            <input type="radio" name="varProj" value="<?php echo $proj["projectUUID"]; ?>" checked>
+                                            <?php echo $proj["projectName"]; ?>
+                                        </label>
+                                        
+                                        <?php
+                                        $projChecked = true;
+                                        }//end case where the project ID is same as the active variable's projectUUID
+                                        
+                                        
+                                        }//end loop through array
+                                    }//end case with an array
+                                    ?>
+                                    
+                                    <?php
+                                    
+                                    if(!$projChecked){
+                                    
+                                    ?>   
+                                        <label class="radio">
+                                            <input type="radio" name="varProj" value="0" checked>
+                                            (Don't Limit)
+                                        </label>
+                                    <?php
+                                    }//end case where the project ID has not been checked, so default to don't limit
+                                    else{
+                                    ?>
+                                        <label class="radio">
+                                            <input type="radio" name="varProj" value="0" >
+                                            (Don't Limit)
+                                        </label>
+                                    
+                                    <?php
+                                    }//end case where the project ID has been checked, so don't default to no limit
+                                    ?>
+                                    </form>
+                                </div>
+                                <div class="divCell">
+                                    <h6>Limit by Type:</h6>
+                                    <form class="form-horizontal">
+                                    <?php
+                                    
+                                    $varTypes = $varObj->getRepresentedVarTypes();
+                                    if(is_array($varTypes)){
+                                        foreach($varTypes as $varType){
+                                        ?>    
+                                        <label class="radio">
+                                            <input type="radio" name="varType" value="<?php echo $varType; ?>">
+                                            <?php echo $varType; ?>
+                                        </label>
+                                        <?php
+                                        
+                                        }//end loop through array
+                                    }//end case with an array
+                                    ?>
+                                        <label class="radio">
+                                            <input type="radio" name="varType" value="0" checked>
+                                            (Don't Limit)
+                                        </label>
+                                    </form>
+                                </div>
+                                <div class="divCell">
+                                    <h6>Limit by Use in a Class:</h6>
+                                    <form class="form-horizontal">
+                                    <?php
+                                    
+                                    $varClasses = $varObj->getRepresentedClasses();
+                                    if(is_array($varClasses)){
+                                        foreach($varClasses as $varClass){
+                                        ?>    
+                                        <label class="radio">
+                                            <input type="radio" name="varClass" value="<?php echo $varClass["classUUID"]; ?>">
+                                            <?php echo $varClass["classLabel"]; ?>
+                                        </label>
+                                        <?php
+                                        
+                                        }//end loop through array
+                                    }//end case with an array
+                                    ?>
+                                        <label class="radio">
+                                            <input type="radio" name="varClass" value="0" checked>
+                                            (Don't Limit)
+                                        </label>
+                                    </form>
+                                </div>
+                            </div>
+                            
+                        </div>
+                    </div>
+                    
+                    <div <?php echo $varObj->makeTabDivClass("notes");?> id="notes">
+                        <h4>Add Documentation to a Variable</h4>
+                        
+                        <div class="divTab" style="width:100%;">
+                            <div class="divRow">
+                                <div class="divCell" style="width:66%; background-color:#f7f7f7;">
+                                    <h6>Variable Documentation Form</h6>
+                                    <form class="form-horizontal" method="post" action="../editorial/var-add-note">
+                                        <div class="control-group">
+                                            <label class="control-label" for="noteVarUUID">Variable UUID</label>
+                                            <div class="controls">
+                                            <?php
+                                            if($varObj->varUUID){
+                                            ?>
+                                            
+                                            <input name="varUUID" type="text" class="input-large" id="noteVarUUID" value="<?php echo $varObj->varUUID; ?>" >
+                                            
+                                            <?php
+                                            }//end case with a variableUUID
+                                            else{
+                                            ?>
+                                            
+                                            <input name="varUUID" type="text" class="input-large" id="noteVarUUID" placeholder="(Select from list)" >
+                                          
+                                            <?php
+                                            }//end case without a variableUUID
+                                            ?>
+                                            
+                                            </div>
+                                        </div>
+                                        <div class="control-group">
+                                            <label class="control-label" for="noteVarLabel">Variable Name</label>
+                                            <div class="controls">
+                                            
+                                            <?php
+                                            if($varObj->varUUID){
+                                            ?>
+                                            
+                                            <span id="noteVarLabel" class="input-large uneditable-input"><?php echo $varObj->varLabel; ?></span>
+                                            
+                                            <?php
+                                            }//end case with a variableUUID
+                                            else{
+                                            ?>
+                                            
+                                            <span id="noteVarLabel" class="input-large uneditable-input">(Select from list)</span>
+                                          
+                                            <?php
+                                            }//end case without a variableUUID
+                                            ?>
+                                            
+                                            
+                                            
+                                            </div>
+                                        </div>
+                                        <div class="control-group">
+                                            <label class="control-label" for="noteVarText">Note</label>
+                                            <div class="controls">
+                                                
+                                                <?php
+                                                if($varObj->varNote){
+                                                ?>
+                                                
+                                                <textarea name="varNote" id="noteVarText" style="width:100%;" rows="5"><?php echo $varObj->varNote; ?></textarea>
+                                                
+                                                <?php
+                                                }//end case with a varNote
+                                                else{
+                                                ?>
+                                                
+                                                <textarea name="varNote" id="noteVarText" style="width:100%;" rows="5"></textarea>
+                                              
+                                                <?php
+                                                }//end case without a varNote
+                                                ?>
+                                                
+                                            </div>
+                                        </div>
+                                        <div class="control-group">
+                                            <div class="controls">
+                                                
+                                                <?php
+                                                if($varObj->varNote && $varObj->varNoteXHTMLvalid){
+                                                ?>
+                                                    <button class="btn btn-small btn-success" type="button">XHTML valid</button>
+                                                <?php
+                                                }//end case with good XHTML
+                                                elseif($varObj->varNote && !$varObj->varNoteXHTMLvalid){
+                                                ?>
+                                                    <button class="btn btn-small btn-danger" type="button">XHTML Invalid</button>
+                                                <?php
+                                                }//end case bad XHTML
+                                                ?>
+                                                <button type="submit" class="btn">Submit</button>
+                                            </div>
+                                        </div>
+                                    </form>
+                                
+                                
+                                </div>
+                                
+                                <div class="divCell" >
+                                    <h6>Instructions</h6>
+                                    <p>Ideally, most fields (variables) should have documentation.</p>
+                                </div>
+                            
+                            </div>
+                            <div class="divRow">
+                                <div class="divCell" >
+                                    
+                                </div>
+                                <div class="divCell" >
+                                    
+                                </div>
+                            </div>
+                        </div>
+                    
+                    </div>
+                    <div class="tab-pane" id="profile">...
+                    </div>
+                    <div class="tab-pane" id="messages">...
+                    </div>
+                    <div class="tab-pane" id="settings">...
+                    </div>
+                  </div>
+                   
+                  <script>
+                    
+                    function getParameterByName(name) {
+                        name = name.replace(/[\[]/, "\\\[").replace(/[\]]/, "\\\]");
+                        var regex = new RegExp("[\\?&]" + name + "=([^&#]*)"),
+                            results = regex.exec(location.search);
+                        return results == null ? "" : decodeURIComponent(results[1].replace(/\+/g, " "));
+                    }
+                    
+                    var selTab = getParameterByName("tab");
+                    
+                    if(selTab){
+                        $(function () {
+                            e.preventDefault();
+                            $('#myTab a[href="#' + selTab + '"]').tab('show'); // Select tab by name
+                        });
+                    }
+                    else{
+                        $(function () {
+                            $('#myTab a:first').tab('show');
+                        });
+                    }
+                    
+                    <?php
+                    if(isset($requestParams["tab"])){
+                    ?>    
+                        
+                    
+                    <?php   
+                    }//end case with a tab to select
+                    ?>
+                    
+                  </script>
+                
+                
+            </div>
+        </div>
+    </body>
+</html>
