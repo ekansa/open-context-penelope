@@ -406,8 +406,7 @@ class TabOut_TableFiles  {
 	 function startCSVfileHandle($itemDir, $baseFilename){
 		  $fileExtensions = $this->fileExtensions;
 		  $files = $this->files;
-		  iconv_set_encoding("internal_encoding", "UTF-8");
-		  iconv_set_encoding("output_encoding", "UTF-8");
+		  
 		  $csvFileName = $itemDir."/".$baseFilename.$fileExtensions["csv"];
 		 
 		  $fh = fopen($csvFileName, 'a') or die("can't open file");
@@ -420,6 +419,8 @@ class TabOut_TableFiles  {
 	 //now append the data
 	 function saveAppendCSV($data){
 		  
+		  iconv_set_encoding("internal_encoding", "UTF-8");
+		  iconv_set_encoding("output_encoding", "UTF-8");
 		  $fh = $this->actFileHandle;
 		  fwrite($fh, $data);
 		  $this->actFileHandle = $fh;
