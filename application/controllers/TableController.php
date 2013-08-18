@@ -1060,7 +1060,7 @@ class TableController extends Zend_Controller_Action {
 		  $showUnitTypeFields = false; //boolean, show unit type fields (for measurement types, as in zooarchaeology standard measurements)
 		  $limitUnitTypeFields = false; //boolean, limit outputs to only items with unit type fields.
 		  $showSourceFields = true; //boolean, show the original data (source fields)
-		  $showLDSourceValues = false; //boolen, show the original value linked to linked data
+		  $showLDSourceValues = true; //boolen, show the original value linked to linked data
 		  $showBPdates = false;
 		  $showBCEdates = true;
 		  
@@ -1102,7 +1102,7 @@ class TableController extends Zend_Controller_Action {
 				$showSourceFields = $requestParams["showSourceFields"];
 		  }
 		  if(isset($requestParams["showLDSourceValues"])){
-				$limitUnitTypeFields = $requestParams["showLDSourceValues"];
+				$showLDSourceValues = $requestParams["showLDSourceValues"];
 		  }
 		  if(isset($requestParams["showBPdates"])){
 				$showBPdates = $requestParams["showBPdates"];

@@ -16,14 +16,18 @@ class TabOut_TableFiles  {
 	 
 	 public $savedFileSizes; //array of the saved files names and sizes in bytes
 	 
+	 public $actFileHandle; //file handle for the active file
+	 public $files; //array of saved files
 	 
 	 public $fileExtensions = array("csv" => ".csv",
 											  "zip" => ".zip",
 											  "gzip" => ".csv.gz",
-											  "json" => ".json"
+											  "json" => ".json",
+											  "json-prev" => "-prev.json"
 											  );
 	 
 	 const maxRecordSize = 50000;
+	 const previewSize = 500;
 	 const CSVdirectory = "csv-export";
 	 
 	 function makeSaveFiles(){
@@ -41,6 +45,7 @@ class TabOut_TableFiles  {
 
 		  $tablePublishObj->getTableFields();
 		  
+		  $this->startCSVfileHandle(self::CSVdirectory, $baseFilename); //start saving the CSV file
 		  $data = "";
 		  $fieldCount = count($tablePublishObj->tableFields);
 		  $i = 1;
@@ -53,11 +58,13 @@ class TabOut_TableFiles  {
 		  }
 		  
 		  $data.="\n";
+		  $this->saveAppendCSV($data); // save the first row of data, these are collumn names
+		  unset($data);
 		  
 		  //$records = $tablePublishObj->getAllRecords();
 		  //$records = $tablePublishObj->getSampleRecords();
 		  $JSONrecs = array();
-	 
+		  $previewData = false;
 		  $doneRecords = 0;
 		  while($doneRecords < $recordCount){
 				$records = $tablePublishObj->getSampleRecords($doneRecords);
@@ -75,11 +82,12 @@ class TabOut_TableFiles  {
 								}
 						  }
 					 }
+					
 					 $JSONrecs[] = $actJSONrec;
-					 
 					 $this->insertTabRecord($row['uuid']); //save record of item association to a record.
 					 
 					 $i = 1;
+					 $data = "";
 					 foreach($row as $fieldKey => $value){
 						  if(array_key_exists($fieldKey, $tablePublishObj->tableFieldsTemp)){
 								$data.= $this->escape_csv_value($value);
@@ -91,18 +99,31 @@ class TabOut_TableFiles  {
 					 }
 					 
 					 $data.="\n";
+					 $this->saveAppendCSV($data); // save the next row of data
+					 unset($data);
 					 
 				}//end loop through row of sample records
 				unset($records);
 				$doneRecords = count($JSONrecs);
+				if($doneRecords <= self::previewSize){
+					 $previewData = $JSONrecs;
+					 
+					 if($doneRecords == self::previewSize){
+						  $this->saveJSONprev(self::CSVdirectory, $baseFilename, $previewData); //save preview version
+						  $previewData = false; //a little memory help.
+					 }
+				}
 		  }//end loop through 
 		  
+		  $this->closeCSVfileHandle();
+		  if(is_array($previewData)){
+				$this->saveJSONprev(self::CSVdirectory, $baseFilename, $previewData); //save preview version, if not already saved
+		  }
 		  $this->saveJSON(self::CSVdirectory, $baseFilename, $JSONrecs);
-		  $this->saveCSV(self::CSVdirectory, $baseFilename, $data);
-		  $this->saveGZIP(self::CSVdirectory, $baseFilename, $data);
-		  $this->saveZIP(self::CSVdirectory, $baseFilename, $data);
+		  unset($JSONrecs);
+		  $this->CSVcompressCopies(self::CSVdirectory, $baseFilename);
 
-		  return $data;
+		  return true;
 	 }
 	 
 	 
@@ -183,6 +204,38 @@ class TabOut_TableFiles  {
 		  } else {
 				return $value; // If no new lines or commas just return the value
 		  }
+	 }
+	 
+	 
+	 
+	 
+	 
+	 //save the file in the correct correct directory
+	 function saveJSONprev($itemDir, $baseFilename, $JSONarray){
+		
+		  $fileExtensions = $this->fileExtensions;
+		  $success = false;
+		
+		  try{
+				
+				iconv_set_encoding("internal_encoding", "UTF-8");
+				$JSON = Zend_Json::encode($JSONarray);
+				//iconv_set_encoding("internal_encoding", "UTF-8");
+				//iconv_set_encoding("output_encoding", "UTF-8");
+				$fp = fopen($itemDir."/".$baseFilename.$fileExtensions["json-prev"], 'w');
+				//fwrite($fp, iconv("ISO-8859-7","UTF-8",$JSON));
+				//fwrite($fp, utf8_encode($JSON));
+				fwrite($fp, $JSON);
+				fclose($fp);
+				$success = true;
+		  }
+		  catch (Zend_Exception $e){
+				$success = false; //save failure
+				echo (string)$e;
+				die;
+		  }
+		
+		  return $success;
 	 }
 	 
 	 
@@ -304,6 +357,80 @@ class TabOut_TableFiles  {
 		  }
 		
 		  return $success;
+	 }
+	 
+	 //copy the CSV file, save as a GZIP file
+	 function CSVcompressCopies($itemDir, $baseFilename){
+		
+		  $fileExtensions = $this->fileExtensions;
+		  $success = false;
+		
+		  try{
+				
+				$csvFileName = $itemDir."/".$baseFilename.$fileExtensions["csv"];
+				
+				iconv_set_encoding("internal_encoding", "UTF-8");
+				iconv_set_encoding("output_encoding", "UTF-8");
+				
+				$fileOK = file_exists($csvFileName);
+				if($fileOK){
+					 $rHandle = fopen($csvFileName, 'r');
+					 if ($rHandle){
+						  $csv = '';
+						  while(!feof($rHandle)){
+								$csv .= fread($rHandle, filesize($csvFileName));
+						  }
+						  fclose($rHandle);
+						  unset($rHandle);
+						  $this->saveGZIP($itemDir, $baseFilename, $csv);
+						  $this->saveZIP($itemDir, $baseFilename, $csv);
+					 }
+				}
+				else{
+					 echo $csvFileName. " not found!";
+					 die;
+				}
+				
+		  }
+		  catch (Zend_Exception $e){
+				$success = false; //save failure
+				echo (string)$e;
+				die;
+		  }
+		
+		  return $success;
+	 }
+	 
+	 
+	 // open a new file handle to append
+	 function startCSVfileHandle($itemDir, $baseFilename){
+		  $fileExtensions = $this->fileExtensions;
+		  $files = $this->files;
+		  iconv_set_encoding("internal_encoding", "UTF-8");
+		  iconv_set_encoding("output_encoding", "UTF-8");
+		  $csvFileName = $itemDir."/".$baseFilename.$fileExtensions["csv"];
+		 
+		  $fh = fopen($csvFileName, 'a') or die("can't open file");
+		  $files[] = $csvFileName;
+		  $this->files = $files;
+		  
+		  $this->actFileHandle = $fh;
+	 }
+	 
+	 //now append the data
+	 function saveAppendCSV($data){
+		  
+		  $fh = $this->actFileHandle;
+		  fwrite($fh, $data);
+		  $this->actFileHandle = $fh;
+		  
+	 }
+	 
+	 // close the file handle
+	 function closeCSVfileHandle(){
+		  $fh = $this->actFileHandle;
+		  fclose($fh);
+		  $this->actFileHandle = false;
 	 }
 	 
 	 
