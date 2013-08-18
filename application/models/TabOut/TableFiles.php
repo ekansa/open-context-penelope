@@ -198,7 +198,7 @@ class TabOut_TableFiles  {
 	 //escape function
 	 function escape_csv_value($value) {
 		  $value = str_replace('"', '""', $value); // First off escape all " and make them ""
-		  $value = utf8_decode($value);
+		  //$value = utf8_decode($value);
 		  if(preg_match('/,/', $value) or preg_match("/\n/", $value) or preg_match('/"/', $value)) { // Check if I have any commas or new lines
 				return '"'.$value.'"'; // If I have new lines or commas escape them
 		  } else {
@@ -404,15 +404,22 @@ class TabOut_TableFiles  {
 	 
 	 // open a new file handle to append
 	 function startCSVfileHandle($itemDir, $baseFilename){
+		  
+		  iconv_set_encoding("internal_encoding", "UTF-8");
+		  iconv_set_encoding("output_encoding", "UTF-8");
 		  $fileExtensions = $this->fileExtensions;
 		  $files = $this->files;
 		  
 		  $csvFileName = $itemDir."/".$baseFilename.$fileExtensions["csv"];
-		 
-		  $fh = fopen($csvFileName, 'a') or die("can't open file");
+		  if(file_exists($csvFileName)){
+				unlink($csvFileName); 
+		  }
+		  
+		  $fh = fopen($csvFileName, 'ab') or die("can't open file");
 		  $files[] = $csvFileName;
 		  $this->files = $files;
 		  
+		  fwrite($fh, "\xEF\xBB\xBF"); //utf8 mark
 		  $this->actFileHandle = $fh;
 	 }
 	 
@@ -421,8 +428,11 @@ class TabOut_TableFiles  {
 		  
 		  iconv_set_encoding("internal_encoding", "UTF-8");
 		  iconv_set_encoding("output_encoding", "UTF-8");
+		  
+		  //$data = mb_convert_encoding( $data, 'UTF-16LE', 'UTF-8'); 
 		  $fh = $this->actFileHandle;
 		  fwrite($fh, $data);
+		  
 		  $this->actFileHandle = $fh;
 		  
 	 }
