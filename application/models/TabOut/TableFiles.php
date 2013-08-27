@@ -17,6 +17,14 @@ class TabOut_TableFiles  {
 	 public $savedFileSizes; //array of the saved files names and sizes in bytes
 	 
 	 public $actFileHandle; //file handle for the active file
+	 
+	 public $tableByteSize; //estimated size of a table (bytes), based on database query
+	 public $recordCount; //number of records in the dataset
+	
+	 public $actGitFilePartIndex = 1; //index for the current github file part
+	 public $gitFileRowBatchSize; //number of records per file in for GitHub files
+	 public $gitFileHandles = false; //array of git file handles
+	 
 	 public $files; //array of saved files
 	 
 	 public $fileExtensions = array("csv" => ".csv",
@@ -30,6 +38,8 @@ class TabOut_TableFiles  {
 	 const previewSize = 500;
 	 const CSVdirectory = "csv-export";
 	 
+	 const maxGitHubSize = 50000000;
+	 
 	 function makeSaveFiles(){
 		  
 		  $tablePublishObj = new TabOut_TablePublish;
@@ -38,14 +48,21 @@ class TabOut_TableFiles  {
 		  $tablePublishObj->getSavedMetadata();
 		  $tablePublishObj->getTableSize();
 		  $recordCount = $tablePublishObj->recordCount; //total number of records
+		  $this->recordCount = $recordCount;
 		  $baseFilename = $tablePublishObj->tableID;
 		  $sampleBatchSize = $tablePublishObj->getDefaultSampleSize(); //get the total number of records retrieved in a sample
 		  $this->tableID = $tablePublishObj->tableID;
 		  $this->projects  =  $tablePublishObj->projects;
 
 		  $tablePublishObj->getTableFields();
+		  $this->tablePublishObj = $tablePublishObj;
+		  
+		  $tableBytes = $this->estimateTableByteSize(); //estimate the total number of bytes needed for a table
+		  
 		  
 		  $this->startCSVfileHandle(self::CSVdirectory, $baseFilename); //start saving the CSV file
+		  $this->startGitFileHandles(self::CSVdirectory, $baseFilename); //start Git (CSV) files, if needed (segmented for big datasets)
+		  
 		  $data = "";
 		  $fieldCount = count($tablePublishObj->tableFields);
 		  $i = 1;
@@ -59,10 +76,11 @@ class TabOut_TableFiles  {
 		  
 		  $data.="\n";
 		  $this->saveAppendCSV($data); // save the first row of data, these are collumn names
+		  $this->addGitFileFieldNames($data); //save the fieldnames to each Git (CSV) file, if needed
 		  unset($data);
 		  
-		  //$records = $tablePublishObj->getAllRecords();
-		  //$records = $tablePublishObj->getSampleRecords();
+		  
+		  
 		  $JSONrecs = array();
 		  $previewData = false;
 		  $doneRecords = 0;
@@ -100,6 +118,7 @@ class TabOut_TableFiles  {
 					 
 					 $data.="\n";
 					 $this->saveAppendCSV($data); // save the next row of data
+					 $this->saveAppendGitCSV($data, $this->actGitFilePartIndex); //save data to the appropriate Git file (if needed)
 					 unset($data);
 					 
 				}//end loop through row of sample records
@@ -113,18 +132,44 @@ class TabOut_TableFiles  {
 						  $previewData = false; //a little memory help.
 					 }
 				}
+				
+				if($this->gitFileHandles != false){
+					 if($doneRecords >= ($this->gitFileRowBatchSize * $this->actGitFilePartIndex)){
+						  $this->actGitFilePartIndex = $this->actGitFilePartIndex + 1; //go up an index
+					 }
+				}
+				
 		  }//end loop through 
 		  
 		  $this->closeCSVfileHandle();
+		  $this->closeGitFileHandles();
+		  
 		  if(is_array($previewData)){
 				$this->saveJSONprev(self::CSVdirectory, $baseFilename, $previewData); //save preview version, if not already saved
 		  }
 		  $this->saveJSON(self::CSVdirectory, $baseFilename, $JSONrecs);
 		  unset($JSONrecs);
 		  $this->CSVcompressCopies(self::CSVdirectory, $baseFilename);
-
+		 
 		  return true;
 	 }
+	 
+	 
+	 
+	 function estimateTableByteSize(){
+		  
+		  $db = $this->startDB();
+		  
+		  $sql = "SELECT SUM( Data_length ) as TabBytes
+		  FROM INFORMATION_SCHEMA.PARTITIONS
+		  WHERE TABLE_NAME = '".$this->penelopeTabID."'; ";
+
+		  $result =  $db->fetchAll($sql);
+		  $this->tableByteSize = $result[0]["TabBytes"];
+		  return $this->tableByteSize;
+	 }
+	 
+	 
 	 
 	 
 	 
@@ -308,6 +353,9 @@ class TabOut_TableFiles  {
 				$zip = new ZipArchive();
 				$zipFileName = $itemDir."/".$baseFilename.$fileExtensions["zip"];
 				$csvFileName = $itemDir."/".$baseFilename.$fileExtensions["csv"];
+				if(file_exists($zipFileName)){
+					 unlink($zipFileName); 
+				}
 				if($zip->open($zipFileName, ZipArchive::CREATE)!==TRUE){
 					 echo "can't create a zip file";
 					 die;
@@ -340,6 +388,9 @@ class TabOut_TableFiles  {
 		  try{
 				
 				$gzFileName = $itemDir."/".$baseFilename.$fileExtensions["gzip"];
+				if(file_exists($gzFileName)){
+					 unlink($gzFileName); 
+				}
 				
 				iconv_set_encoding("internal_encoding", "UTF-8");
 				iconv_set_encoding("output_encoding", "UTF-8");
@@ -402,6 +453,8 @@ class TabOut_TableFiles  {
 	 }
 	 
 	 
+	 
+	 
 	 // open a new file handle to append
 	 function startCSVfileHandle($itemDir, $baseFilename){
 		  
@@ -422,6 +475,84 @@ class TabOut_TableFiles  {
 		  fwrite($fh, "\xEF\xBB\xBF"); //utf8 mark
 		  $this->actFileHandle = $fh;
 	 }
+	 
+	 
+	  // open a new git file handle to append
+	 function startGitFileHandles($itemDir, $baseFilename){
+		  
+		  if($this->tableByteSize >= (self::maxGitHubSize * .75)){
+				
+				iconv_set_encoding("internal_encoding", "UTF-8");
+				iconv_set_encoding("output_encoding", "UTF-8");
+				$fileExtensions = $this->fileExtensions;
+				$files = $this->files;
+				
+				$this->actGitFilePartIndex = 1;
+				$byteRatio = $this->tableByteSize / ((self::maxGitHubSize * .75));
+				$this->gitFileRowBatchSize = round($this->recordCount / $byteRatio, -3); //number of records per part, rounded to the nearest thousand records
+				$rawNumberGitFiles = $this->recordCount / $this->gitFileRowBatchSize;
+				$numberGitFiles  = round($rawNumberGitFiles, 0);
+				if($numberGitFiles < $rawNumberGitFiles ){
+					 $numberGitFiles  = $numberGitFiles + 1;
+				}
+				
+				
+				$gitFileHandles = array();
+				$gitFileNumber = 1;
+				while($gitFileNumber <= $numberGitFiles){
+					 $actFileName = $itemDir."/".$baseFilename."-git-".$gitFileNumber.$fileExtensions["csv"];
+					 if(file_exists($actFileName)){
+						  unlink($actFileName); 
+					 }
+					 
+					 $gitFileHandles[$gitFileNumber] = fopen($actFileName, 'ab') or die("can't open file");
+					 fwrite($gitFileHandles[$gitFileNumber], "\xEF\xBB\xBF"); //utf8 mark
+					 
+					 $gitFileNumber++; 
+				}//loop through all git files needed
+				
+				$this->gitFileHandles = $gitFileHandles;
+		  }
+		  else{
+				$this->gitFileHandles = false;
+		  }
+		  
+	 }
+	 
+	 //add the field names to each of the git files, it's passed as "data"
+	 function addGitFileFieldNames($data){
+		  if($this->gitFileHandles != false){
+				$gitFileHandles = $this->gitFileHandles;
+				foreach($gitFileHandles as $gitFileNumber => $gitFileHandle){
+					 $this->saveAppendGitCSV($data, $gitFileNumber);
+				}
+		  }
+	 }
+	 
+	 
+	 //save append Git CSV data
+	 function saveAppendGitCSV($data, $gitFileNumber){
+		  if($this->gitFileHandles != false){
+				$gitFileHandles = $this->gitFileHandles;
+				iconv_set_encoding("internal_encoding", "UTF-8");
+				iconv_set_encoding("output_encoding", "UTF-8");
+				fwrite($gitFileHandles[$gitFileNumber], $data);
+				
+				$this->gitFileHandles = $gitFileHandles;
+		  }
+	 }
+	 
+	 // close git file handles
+	 function closeGitFileHandles(){
+		  if($this->gitFileHandles != false){
+				$gitFileHandles = $this->gitFileHandles;
+				foreach($gitFileHandles as $gitFileNumber => $gitFileHandle){
+					 fclose($gitFileHandle);
+				}
+				$this->gitFileHandles = false;
+		  }
+	 }
+	 
 	 
 	 //now append the data
 	 function saveAppendCSV($data){

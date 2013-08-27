@@ -981,8 +981,8 @@ class TabOut_Table  {
 				
 				$sql = "SELECT linked_data.linkedURI, linked_data.linkedLabel, linked_data.linkedType,
 				IF (
-				  linked_data.linkedType = 'unit-type',
-					 AVG(var_tab.sort_order) + 100,
+				  linked_data.linkedType = 'unit',
+					 AVG(var_tab.sort_order) + 10000,
 					 AVG(var_tab.sort_order) 
 					 ) AS  fSort
 				FROM linked_data
@@ -991,6 +991,20 @@ class TabOut_Table  {
 				GROUP BY linked_data.linkedURI
 				ORDER BY fSort
 				";
+		  
+				$sql = "SELECT linked_data.linkedURI, linked_data.linkedLabel, linked_data.linkedType,
+				CASE
+					 WHEN linked_data.linkedType = 'type' THEN  AVG(var_tab.sort_order) - 10000
+					 WHEN linked_data.linkedType = 'unit' THEN  AVG(var_tab.sort_order) + 10000
+					 ELSE AVG(var_tab.sort_order)
+				END AS  fSort
+				FROM linked_data
+				JOIN var_tab ON linked_data.itemUUID = var_tab.variable_uuid
+				WHERE linked_data.linkedType != 'unit' AND ($varCondition)
+				GROUP BY linked_data.linkedURI
+				ORDER BY fSort
+				";
+		  
 		  
 				$this->recordQuery($sql);
 				$result =  $db->fetchAll($sql);
@@ -1001,7 +1015,7 @@ class TabOut_Table  {
 						  if($row["linkedType"] == "type"){
 								$this->LFtypeCount++;
 						  }
-						  elseif($row["linkedType"] == "unit-type"){
+						  elseif($row["linkedType"] == "unit"){
 								$this->LFunitTypeCount++;
 						  }
 						  
