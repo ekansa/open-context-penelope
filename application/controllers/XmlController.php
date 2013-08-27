@@ -9,76 +9,76 @@
 class xmlController extends Zend_Controller_Action {
     
     //make sure all connections are UTF-8 OK
-    private function setUTFconnection($db){
-	$sql = "SET collation_connection = utf8_unicode_ci;";
-	$db->query($sql, 2);
-	$sql = "SET NAMES utf8;";
-	$db->query($sql, 2);
-    }
+   private function setUTFconnection($db){
+			$sql = "SET collation_connection = utf8_unicode_ci;";
+			$db->query($sql, 2);
+			$sql = "SET NAMES utf8;";
+			$db->query($sql, 2);
+   }
     
     
-    public function spaceAction(){
-	$this->_helper->viewRenderer->setNoRender();
-	Zend_Loader::loadClass('dbXML_dbSpace');
-	Zend_Loader::loadClass('dbXML_dbLinks');
-	Zend_Loader::loadClass('dbXML_dbProperties');
-	Zend_Loader::loadClass('dbXML_dbMetadata');
-	Zend_Loader::loadClass('dbXML_xmlSpace');
-	Zend_Loader::loadClass('dbXML_xmlProperties');
-	Zend_Loader::loadClass('dbXML_xmlLinks');
-	Zend_Loader::loadClass('dbXML_xmlNotes');
-	Zend_Loader::loadClass('dbXML_xmlContext');
-	Zend_Loader::loadClass('dbXML_xmlMetadata');
-	
-	$db = Zend_Registry::get('db');
-	$this->setUTFconnection($db);
-	
-	$itemObj = new dbXML_dbSpace;
-	$itemObj->initialize($db);
-	$itemObj->dbPenelope = true;
-	$itemObj->getByID($_GET['id']);
-	$itemObj->getChildren();
-	$itemObj->getParents();
-	$itemObj->getObs();
-	$itemObj->getGeo();
-	$itemObj->getChrono();
-	
-	$propsObj = new dbXML_dbProperties;
-	$propsObj->initialize($db);
-	$propsObj->dbPenelope = true;
-	$propsObj->getProperties($itemObj->itemUUID, $itemObj->obsNumbers);
-	$itemObj->propertiesObj = $propsObj;
-	
-	$linksObj = new dbXML_dbLinks;
-	$linksObj->initialize($db);
-	$linksObj->dbPenelope = true;
-	$linksObj->getLinks($itemObj->itemUUID, $itemObj->obsNumbers);
-	$itemObj->linksObj = $linksObj;
-	
-	$metadataObj = new dbXML_dbMetadata;
-	$metadataObj->initialize($db);
-	$metadataObj->dbPenelope = true;
-	$metadataObj->getMetadata($itemObj->projectUUID, $itemObj->sourceID);
-	$itemObj->metadataObj = $metadataObj;
-	
-	if(!isset($_GET['xml'])){
-		header('Content-Type: application/json; charset=utf8');
-		echo Zend_Json::encode($itemObj);
-	}
-	else{
-		$xmlItem = new dbXML_xmlSpace;
-		$xmlItem->itemObj = $itemObj;
-		$xmlItem->initialize();
-		$xmlItem->addNameClass();
-		$xmlItem->addObsPropsLinks();
-		$xmlItem->addContext();
-		$xmlItem->addChildren();
-		$xmlItem->addMetadata();
-		$doc = $xmlItem->doc;
-		header('Content-Type: application/xml; charset=utf8');
-		echo $doc->saveXML();
-	}
-    }
+   public function spaceAction(){
+		$this->_helper->viewRenderer->setNoRender();
+		Zend_Loader::loadClass('dbXML_dbSpace');
+		Zend_Loader::loadClass('dbXML_dbLinks');
+		Zend_Loader::loadClass('dbXML_dbProperties');
+		Zend_Loader::loadClass('dbXML_dbMetadata');
+		Zend_Loader::loadClass('dbXML_xmlSpace');
+		Zend_Loader::loadClass('dbXML_xmlProperties');
+		Zend_Loader::loadClass('dbXML_xmlLinks');
+		Zend_Loader::loadClass('dbXML_xmlNotes');
+		Zend_Loader::loadClass('dbXML_xmlContext');
+		Zend_Loader::loadClass('dbXML_xmlMetadata');
+		
+		$db = Zend_Registry::get('db');
+		$this->setUTFconnection($db);
+		
+		$itemObj = new dbXML_dbSpace;
+		$itemObj->initialize($db);
+		$itemObj->dbPenelope = true;
+		$itemObj->getByID($_GET['id']);
+		$itemObj->getChildren();
+		$itemObj->getParents();
+		$itemObj->getObs();
+		$itemObj->getGeo();
+		$itemObj->getChrono();
+		
+		$propsObj = new dbXML_dbProperties;
+		$propsObj->initialize($db);
+		$propsObj->dbPenelope = true;
+		$propsObj->getProperties($itemObj->itemUUID, $itemObj->obsNumbers);
+		$itemObj->propertiesObj = $propsObj;
+		
+		$linksObj = new dbXML_dbLinks;
+		$linksObj->initialize($db);
+		$linksObj->dbPenelope = true;
+		$linksObj->getLinks($itemObj->itemUUID, $itemObj->obsNumbers);
+		$itemObj->linksObj = $linksObj;
+		
+		$metadataObj = new dbXML_dbMetadata;
+		$metadataObj->initialize($db);
+		$metadataObj->dbPenelope = true;
+		$metadataObj->getMetadata($itemObj->projectUUID, $itemObj->sourceID);
+		$itemObj->metadataObj = $metadataObj;
+		
+		if(!isset($_GET['xml'])){
+			header('Content-Type: application/json; charset=utf8');
+			echo Zend_Json::encode($itemObj);
+		}
+		else{
+			$xmlItem = new dbXML_xmlSpace;
+			$xmlItem->itemObj = $itemObj;
+			$xmlItem->initialize();
+			$xmlItem->addNameClass();
+			$xmlItem->addObsPropsLinks();
+			$xmlItem->addContext();
+			$xmlItem->addChildren();
+			$xmlItem->addMetadata();
+			$doc = $xmlItem->doc;
+			header('Content-Type: application/xml; charset=utf8');
+			echo $doc->saveXML();
+		}
+   }
     
     
     public function mediaAction(){
