@@ -43,7 +43,7 @@ class EditorialController extends Zend_Controller_Action{
 		  
 	 }
 	 
-	  function variablesAction(){
+	 function variablesAction(){
 		  
         if(isset($_REQUEST["varUUID"])){
             $varUUID = $_REQUEST["varUUID"];
@@ -66,6 +66,35 @@ class EditorialController extends Zend_Controller_Action{
 		  
 	 }
 	 
+	 //get individual item, make ready for display of editorial functions
+	 function itemsAction(){
+		  
+        if(isset($_REQUEST["uuid"])){
+            $itemUUID = $_REQUEST["uuid"];
+        }
+        else{
+            $itemUUID = false;
+        }
+		  
+		  if(isset($_REQUEST["itemType"])){
+            $itemType = $_REQUEST["itemType"];
+        }
+        else{
+            $itemType = false;
+        }
+		  
+		  $requestParams =  $this->_request->getParams();
+		  Zend_Loader::loadClass('dataEdit_Items');
+		  $itemsObj = new dataEdit_Items;
+		  $itemsObj->host = $this->host;
+		  $itemsObj->requestParams = $requestParams;
+		  $itemsObj->getItem($itemUUID, $itemType);
+		  
+		  $this->view->requestParams = $requestParams;
+		  $this->view->itemsObj = $itemsObj;
+		  $this->view->host = $this->host;
+	 }
+	 
 	 
 	 //gets JSON data for a list of variables
 	 function varLookupAction(){
@@ -80,6 +109,21 @@ class EditorialController extends Zend_Controller_Action{
 		  header('Content-Type: application/json; charset=utf8');
 		  echo Zend_Json::encode($output);
 	 }
+	 
+	 function varValsAction(){
+		  
+		  $this->_helper->viewRenderer->setNoRender();
+		  $requestParams =  $this->_request->getParams();
+		 
+		  Zend_Loader::loadClass('dataEdit_Variable');
+		  $varObj = new dataEdit_Variable;
+		  $varObj->requestParams = $requestParams;
+		  $output = $varObj->getVarValues();
+		 
+		  header('Content-Type: application/json; charset=utf8');
+		  echo Zend_Json::encode($output);
+	 }
+	 
 	 
 	 
 	 //adds a note to a variable, redirects back to the variable when completed.
@@ -104,6 +148,151 @@ class EditorialController extends Zend_Controller_Action{
         }
         else{
             $location = "../editorial/variables";
+        }
+		 
+		  
+		  header("Location: ".$location);
+	 }
+	 
+	 //adds a chronology tag to a given item
+	 function chronoTagItemAction(){
+		  $this->_helper->viewRenderer->setNoRender();
+		  $requestParams =  $this->_request->getParams();
+		 
+		  Zend_Loader::loadClass('dataEdit_SpaceTime');
+		  Zend_Loader::loadClass('dataEdit_SpaceContain');
+		  Zend_Loader::loadClass('dataEdit_Published');
+		  
+		  if(isset($_REQUEST["uuid"])){
+            $itemUUID = $_REQUEST["uuid"];
+				$spaceTimeObj = new dataEdit_SpaceTime;
+				$spaceTimeObj->requestParams =  $requestParams;
+				$spaceTimeObj->chrontoTagItem($itemUUID);
+				
+				$publishedObj = new dataEdit_Published;
+				$publishedObj->deleteFromPublishedDocsByParentUUID($parentUUID); //deletes the item and it's children from the list of published items
+				
+				$location = "../editorial/items?tab=chrono&uuid=".$itemUUID;
+        }
+        else{
+            $location = "../editorial/items";
+        }
+		 
+		  
+		  header("Location: ".$location);
+	 }
+	 
+	 //adds a chronology tag to a given item
+	 function chronoTagByPropAction(){
+		  $this->_helper->viewRenderer->setNoRender();
+		  $requestParams =  $this->_request->getParams();
+		 
+		  Zend_Loader::loadClass('dataEdit_SpaceTime');
+		  Zend_Loader::loadClass('dataEdit_SpaceContain');
+		  Zend_Loader::loadClass('dataEdit_Published');
+		  
+		  if(isset($_REQUEST["propUUID"])){
+            $propUUID = $_REQUEST["propUUID"];
+				$spaceTimeObj = new dataEdit_SpaceTime;
+				$spaceTimeObj->requestParams =  $requestParams;
+				$output = $spaceTimeObj->chrontoTagByProperty($propUUID);
+				header('Content-Type: application/json; charset=utf8');
+				echo Zend_Json::encode($output);
+        }
+        else{
+            $location = "../editorial/items";
+				header("Location: ".$location);
+        }
+	 }
+	 
+	 
+	 //adds a chronology tag to a given item
+	 function updateLabelAction(){
+		  $this->_helper->viewRenderer->setNoRender();
+		  $requestParams =  $this->_request->getParams();
+		 
+		  Zend_Loader::loadClass('dataEdit_Items');
+		  Zend_Loader::loadClass('dataEdit_SpaceTime');
+		  Zend_Loader::loadClass('dataEdit_SpaceContain');
+		  Zend_Loader::loadClass('dataEdit_Published');
+		  
+		  
+		  if(isset($_REQUEST["uuid"])){
+            $itemUUID = $_REQUEST["uuid"];
+        }
+        else{
+            $itemUUID = false;
+        }
+		  
+		  if(isset($_REQUEST["itemType"])){
+            $itemType = $_REQUEST["itemType"];
+        }
+        else{
+            $itemType = false;
+        }
+		  
+		  if(isset($_REQUEST["label"])){
+            $newLabel = $_REQUEST["label"];
+        }
+        else{
+            $newLabel = "";
+        }
+		  
+		  
+		  if($itemUUID != false){
+				$itemsObj = new dataEdit_Items;
+				$itemsObj->host = $this->host;
+				$itemsObj->requestParams = $requestParams;
+				$itemsObj->updateItemLabel($newLabel, $itemUUID, $itemType);
+				
+				$location = "../editorial/items?uuid=".$itemUUID;
+        }
+        else{
+            $location = "../editorial/items";
+        }
+		 
+		  
+		  header("Location: ".$location);
+	 }
+	 
+	 
+	 
+	 //adds a chronology tag to a given item
+	 function updateClassAction(){
+		  $this->_helper->viewRenderer->setNoRender();
+		  $requestParams =  $this->_request->getParams();
+		 
+		  Zend_Loader::loadClass('dataEdit_Items');
+		  Zend_Loader::loadClass('dataEdit_SpaceTime');
+		  Zend_Loader::loadClass('dataEdit_SpaceContain');
+		  Zend_Loader::loadClass('dataEdit_Published');
+		  
+		  
+		  if(isset($_REQUEST["uuid"])){
+            $itemUUID = $_REQUEST["uuid"];
+        }
+        else{
+            $itemUUID = false;
+        }
+		  
+		  if(isset($_REQUEST["classUUID"])){
+            $classUUID = $_REQUEST["classUUID"];
+        }
+        else{
+            $classUUID = false;
+        }
+		  
+		  
+		  if($itemUUID != false){
+				$itemsObj = new dataEdit_Items;
+				$itemsObj->host = $this->host;
+				$itemsObj->requestParams = $requestParams;
+				$itemsObj->updateClassUUID($itemUUID, $classUUID);
+				
+				$location = "../editorial/items?uuid=".$itemUUID;
+        }
+        else{
+            $location = "../editorial/items";
         }
 		 
 		  

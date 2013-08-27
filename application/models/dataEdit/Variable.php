@@ -322,6 +322,78 @@ class dataEdit_Variable  {
 	 
 	 
 	 
+	 
+	 
+	 //get a list of values associated with a variable
+	 function getVarValues(){
+		  
+		  $output = false;
+		  $db = $this->startDB();
+		  
+		  $requestParams = $this->requestParams;
+		  if(isset($requestParams["varUUID"])){
+				
+				$varUUID = $requestParams["varUUID"];
+				$valLimit = " ";
+				if(isset($requestParams["q"])){
+					 if(strlen(trim($requestParams["q"]))>0){
+						  $qLimit = addslashes($requestParams["q"]);
+						  $valLimit = " AND val_tab.val_text LIKE '%".$qLimit."%' ";
+					 }
+				}
+				
+				
+				$sql = "SELECT properties.property_uuid AS propUUID,
+				properties.value_uuid as valUUID,
+				val_tab.val_text,
+				properties.val_num,
+				properties.val_date
+				FROM properties
+				LEFT JOIN val_tab ON properties.value_uuid = val_tab.value_uuid
+				WHERE properties.variable_uuid = '$varUUID'
+				$valLimit
+				ORDER BY val_tab.val_text, properties.val_num, properties.val_date 
+				";
+				
+				$result =  $db->fetchAll($sql);
+				if($result){
+					 $output = array();
+					 foreach($result as $row){
+						  $actOutput = $row;
+						  unset($actOutput["val_text"]);
+						  unset($actOutput["val_num"]);
+						  unset($actOutput["val_date"]);
+						  $actVal = $row["val_text"];
+						  if(!strstr($row["val_date"], "0000")){
+								$actVal = $row["val_date"];
+						  }
+						  elseif(!is_null($row["val_num"])){
+								$actVal = $row["val_num"];
+						  }
+						  $actOutput["val"] = $actVal;
+						  $output[] = $actOutput;
+					 }
+				}
+				
+		  }
+		  return $output;
+	 }//end function
+	 
+	 
+	 
+	 
+	 
+	 
+	 
+	 
+	 
+	 
+	 
+	 
+	 
+	 
+	 
+	 
 	 //makes an OR condition for a given value array, field, and maybe table
 	 function makeORcondition($valueArray, $field, $table = false, $like = false){
 		  

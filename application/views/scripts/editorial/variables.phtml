@@ -76,7 +76,8 @@ $requestParams = $this->requestParams;
                 
                 <ul class="nav nav-tabs">
                     <li <?php echo $varObj->makeTabLiClass("varsList");?> ><a href="#varsList" data-toggle="tab">Variables</a></li>
-                    <li <?php echo $varObj->makeTabLiClass("notes");?> ><a href="#notes" data-toggle="tab">Notes</a></li>
+                    <li <?php echo $varObj->makeTabLiClass("notes");?> ><a href="#notes" data-toggle="tab">Variable Notes</a></li>
+                    <li <?php echo $varObj->makeTabLiClass("values");?> ><a href="#values" data-toggle="tab">Variable Values</a></li>
                 </ul>
                    
                   <div class="tab-content">
@@ -326,7 +327,59 @@ $requestParams = $this->requestParams;
                         </div>
                     
                     </div>
-                    <div class="tab-pane" id="profile">...
+                    <div <?php echo $varObj->makeTabDivClass("values");?> id="values">
+                        <h4>Get the Value List</h4>
+                        <div class="divTab" style="width:100%;">
+                            <div class="divRow" style="background-color:#f7f7f7;">
+                                <div class="divCell" style="width:40%;">
+                                    <h6>Search for a value</h6>
+                                    <form class="form-search">
+                                        <div class="input-append">
+                                            <input class="span2" id="valLook" type="text" />
+                                            <input type="hidden" name="varUUID" id="valsVarUUID" value="<?php echo $varObj->varUUID; ?>" />
+                                            <button class="btn" type="button" onclick="valsLookUp();">Find</button>
+                                        </div>
+                                    </form>
+                                </div>
+                                <div class="divCell" style="width:60%;">
+                                    <h6>Use Property to Assign Chronology to Associated Items</h6>
+                                    <form class="form-horizontal" method="post" action="../editorial/chrono-tag-by-prop">
+                                        <div class="control-group">
+                                            <label class="control-label" for="chronoPropUUID">Property UUID</label>
+                                            <div class="controls">
+                                                <input name="propUUID" type="text" class="input-large" id="chronoPropUUID" />
+                                            </div>
+                                        </div>
+                                        <div class="control-group">
+                                            <label class="control-label" for="chronoPropVal">Property Value</label>
+                                            <div class="controls">
+                                                <input name="propVal" type="text" class="input-large" id="chronoPropVal" />
+                                            </div>
+                                        </div>
+                                        <div class="control-group">
+                                            <label class="control-label" for="tStart">Start Time</label>
+                                            <div class="controls">
+                                                <input name="tStart" type="text" class="input-large" id="tStart" placeholder="(Start time)" >
+                                            </div>
+                                        </div>
+                                        <div class="control-group">
+                                            <label class="control-label" for="tEnd">End Time</label>
+                                            <div class="controls">
+                                                <input name="tEnd" type="text" class="input-large" id="tEnd" placeholder="(End time)" >
+                                            </div>
+                                        </div>
+                                        <div class="control-group">
+                                            <div class="controls">
+                                                <button type="submit" class="btn">Assign Chronology</button>
+                                            </div>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="vals" style="padding-top:10%;padding-left:5%;padding-right:5%; background-color: white;">
+                                    
+                        </div>
                     </div>
                     <div class="tab-pane" id="messages">...
                     </div>

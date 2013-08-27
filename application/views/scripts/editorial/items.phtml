@@ -1,0 +1,358 @@
+<?php
+
+$itemsObj = $this->itemsObj;
+$requestParams = $this->requestParams;
+if($itemsObj->itemData){
+    $itemData = $itemsObj->itemData;
+}
+else{
+    $itemData = false;
+}
+
+
+?>
+<html>
+    <head>
+        <meta charset="UTF-8" />
+        <title>Editorial Functions for Individual Items</title>
+        <link href="../public/css/bootstrap.css"  rel="stylesheet" type="text/css" />
+        <link href="../public/css/bootstrap-responsive.css"  rel="stylesheet" type="text/css" />
+        <link href="../public/css/rev2-general.css"  rel="stylesheet" type="text/css" />
+        <link href="../public/css/rev2-ex-tables.css"  rel="stylesheet" type="text/css" />
+        
+        
+        <script src="../public/scripts/application/editorial/widgets.js" type="text/javascript" ></script>
+        <script src="../public/scripts/application/editorial/jquery.js" type="text/javascript" ></script>
+        <script src="../public/scripts/application/editorial/bootstrap-tab.js" type="text/javascript" ></script>
+        
+        <script type="text/javascript" src="/public/scripts/json2.js"></script>
+        <script type="text/javascript" src="/public/scripts/utils.js"></script>
+        <script type="text/javascript" src="../public/scripts/application/editorial/prototype.js"></script>
+        
+        <script src="../public/scripts/application/editorial/itemEdits.js" type="text/javascript" ></script>
+        
+        
+        <script type="text/javascript">
+           
+            
+            
+        </script>
+        
+    </head>
+    <body>
+        <div id="main">
+            <div id="main_content">
+                <h2>Editorial Functions for Items:</h2>
+                
+                <div style="padding:5%;">
+                    <?php 
+                    
+                    if($itemsObj->itemUUID){
+                    ?>    
+                        
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Label</th>
+                                    <th>UUID</th>
+                                    <th>Type</th>
+                                    <th>Project</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr class="info">
+                                    <td><h4><?php echo $itemsObj->itemLabel; ?></h4></td>
+                                    <td><p><small><?php echo $itemsObj->itemUUID; ?></small></p></td>
+                                    <td><?php echo $itemsObj->itemType; ?></td>
+                                    <td><p class="muted">
+                                        <?php echo $itemsObj->projectName; ?>
+                                        </p>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        
+                    <?php    
+                    } // end case with a variable
+                    
+                    ?>
+                </div>
+                
+                
+                <ul class="nav nav-tabs">
+                    <li <?php echo $itemsObj->makeTabLiClass("basicData");?> ><a href="#basicData" data-toggle="tab">Basic Data</a></li>
+                    <li <?php echo $itemsObj->makeTabLiClass("chrono");?> ><a href="#chrono" data-toggle="tab">Chronology</a></li>
+                </ul>
+                   
+                  <div class="tab-content">
+                    
+                    <div <?php echo $itemsObj->makeTabDivClass("basicData");?> id="basicData">
+                        <h4>Basic Item Data</h4>
+                        <div class="divTab" style="width:100%;">
+                            <div class="divRow">
+                                <div class="divCell" style="width:66%; background-color:#f7f7f7;">
+                                    <h6>Labeling</h6>
+                                    <form class="form-horizontal" method="post" action="../editorial/update-label">
+                                        <input type="hidden" name="uuid" value="<?php echo $itemsObj->itemUUID; ?>" />
+                                        <div class="control-group">
+                                            <label class="control-label" for="itemLabel">Item Label</label>
+                                            <div class="controls">
+                                                <input name="label" type="text" class="input-large" id="itemLabel" value="<?php echo $itemsObj->itemLabel; ?>" >
+                                            </div>
+                                        </div>
+                                        <div class="control-group">
+                                            <div class="controls">
+                                                <button id="labelSubmit" type="submit" class="btn">Update Label</button>
+                                            </div>
+                                        </div>
+                                    </form>
+                                </div>
+                                <div class="divCell" style="width:66%; background-color:#f7f7f7;">
+                                </div>
+                            </div>
+                            <?php
+                            if($itemsObj->itemTypeJSON == "space" && is_array($itemData)){
+                               $itemClasses = $itemsObj->getRepresentedClasses(false);
+                            ?>
+                            <div class="divRow">
+                                <div class="divCell" style="width:66%; background-color:#f7f7f7;">
+                                    <h6>Item Class</h6>
+                                    <form class="form-horizontal" method="post" action="../editorial/update-class">
+                                        <input type="hidden" name="uuid" value="<?php echo $itemsObj->itemUUID; ?>" />
+                                        <div class="control-group">
+                                            <label class="control-label" for="itemClassUUID">Item Class UUID</label>
+                                            <div class="controls">
+                                                <input name="classUUID" type="text" class="input-large" id="itemClassUUID" value="<?php echo $itemData["classID"]; ?>" >
+                                            </div>
+                                        </div>
+                                        <div class="control-group">
+                                            <label class="control-label" for="itemClassName">Item Class Name</label>
+                                            <div class="controls">
+                                                <span id="itemClassName" class="input-large uneditable-input"><?php echo $itemData["className"]; ?></span>
+                                            </div>
+                                        </div>
+                                        <div class="control-group">
+                                            <div class="controls">
+                                                <button type="submit" class="btn">Update Class</button>
+                                            </div>
+                                        </div>
+                                    </form>
+                                </div>
+                                <div class="divCell" style="width:66%; background-color:#f7f7f7;">
+                                <?php
+                                    if(is_array($itemClasses)){
+                                        foreach($itemClasses as $itemClass){
+                                        ?>    
+                                        <label class="radio">
+                                            <input id="<?php echo $itemClass["classUUID"]; ?>" type="radio" name="itemClass" value="<?php echo $itemClass["classUUID"]; ?>" onclick="javascript:updateClass('<?php echo $itemClass["classLabel"]; ?>');">
+                                            <?php echo $itemClass["classLabel"]; ?>
+                                        </label>
+                                        <?php
+                                        
+                                        }//end loop through array
+                                    }//end case with an array
+                                ?>
+                                </div>
+                            </div>
+                            <?php
+                            
+                            }//end case where we show a class form
+                            else{
+                            ?>    
+                                <div class="divCell" style="width:66%; background-color:#f7f7f7;">
+                                </div>
+                            <?php    
+                            }//end case where we have no class form
+                            ?>
+                        </div>
+                    </div>
+                    
+                    <div <?php echo $itemsObj->makeTabDivClass("chrono");?> id="chrono">
+                        <h4>Chronology</h4>
+                        <div class="divTab" style="width:100%;">
+                            <div class="divRow">
+                                <div class="divCell" style="width:66%; background-color:#f7f7f7;">
+                                    <h6>Chronology Form</h6>
+                                    <form class="form-horizontal" method="post" action="../editorial/chrono-tag-item">
+                                        <input type="hidden" name="uuid" value="<?php echo $itemsObj->itemUUID; ?>" />
+                                        <div class="control-group">
+                                            <label class="control-label" for="tStart">Start Time</label>
+                                            <div class="controls">
+                                            <?php
+                                            if(is_array($itemData)){
+                                                
+                                            ?>
+                                            
+                                            <input name="tStart" type="text" class="input-large" id="tStart" value="<?php echo $itemData["chronoArray"][0]["start_time"]; ?>" >
+                                            
+                                            <?php
+                                            }//end case with a variableUUID
+                                            else{
+                                            ?>
+                                            
+                                            <input name="tStart" type="text" class="input-large" id="tStart" placeholder="(Start time)" >
+                                          
+                                            <?php
+                                            }//end case without a variableUUID
+                                            ?>
+                                            
+                                            </div>
+                                        </div>
+                                        <div class="control-group">
+                                            <label class="control-label" for="tEnd">End Time</label>
+                                            <div class="controls">
+                                            <?php
+                                            if(is_array($itemData)){
+                                                
+                                            ?>
+                                            
+                                            <input name="tEnd" type="text" class="input-large" id="tEnd" value="<?php echo $itemData["chronoArray"][0]["end_time"]; ?>" >
+                                            
+                                            <?php
+                                            }//end case with a variableUUID
+                                            else{
+                                            ?>
+                                            
+                                            <input name="tEnd" type="text" class="input-large" id="tEnd" placeholder="(End time)" >
+                                          
+                                            <?php
+                                            }//end case without a variableUUID
+                                            ?>
+                                            
+                                            </div>
+                                        </div>
+                                        <div class="control-group">
+                                            <label class="control-label" for="timeRange">Time Range</label>
+                                            <div class="controls">
+                                            <?php
+                                            if(is_array($itemData)){
+                                                
+                                            ?>
+                                            
+                                            <span id="timeRange" class="input-large uneditable-input"><?php echo $itemData["chronoArray"][0]["label"]; ?></span>
+                                            
+                                            <?php
+                                            }//end case with a variableUUID
+                                            else{
+                                            ?>
+                                            
+                                            <span id="timeRange" class="input-large uneditable-input">[Time range]</span>
+                                          
+                                            <?php
+                                            }//end case without a variableUUID
+                                            ?>
+                                            
+                                            </div>
+                                        </div>
+                                        <div class="control-group">
+                                            <label class="control-label" for="timeSourceUUID">Chronology Tag Source UUID</label>
+                                            <div class="controls">
+                                            <?php
+                                            if(is_array($itemData)){
+                                               
+                                            ?>
+                                            
+                                            <span id="timeSourceUUID" class="input-large uneditable-input"><?php echo $itemData["chronoArray"][0]["chronoSource"]; ?></span>
+                                            
+                                            <?php
+                                            }//end case with a variableUUID
+                                            else{
+                                            ?>
+                                            
+                                            <span id="timeSourceUUID" class="input-large uneditable-input">[Time Source UUID]</span>
+                                          
+                                            <?php
+                                            }//end case without a variableUUID
+                                            ?>
+                                            
+                                            </div>
+                                        </div>
+                                        <div class="control-group">
+                                            <label class="control-label" for="timeSourceLabel">Chronology Tag Source Label</label>
+                                            <div class="controls">
+                                            <?php
+                                            if(is_array($itemData)){
+                                               
+                                            ?>
+                                            
+                                            <span id="timeSourceLabel" class="input-large uneditable-input"><?php echo $itemData["chronoArray"][0]["sourceName"]; ?></span>
+                                            
+                                            <?php
+                                            }//end case with a variableUUID
+                                            else{
+                                            ?>
+                                            
+                                            <span id="timeSourceLabel" class="input-large uneditable-input">[Time Source Label]</span>
+                                          
+                                            <?php
+                                            }//end case without a variableUUID
+                                            ?>
+                                            
+                                            </div>
+                                        </div>
+                                        <div class="control-group">
+                                            <div class="controls">
+                                                <button type="submit" class="btn">Submit</button>
+                                            </div>
+                                        </div>
+                                    </form>
+                                
+                                
+                                </div>
+                                
+                                <div class="divCell" >
+                                    <h6>Instructions</h6>
+                                    <p>Ideally, most fields (variables) should have documentation.</p>
+                                </div>
+                            
+                            </div>
+                    </div>
+            
+            
+                    <div class="tab-pane" id="profile">...
+                    </div>
+                    <div class="tab-pane" id="messages">...
+                    </div>
+                    <div class="tab-pane" id="settings">...
+                    </div>
+                  </div>
+                   
+                  <script>
+                    
+                    function getParameterByName(name) {
+                        name = name.replace(/[\[]/, "\\\[").replace(/[\]]/, "\\\]");
+                        var regex = new RegExp("[\\?&]" + name + "=([^&#]*)"),
+                            results = regex.exec(location.search);
+                        return results == null ? "" : decodeURIComponent(results[1].replace(/\+/g, " "));
+                    }
+                    
+                    var selTab = getParameterByName("tab");
+                    
+                    if(selTab){
+                        $(function () {
+                            e.preventDefault();
+                            $('#myTab a[href="#' + selTab + '"]').tab('show'); // Select tab by name
+                        });
+                    }
+                    else{
+                        $(function () {
+                            $('#myTab a:first').tab('show');
+                        });
+                    }
+                    
+                    <?php
+                    if(isset($requestParams["tab"])){
+                    ?>    
+                        
+                    
+                    <?php   
+                    }//end case with a tab to select
+                    ?>
+                    
+                  </script>
+                
+                
+            </div>
+        </div>
+    </body>
+</html>
