@@ -312,18 +312,20 @@ the fields used to describe post-cranial element measurements at Çatalhöyük.
 	 function republishSolrAction(){
 		  
 		  $this->_helper->viewRenderer->setNoRender();
-		  
+		  /*
 		  $solrQuery = "http://opencontext.org:8983/solr/select?facet=true&facet.mincount=1&fq=%7B%21cache%3Dfalse%7Dproject_name%3AMurlo++%26%26+NOT+project_id%3A0+NOT+def_context_0%3AItaly+%26%26+%28+%28item_type%3Aspatial%29+%29&facet.field=def_context_0&facet.field=project_name&facet.field=item_class&facet.field=time_span&facet.field=geo_point&facet.query=image_media_count%3A%5B1+TO+%2A%5D&facet.query=other_binary_media_count%3A%5B1+TO+%2A%5D&facet.query=diary_count%3A%5B1+TO+%2A%5D&sort=interest_score+desc&wt=json&json.nl=map&q=%2A%3A%2A&start=0&rows=200";
 		  
-		  /*
 		  $solrQuery = "http://localhost:8983/solr/select?facet=true&facet.mincount=1&fq=%7B%21cache%3Dfalse%7DNOT+project_id%3A0+%26%26+%28+%28item_type%3Aspatial%29+%29&facet.field=def_context_1&facet.field=project_name&facet.field=item_class&facet.field=time_span&facet.field=geo_point&facet.field=geo_path&facet.query=image_media_count%3A%5B1+TO+%2A%5D&facet.query=other_binary_media_count%3A%5B1+TO+%2A%5D&facet.query=diary_count%3A%5B1+TO+%2A%5D&sort=interest_score+desc&wt=json&json.nl=map&q=%28+%28default_context_path%3AItaly%2F%2A+%29+%7C%7C+%28default_context_path%3AItaly+%29%29+%26%26+%28geo_path%3A12023202222130310%2A%29&start=0&rows=400";
 		  */
 		  
+		  $solrQuery = "http://localhost:8983/solr/select?facet=true&facet.mincount=1&fq=%7B%21cache%3Dfalse%7DNOT+project_id%3A0+%26%26+%28+%28item_type%3Aspatial%29+%29+%26%26+799fdbd6e04acf4144f6292d3c6fdd98a11df31a_lent_taxon%3Ahttp%5C%3A%2F%2Feol.org%2Fpages%2F2851411%2F%23sheepgoat++%26%26+top_lrel_taxon%3Ahttp%5C%3A%2F%2Fpurl.org%2FNET%2Fbiol%2Fns%23term_hasTaxonomy+&facet.field=e1ebfc4569d81cbc4d21b9ca08bc3e85ce09262d_lent_taxon&facet.field=799fdbd6e04acf4144f6292d3c6fdd98a11df31a_lent_taxon&facet.field=top_taxon&facet.field=def_context_0&facet.field=project_name&facet.field=item_class&facet.field=time_span&facet.field=geo_point&facet.field=geo_path&facet.query=image_media_count%3A%5B1+TO+%2A%5D&facet.query=other_binary_media_count%3A%5B1+TO+%2A%5D&facet.query=diary_count%3A%5B1+TO+%2A%5D&sort=interest_score+desc&wt=json&json.nl=map&q=%28%2A%3A%2A%29+%26%26+%28geo_path%3A1%2A%29&start=0&rows=1000";
+		  
 		  $respJSONstring = file_get_contents($solrQuery);
 		  $solrJSON = Zend_Json::decode($respJSONstring);
+		  $projectUUID = "DF043419-F23B-41DA-7E4D-EE52AF22F92F";
 		  $output = array();
-		  $localPubBaseURI = "http://penelope.oc/publish/publishdoc?projectUUID=DF043419-F23B-41DA-7E4D-EE52AF22F92F&itemType=space&doUpdate=true&itemUUID=";
-		  $ocPubBaseURI = "http://penelope.oc/publish/publishdoc?projectUUID=DF043419-F23B-41DA-7E4D-EE52AF22F92F&itemType=space&doUpdate=true&pubURI=http://opencontext.org/publish/item-publish&itemUUID=";
+		  $localPubBaseURI = "http://penelope.oc/publish/publishdoc?projectUUID=".$projectUUID."&itemType=space&doUpdate=true&itemUUID=";
+		  $ocPubBaseURI = "http://penelope.oc/publish/publishdoc?projectUUID=".$projectUUID."&itemType=space&doUpdate=true&pubURI=http://opencontext.org/publish/item-publish&itemUUID=";
 		  
 		  foreach($solrJSON["response"]["docs"] as $doc){
 				
@@ -345,11 +347,46 @@ the fields used to describe post-cranial element measurements at Çatalhöyük.
 	 }
 	 
 	 
+	 
+	 function finishIndexAction(){
+		  
+		  $this->_helper->viewRenderer->setNoRender();
+		  Zend_Loader::loadClass('ProjEdits_Murlo');
+		  $jsonURL = "http://opencontext/publish/index-update";
+		  //$jsonURL = "http://penelope.oc/csv-export/murlo-trenches-b.txt";
+		  $itemCount = 1;
+		  $loopCount = 0;
+		  while($itemCount > 0){
+				
+				sleep(.1);
+				$json = file_get_contents($jsonURL);
+				$jsonArray = Zend_Json::decode($json);
+				$itemCount = count($jsonArray["indexItems"]);
+				if(!$jsonArray["indexItems"]){
+					 break;
+				}
+				$loopCount++;
+		  }
+		  
+		  
+		  
+		  
+		  header('Content-Type: application/json; charset=utf8');
+		  
+		  echo Zend_Json::encode($loopCount);
+	 }
+	 
+	 
+	 
+	 
+	 
+	 
+	 
 	 function republishSolrImagesAction(){
 		  
 		  $this->_helper->viewRenderer->setNoRender();
 		  
-		  $solrQuery = "http://opencontext.org:8983/solr/select?facet=true&facet.mincount=1&fq=%7B%21cache%3Dfalse%7Dproject_name%3AMurlo++%26%26+NOT+project_id%3A0+NOT+def_context_0%3AItaly+%26%26+%28+%28item_type%3Aimage%29+%29&facet.field=def_context_0&facet.field=project_name&facet.field=item_class&facet.field=time_span&facet.field=geo_point&facet.query=image_media_count%3A%5B1+TO+%2A%5D&facet.query=other_binary_media_count%3A%5B1+TO+%2A%5D&facet.query=diary_count%3A%5B1+TO+%2A%5D&sort=interest_score+desc&wt=json&json.nl=map&q=%2A%3A%2A&start=0&rows=1000";
+		  $solrQuery = "http://localhost:8983/solr/select?facet=true&facet.mincount=1&fq=%7B%21cache%3Dfalse%7DNOT+project_id%3A0+%26%26+%28+%28item_type%3Aspatial%29+%29+%26%26+799fdbd6e04acf4144f6292d3c6fdd98a11df31a_lent_taxon%3Ahttp%5C%3A%2F%2Feol.org%2Fpages%2F2851411%2F%23sheepgoat++%26%26+top_lrel_taxon%3Ahttp%5C%3A%2F%2Fpurl.org%2FNET%2Fbiol%2Fns%23term_hasTaxonomy+&facet.field=e1ebfc4569d81cbc4d21b9ca08bc3e85ce09262d_lent_taxon&facet.field=799fdbd6e04acf4144f6292d3c6fdd98a11df31a_lent_taxon&facet.field=top_taxon&facet.field=def_context_0&facet.field=project_name&facet.field=item_class&facet.field=time_span&facet.field=geo_point&facet.field=geo_path&facet.query=image_media_count%3A%5B1+TO+%2A%5D&facet.query=other_binary_media_count%3A%5B1+TO+%2A%5D&facet.query=diary_count%3A%5B1+TO+%2A%5D&sort=interest_score+desc&wt=json&json.nl=map&q=%28%2A%3A%2A%29+%26%26+%28geo_path%3A1%2A%29&start=0&rows=10";
 		  
 		  /*
 		  $solrQuery = "http://localhost:8983/solr/select?facet=true&facet.mincount=1&fq=%7B%21cache%3Dfalse%7DNOT+project_id%3A0+%26%26+%28+%28item_type%3Aspatial%29+%29&facet.field=def_context_1&facet.field=project_name&facet.field=item_class&facet.field=time_span&facet.field=geo_point&facet.field=geo_path&facet.query=image_media_count%3A%5B1+TO+%2A%5D&facet.query=other_binary_media_count%3A%5B1+TO+%2A%5D&facet.query=diary_count%3A%5B1+TO+%2A%5D&sort=interest_score+desc&wt=json&json.nl=map&q=%28+%28default_context_path%3AItaly%2F%2A+%29+%7C%7C+%28default_context_path%3AItaly+%29%29+%26%26+%28geo_path%3A12023202222130310%2A%29&start=0&rows=400";
