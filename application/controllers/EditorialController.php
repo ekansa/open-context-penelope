@@ -257,7 +257,7 @@ class EditorialController extends Zend_Controller_Action{
 	 
 	 
 	 
-	 //adds a chronology tag to a given item
+	 //changes a class for a given item
 	 function updateClassAction(){
 		  $this->_helper->viewRenderer->setNoRender();
 		  $requestParams =  $this->_request->getParams();
@@ -298,6 +298,32 @@ class EditorialController extends Zend_Controller_Action{
 		  
 		  header("Location: ".$location);
 	 }
+	 
+	 
+	 //deletes a property from an item redirects back to the item when completed.
+	 function deleteItemPropAction(){
+		  $this->_helper->viewRenderer->setNoRender();
+		  $requestParams =  $this->_request->getParams();
+		 
+		  Zend_Loader::loadClass('dataEdit_Property');
+		  Zend_Loader::loadClass('dataEdit_Published');
+		  
+		  if(isset($_REQUEST["propUUID"]) && isset($_REQUEST["itemUUID"])){
+            
+				$propObj = new dataEdit_Property;
+				$propObj->delete_item_property($_REQUEST["propUUID"], $_REQUEST["itemUUID"]);
+				
+				$location = "../editorial/items?tab=itemDes&uuid=".$_REQUEST["itemUUID"];
+        }
+        else{
+            $location = "../editorial/items";
+        }
+		 
+		  
+		  header("Location: ".$location);
+	 }
+	 
+	 
 	 
 	 
 }

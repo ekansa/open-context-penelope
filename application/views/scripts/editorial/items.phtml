@@ -81,6 +81,7 @@ else{
                 
                 <ul class="nav nav-tabs">
                     <li <?php echo $itemsObj->makeTabLiClass("basicData");?> ><a href="#basicData" data-toggle="tab">Basic Data</a></li>
+                    <li <?php echo $itemsObj->makeTabLiClass("itemDes");?> ><a href="#itemDes" data-toggle="tab">Item Description</a></li>
                     <li <?php echo $itemsObj->makeTabLiClass("chrono");?> ><a href="#chrono" data-toggle="tab">Chronology</a></li>
                 </ul>
                    
@@ -166,6 +167,50 @@ else{
                             ?>
                         </div>
                     </div>
+                    
+                    
+                    
+                    <div <?php echo $itemsObj->makeTabDivClass("itemDes");?> id="itemDes">
+                        <h4>Item Description</h4>
+                        <table class="table table-striped table-condensed table-hover table-bordered data-tab">
+                            <thead>
+                                <tr>
+                                    <th style="width:15%;">PropertyUUID</th>
+                                    <th style="width:15%;">VariableUUID</th>
+                                    <th style="width:15%;">ValueUUID</th>
+                                    <th>Variable Label</th>
+                                    <th>Value Text</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            <?php
+                                
+                        if(isset($itemData["propertiesObj"]["properties"])){
+                            foreach($itemData["propertiesObj"]["properties"] as $obsKey => $propsArray){
+                                foreach($propsArray as $propUUIDkey => $propArray){
+                                ?>    
+                                <tr>
+                                    <td><p><small><?php echo $propUUIDkey; ?></small></p>
+                                        <form method="POST" action="../editorial/delete-item-prop">
+                                            <input type="hidden" name="propUUID" value="<?php echo $propUUIDkey; ?>" />
+                                            <input type="hidden" name="itemUUID" value="<?php echo $itemsObj->itemUUID; ?>" />
+                                            <button class="btn btn-warning btn-mini" type="submit" title="Remove property from item">X</button>
+                                        </form>
+                                    </td>
+                                    <td><p><small><a title="<?php echo $propArray["varType"]; ?>" href="../editorial/variables?varUUID=<?php echo $propArray["varUUID"]; ?>"><?php echo $propArray["varUUID"]; ?></small></p></td>
+                                    <td><p><small><?php echo $propArray["valUUID"]; ?></small></p></td>
+                                    <td><?php echo $propArray["varLabel"]; ?></td>
+                                    <td><?php echo $propArray["showVal"]; ?></td>
+                                </tr>
+                        <?php
+                                }//end loop through propereies
+                            }//end loop through observations
+                        }//end case with properties
+                            ?>
+                            </tbody>
+                        </table>
+                    </div>   
+                    
                     
                     <div <?php echo $itemsObj->makeTabDivClass("chrono");?> id="chrono">
                         <h4>Chronology</h4>

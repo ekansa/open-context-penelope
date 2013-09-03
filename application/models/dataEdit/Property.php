@@ -42,6 +42,21 @@ class dataEdit_Property  {
 		  $db->query($sql);
 	 }
 	 
+	 //delete a given property from an observation of an item
+	 function delete_item_property($propertyUUID, $subjectUUID){
+		  
+		  $db = $this->startDB();
+		  
+		  $where = array();
+		  $where[] = "subject_uuid = '$subjectUUID' ";
+		  $where[] = "property_uuid = '$propertyUUID' ";
+		  $db->delete("observe", $where);
+		  
+		  $publishedObj = new dataEdit_Published;
+		  $publishedObj->deleteFromPublishedDocsByUUID($itemUUID);
+		  
+	 }
+	 
 	 
 	 
 	 //add a property to an observation
