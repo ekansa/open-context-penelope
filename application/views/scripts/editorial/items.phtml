@@ -83,6 +83,7 @@ else{
                     <li <?php echo $itemsObj->makeTabLiClass("basicData");?> ><a href="#basicData" data-toggle="tab">Basic Data</a></li>
                     <li <?php echo $itemsObj->makeTabLiClass("itemDes");?> ><a href="#itemDes" data-toggle="tab">Item Description</a></li>
                     <li <?php echo $itemsObj->makeTabLiClass("chrono");?> ><a href="#chrono" data-toggle="tab">Chronology</a></li>
+                    <li <?php echo $itemsObj->makeTabLiClass("itemNew");?> ><a href="#itemNew" data-toggle="tab">Make New Item</a></li>
                 </ul>
                    
                   <div class="tab-content">
@@ -354,14 +355,109 @@ else{
                     </div>
             
             
-                    <div class="tab-pane" id="profile">...
-                    </div>
+                    
                     <div class="tab-pane" id="messages">...
                     </div>
                     <div class="tab-pane" id="settings">...
                     </div>
                   </div>
                    
+                  
+                  
+                  
+                  
+                    <div <?php echo $itemsObj->makeTabDivClass("itemNew");?> id="itemNew">
+                        <h4>Mannually Create a new Item</h4>
+                        <div class="divTab" style="width:100%;">
+                            <div class="divRow">
+                                <div class="divCell" style="width:66%; background-color:#f7f7f7;">
+                                    <h6>Subjects (Locations / Objects)</h6>
+                                </div>
+                                <div class="divCell">
+                                    
+                                </div>
+                            </div>
+                            <div class="divRow">
+                                <div class="divCell" style="width:66%; background-color:#f7f7f7;">
+                                    <h6>Media Resources</h6>
+                                    <form class="form-horizontal" method="post" action="../editorial/create-media-item">
+                                        <div class="control-group">
+                                            <label class="control-label" for="MediaNewUUID">New UUID</label>
+                                            <div class="controls">
+                                                <input name="newUUID" type="text" size="80" style="font-size:70%;" id="MediaNewUUID" value="<?php echo GenericFunctions::generateUUID(); ?>" >
+                                            </div>
+                                        </div>
+                                        <div class="control-group">
+                                            <label class="control-label" for="MediaNewProjUUID">Project UUID</label>
+                                            <div class="controls">
+                                                <input name="projUUID" type="text" size="80" style="font-size:70%;" id="MediaNewProjUUID" value="<?php echo $itemsObj->projectUUID; ?>" >
+                                            </div>
+                                        </div>
+                                        <div class="control-group">
+                                            <label class="control-label" for="MediaNewSourceID">Source ID</label>
+                                            <div class="controls">
+                                                <input name="sourceID" type="text" size="80" style="font-size:70%;" id="MediaNewSourceID" value="manual" >
+                                            </div>
+                                        </div>
+                                        <div class="control-group">
+                                            <label class="control-label" for="MediaNewLabel">Item Label</label>
+                                            <div class="controls">
+                                                <input name="label" type="text" size="80" style="font-size:70%;" id="MediaNewLabel" value="" >
+                                            </div>
+                                        </div>
+                                        <div class="control-group">
+                                            <label class="control-label" for="MediaNewFileName">File Name</label>
+                                            <div class="controls">
+                                                <input name="filename" type="text" size="80" style="font-size:70%;" id="MediaNewFileName" value="" onchange="javascript:autoSuggestPaths();">
+                                            </div>
+                                        </div>
+                                        <div class="control-group">
+                                            <label class="control-label" for="MediaNewPathPrefix">File Path Prefix</label>
+                                            <div class="controls">
+                                                <input name="pathprefix" type="text" size="80" style="font-size:70%;" id="MediaNewPathPrefix" value="" onchange="javascript:autoSuggestPaths();" >
+                                            </div>
+                                        </div>
+                                         <div class="control-group">
+                                            <label class="control-label" for="MediaNewFull">Full File URI</label>
+                                            <div class="controls">
+                                                <input name="fullfile" type="text" size="80" style="font-size:70%;" id="MediaNewFull" value="" >
+                                            </div>
+                                            <div id="fullfile-newStatus" style="padding:2%; text-align: center;"></div>
+                                        </div>
+                                        <div class="control-group">
+                                            <label class="control-label" for="MediaNewPreview">Preview File URI</label>
+                                            <div class="controls">
+                                                <input name="preview" type="text" size="80" style="font-size:70%;" id="MediaNewPreview" value="" >
+                                            </div>
+                                            <div id="preview-newStatus" style="padding:2%; text-align: center;"></div>
+                                        </div>
+                                        <div class="control-group">
+                                            <label class="control-label" for="MediaNewThumb">Thumbnail</label>
+                                            <div class="controls">
+                                                <input name="thumb" type="text" size="80" style="font-size:70%;" id="MediaNewThumb" value="" >
+                                            </div>
+                                            <div id="thumb-newStatus" style="padding:2%; text-align: center;"></div>
+                                        </div>
+                                         <div class="control-group">
+                                            <label class="control-label" for="fileCheck">Check Files</label>
+                                            <div class="controls">
+                                                <a class="btn" onclick="javascript:checkNewFiles();">Check</a>
+                                            </div>
+                                        </div>
+                                        <div class="control-group">
+                                            <label class="control-label" for="MediaNewSubmit">Create New Media</label>
+                                            <div class="controls">
+                                                <button id="MediaNewSubmit" class="btn btn-inverse" type="submit" title="Create the new resource">Create Media!</button>
+                                            </div>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                  </div>
+                  <!--end tab content -->
+                  
                   <script>
                     
                     function getParameterByName(name) {

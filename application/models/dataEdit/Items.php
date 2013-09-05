@@ -270,6 +270,9 @@ class dataEdit_Items  {
 	 
 	 
 	 
+	 
+	 
+	 
 	 //makes an OR condition for a given value array, field, and maybe table
 	 function makeORcondition($valueArray, $field, $table = false, $like = false){
 		  

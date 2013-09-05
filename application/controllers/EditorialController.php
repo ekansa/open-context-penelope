@@ -326,4 +326,43 @@ class EditorialController extends Zend_Controller_Action{
 	 
 	 
 	 
+	 
+	 //checks on the size of media files, if present
+	 function checkMediaFilesAction(){
+		  
+		  $this->_helper->viewRenderer->setNoRender();
+		  $requestParams =  $this->_request->getParams();
+		  Zend_Loader::loadClass('dataEdit_Media');
+		  Zend_Loader::loadClass('dbXML_dbMedia');
+		  
+		  $mediaObj = new dataEdit_Media;
+		  $mediaObj->requestParams = $requestParams;
+		  $output = $mediaObj->checkMediaFiles();
+		  
+		  header('Content-Type: application/json; charset=utf8');
+		  echo Zend_Json::encode($output);
+	 }
+	 
+	 function createMediaItemAction(){
+		  $this->_helper->viewRenderer->setNoRender();
+		  $requestParams =  $this->_request->getParams();
+		  Zend_Loader::loadClass('dataEdit_Media');
+		  
+		  $mediaObj = new dataEdit_Media;
+		  $mediaObj->requestParams = $requestParams;
+		  $uuid = $mediaObj->createMediaItem();
+		  /*
+		  if($uuid != false){
+				$location = "../editorial/items?tab=itemDes&uuid=".$uuid;
+		  }
+		  else{
+				$location = "../editorial/items?tab=itemNew";
+		  }
+		  header("Location: ".$location);
+		  */
+		   header('Content-Type: application/json; charset=utf8');
+		  echo Zend_Json::encode($uuid);
+	 }
+	 
+	 
 }
