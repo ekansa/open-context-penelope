@@ -17,50 +17,50 @@ class dbXML_xmlSpace  {
     const spaceRootURI = "http://opencontext.org/subjects/";
     
     public function initialize(){
-	$itemObj = $this->itemObj;
-	$doc = new DOMDocument("1.0", "utf-8");
-	$doc->formatOutput = true;
-	$root = $doc->createElement("arch:spatialUnit");
-	$root->setAttribute("xmlns:arch", self::NSarchaeoML);
-	$root->setAttribute("xmlns:oc", self::NSocSpace);
-	$root->setAttribute("xmlns:dc", self::NSdc);
-	$root->setAttribute("xmlns:gml", self::NSgml);
-	
-	$root->setAttribute("UUID", $itemObj->itemUUID);
-	$root->setAttribute("ownedBy", $itemObj->projectUUID);
-	$doc->appendChild($root);
-	$this->doc = $doc;
-	$this->root = $root;
+		  $itemObj = $this->itemObj;
+		  $doc = new DOMDocument("1.0", "utf-8");
+		  $doc->formatOutput = true;
+		  $root = $doc->createElement("arch:spatialUnit");
+		  $root->setAttribute("xmlns:arch", self::NSarchaeoML);
+		  $root->setAttribute("xmlns:oc", self::NSocSpace);
+		  $root->setAttribute("xmlns:dc", self::NSdc);
+		  $root->setAttribute("xmlns:gml", self::NSgml);
+		  
+		  $root->setAttribute("UUID", $itemObj->itemUUID);
+		  $root->setAttribute("ownedBy", $itemObj->projectUUID);
+		  $doc->appendChild($root);
+		  $this->doc = $doc;
+		  $this->root = $root;
     }
     
     public function addNameClass(){
         
         $doc = $this->doc;
-	$root = $this->root;
-	$itemObj = $this->itemObj;
-	
-	//name construction
-	$element = $doc->createElement("arch:name");
-	$elementB = $doc->createElement("arch:string");
-	$elementBtext = $doc->createTextNode($itemObj->label);
-	$elementB->appendChild($elementBtext);
-	$element->appendChild($elementB);
-	$root->appendChild($element);
-	
-	//class construction
-	$element = $doc->createElement("oc:item_class");
-	$elementB = $doc->createElement("oc:name");
-	$elementBtext = $doc->createTextNode($itemObj->className);
-	$elementB->appendChild($elementBtext);
-	$element->appendChild($elementB);
-	
-	$elementB = $doc->createElement("oc:iconURI");
-	$elementBtext = $doc->createTextNode(self::classIconRoot.$itemObj->largeClassIcon);
-	$elementB->appendChild($elementBtext);
-	$element->appendChild($elementB);
-	
-	$root->appendChild($element);
-	
+		  $root = $this->root;
+		  $itemObj = $this->itemObj;
+		  
+		  //name construction
+		  $element = $doc->createElement("arch:name");
+		  $elementB = $doc->createElement("arch:string");
+		  $elementBtext = $doc->createTextNode($itemObj->label);
+		  $elementB->appendChild($elementBtext);
+		  $element->appendChild($elementB);
+		  $root->appendChild($element);
+		  
+		  //class construction
+		  $element = $doc->createElement("oc:item_class");
+		  $elementB = $doc->createElement("oc:name");
+		  $elementBtext = $doc->createTextNode($itemObj->className);
+		  $elementB->appendChild($elementBtext);
+		  $element->appendChild($elementB);
+		  
+		  $elementB = $doc->createElement("oc:iconURI");
+		  $elementBtext = $doc->createTextNode(self::classIconRoot.$itemObj->largeClassIcon);
+		  $elementB->appendChild($elementBtext);
+		  $element->appendChild($elementB);
+		  
+		  $root->appendChild($element);
+		  
     }
 
     

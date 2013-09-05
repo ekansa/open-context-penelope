@@ -22,7 +22,9 @@ class dbXML_dbMetadata {
     public $licenseVersion; //version number for license
     public $licenseIconURI; //uri to license icon
     
-    
+    public $persistentIDs; //array of persistent IDs assigned to individual items
+	 
+	 
     public $dbName;
     public $dbPenelope;
     public $db;
@@ -37,25 +39,26 @@ class dbXML_dbMetadata {
         }
         
         $this->db = $db;
-	$this->projectName = false;
-	$this->subProjectID = false;
-	$this->subProjectName = false;
-	$this->noPropMessage = "This item has no additional descriptive properties.";
+		  $this->projectName = false;
+		  $this->subProjectID = false;
+		  $this->subProjectName = false;
+		  $this->noPropMessage = "This item has no additional descriptive properties.";
+		  
+		  
+		  $this->projCreatedXML = false;
+		  $this->projCreatedHuman = false;
+		  
+				 $this->projCreators = false;
+		  $this->projSubjects = false;
+		  $this->projCoverages = false;
+		  $this->projFormats = false;
+		  
+		  $this->licenseURI = false;
+		  $this->licenseName = false;
+		  $this->licenseVersion = false;
+		  $this->licenseIconURI = false;
 	
-	
-	$this->projCreatedXML = false;
-	$this->projCreatedHuman = false;
-	
-        $this->projCreators = false;
-	$this->projSubjects = false;
-	$this->projCoverages = false;
-	$this->projFormats = false;
-	
-	$this->licenseURI = false;
-	$this->licenseName = false;
-	$this->licenseVersion = false;
-	$this->licenseIconURI = false;
-	
+		  $this->persistentIDs = false;
     }
     
     public function getMetadata($projectUUID, $sourceID = false){
@@ -81,50 +84,50 @@ class dbXML_dbMetadata {
     
         $db = $this->db;
 	
-	if($this->dbPenelope){
-	    
-	    $sql = "SELECT project_name,
-		DATE_FORMAT(created, '%M %e, %Y') as HumanPubDate, 
-		DATE_FORMAT(created, '%Y-%m-%d') as XMLPubDate,
-		noprop_mes,
-		'' AS license_id
-	    FROM project_list
-	    WHERE project_id = '$projectUUID'
-	    LIMIT 1
-		";
-	}
-	else{
-	    
-	    $sql = "SELECT proj_name AS project_name,
-		DATE_FORMAT(accession, '%M %e, %Y') as HumanPubDate, 
-		DATE_FORMAT(accession, '%Y-%m-%d') as XMLPubDate,
-		noprop_mes,
-		license_id
-	    FROM projects
-	    WHERE project_id = '$projectUUID'
-	    LIMIT 1
-		";
-	    
-	}
+		  if($this->dbPenelope){
+				
+				$sql = "SELECT project_name,
+			  DATE_FORMAT(created, '%M %e, %Y') as HumanPubDate, 
+			  DATE_FORMAT(created, '%Y-%m-%d') as XMLPubDate,
+			  noprop_mes,
+			  '' AS license_id
+				FROM project_list
+				WHERE project_id = '$projectUUID'
+				LIMIT 1
+			  ";
+		  }
+		  else{
+				
+				$sql = "SELECT proj_name AS project_name,
+			  DATE_FORMAT(accession, '%M %e, %Y') as HumanPubDate, 
+			  DATE_FORMAT(accession, '%Y-%m-%d') as XMLPubDate,
+			  noprop_mes,
+			  license_id
+				FROM projects
+				WHERE project_id = '$projectUUID'
+				LIMIT 1
+			  ";
+				
+		  }
 	
-	//echo $sql;
+		  //echo $sql;
 	
         $result = $db->fetchAll($sql, 2);
         if($result){
-	    $this->projectName = $result[0]["project_name"];
-	    $this->projCreatedXML = $result[0]["XMLPubDate"];
-	    $this->projCreatedHuman = $result[0]["HumanPubDate"];    
-	    if(strlen($result[0]["noprop_mes"])>0){
-		$this->noPropMessage = $result[0]["noprop_mes"];
-	    }
-	    
-	    //get license information for open context 
-	    if(!$this->dbPenelope){
-			$this->oc_getLicense($result[0]["license_id"]);
-	    }
-		else{
-			$this->pen_getLicense();
-		}
+				$this->projectName = $result[0]["project_name"];
+				$this->projCreatedXML = $result[0]["XMLPubDate"];
+				$this->projCreatedHuman = $result[0]["HumanPubDate"];    
+				if(strlen($result[0]["noprop_mes"])>0){
+					 $this->noPropMessage = $result[0]["noprop_mes"];
+				}
+				
+				//get license information for open context 
+				if(!$this->dbPenelope){
+					 $this->oc_getLicense($result[0]["license_id"]);
+				}
+				else{
+					  $this->pen_getLicense();
+				}
 	    
         }
         
@@ -224,6 +227,16 @@ class dbXML_dbMetadata {
     }
 	 
 	 
+	 public function getPersistentID($itemUUID){
+		  
+		  $db = $this->db;
+		  $sql = "SELECT stableID, stableType  FROM itemids WHERE uuid = '$itemUUID' LIMIT 1; ";
+		  $result = $db->fetchAll($sql, 2);
+		  if($result){
+				$this->persistentIDs = $result;
+		  }
+	 }
+	 
 	 
 	 
     
@@ -238,10 +251,10 @@ class dbXML_dbMetadata {
 		  
 				$result = $db->fetchAll($sql, 2);
 				if($result){
-			  $this->licenseName = $result[0]["license_name"];
-			  $this->licenseURI = $result[0]["license_url"];
-			  $this->licenseIconURI = $result[0]["lic_pict_url"];
-			  $this->licenseVersion = $result[0]["license_vers"];
+					 $this->licenseName = $result[0]["license_name"];
+					 $this->licenseURI = $result[0]["license_url"];
+					 $this->licenseIconURI = $result[0]["lic_pict_url"];
+					 $this->licenseVersion = $result[0]["license_vers"];
 				}
 		  }
     }
@@ -320,43 +333,43 @@ class dbXML_dbMetadata {
     //get names for people in a project
     public function getPersonID($projectUUID, $personName){
 	
-	$db = $this->db;
+		  $db = $this->db;
+		  
+		  if($this->dbPenelope){
+				
+				$sql = "SELECT persons.uuid
+					FROM persons
+					WHERE persons.project_id = '".$projectUUID."'
+					AND persons.combined_name LIKE '%".$personName."%'	
+					LIMIT 1
+					
+					UNION
+					
+					SELECT users.uuid AS uuid
+					FROM users 
+					WHERE users.combined_name LIKE '%".$personName."%'	
+					LIMIT 1
+					
+					";
+		  }
+		  else{
+				
+				$sql = "SELECT persons.uuid
+				FROM persons
+				WHERE persons.project_id = '".$projectUUID."'
+				AND persons.combined_name LIKE '%".$personName."%'	
+				LIMIT 1;
+				";
+				
+		  }	
 	
-	if($this->dbPenelope){
-	    
-	    $sql = "SELECT persons.uuid
-		    FROM persons
-		    WHERE persons.project_id = '".$projectUUID."'
-		    AND persons.combined_name LIKE '%".$personName."%'	
-		    LIMIT 1
-		    
-		    UNION
-		    
-		    SELECT users.uuid AS uuid
-		    FROM users 
-		    WHERE users.combined_name LIKE '%".$personName."%'	
-		    LIMIT 1
-		    
-		    ";
-	}
-	else{
-	    
-	    $sql = "SELECT persons.uuid
-	    FROM persons
-	    WHERE persons.project_id = '".$projectUUID."'
-	    AND persons.combined_name LIKE '%".$personName."%'	
-	    LIMIT 1;
-	    ";
-	    
-	}	
-	
-	$result = $db->fetchAll($sql, 2);
-	$personID = false;
-        if($result){
-	    $personID = $result[0]["uuid"];
-	}
-	
-	return $personID;
+		  $result = $db->fetchAll($sql, 2);
+		  $personID = false;
+				 if($result){
+				$personID = $result[0]["uuid"];
+		  }
+		  
+		  return $personID;
         
     } //end function
     

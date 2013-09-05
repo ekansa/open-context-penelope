@@ -716,31 +716,33 @@ class dbXML_dbLinks  {
 		}
 	    }
 	    
-	    foreach($result as $row){
-		
-		$linkedUUID = $row["origin_uuid"];
-		$linkType = $row["link_type"];
-		$linkedName = $row["space_label"];
-		$classUUID = $row["class_uuid"];
-		$spaceObj = $this->getSpaceData($linkedUUID);
-		
-		$fullContain = array();
-		$containArray = $spaceObj->containment;
-		foreach($containArray as $treeKey => $containArray){
-		    foreach($containArray as $containItem){
-			$containObj = new dbXML_dbSpace;
-			$containObj->initialize($db);
-			$containObj->dbPenelope = true;
-			$containObj->getByID($containItem);
-			$fullContain[$treeKey][] = array("itemUUID" => $containItem,
-					       "label" => $containObj->label,
-					       "className" => $containObj->className,
-					       "smallClassIcon" => $containObj->smallClassIcon
-					       );
-		    }
-		}
-		
-		$actSpLinkArray = array("linkedName" => $linkedName,
+		  foreach($result as $row){
+		 
+				$linkedUUID = $row["origin_uuid"];
+				$linkType = $row["link_type"];
+				$linkedName = $row["space_label"];
+				$classUUID = $row["class_uuid"];
+				$spaceObj = $this->getSpaceData($linkedUUID);
+				
+				$fullContain = array();
+				$containArray = $spaceObj->containment;
+				if(is_array($containArray)){
+					 foreach($containArray as $treeKey => $containArray){
+						 foreach($containArray as $containItem){
+							  $containObj = new dbXML_dbSpace;
+							  $containObj->initialize($db);
+							  $containObj->dbPenelope = true;
+							  $containObj->getByID($containItem);
+							  $fullContain[$treeKey][] = array("itemUUID" => $containItem,
+												"label" => $containObj->label,
+												"className" => $containObj->className,
+												"smallClassIcon" => $containObj->smallClassIcon
+												);
+						 }
+					 }
+				}
+		 
+		 $actSpLinkArray = array("linkedName" => $linkedName,
 				      "linkType" => $linkType,
 				      "linkedUUID" => $linkedUUID,
 				      "classID" => $classUUID,
