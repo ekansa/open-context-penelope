@@ -9,6 +9,9 @@ class dataEdit_Items  {
 	 public $itemType;
 	 public $itemTypeJSON;
 	 public $itemLabel;
+	 public $itemPreview;
+	 public $itemXMLdata;
+	 public $itemJSONdata;
 	 public $projectUUID;
 	 public $projectName;
 	 public $itemData;
@@ -78,8 +81,10 @@ class dataEdit_Items  {
 				}
 				
 				if($this->itemTypeJSON){
-					 
+					 $this->itemPreview = $this->host."/preview/".$this->itemTypeJSON."?UUID=".$itemUUID;
 					 $url = $this->host."/xml/".$this->itemTypeJSON."?id=".$itemUUID;
+					 $this->itemJSONdata = $this->host."/xml/".$this->itemTypeJSON."?id=".$itemUUID;
+					 $this->itemXMLdata = $this->itemJSONdata."&xml=1";
 					 $itemJSON = file_get_contents($url);
 					 $this->itemData = Zend_Json::decode($itemJSON);
 					 $this->getBasicData();

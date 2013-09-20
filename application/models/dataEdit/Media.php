@@ -99,6 +99,16 @@ class dataEdit_Media  {
 					 $this->errors = $errors;
 					 $uuid = false;
 				}
+				
+				if(!$this->errors){
+					 if($this->checkExistsNonBlank("linkedUUID", $requestParams)){
+						  //add a linking relationship to the newly created item
+						  $linkObj = new dataEdit_Link;
+						  $linkObj->requestParams = $requestParams;
+						  $output = $linkObj->createItemLinkingRel($uuid, "Media (various)");
+					 }
+				}
+				
 		  }
 		  else{
 				$this->errors = $errors;
@@ -113,7 +123,7 @@ class dataEdit_Media  {
 	 function checkExistsNonBlank($key, $requestParams){
 		  $value = false;
 		  if(isset($requestParams[$key])){
-				$value = $requestParams[$key];
+				$value = trim($requestParams[$key]);
 				if(strlen($value)<1){
 					 $value = false;
 				}

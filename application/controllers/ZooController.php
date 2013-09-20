@@ -671,6 +671,8 @@ the fields used to describe post-cranial element measurements at Çatalhöyük.
 		  $db = Zend_Registry::get('db');
 		  Zend_Loader::loadClass('dataEdit_SpaceIdentity');
 		  Zend_Loader::loadClass('dataEdit_Property');
+		  Zend_Loader::loadClass('dataEdit_Published');
+		  Zend_Loader::loadClass('dataEdit_SpaceContain');
 		  
 		  $sql = "SELECT field_summary.field_name, field_summary.field_label,
 					 var_tab.variable_uuid, field_summary.project_id
@@ -694,10 +696,18 @@ the fields used to describe post-cranial element measurements at Çatalhöyük.
 		  
 		  $spaceEdit = new dataEdit_SpaceIdentity;
 		  $propEdit = new dataEdit_Property;
+		  $pubObj = new dataEdit_Published;
 		  
 		  $spaceEdit->actSourceTab = 'z_1_ee76ce40e';
+		  
+	 
+		  
 		  $output = array();
 		  foreach($badUUIDs as $uuid){
+				
+				$pubObj->deleteFromPublishedDocsByUUID($uuid);
+				$pubObj->deleteFromPublishedDocsByChildUUID($uuid);
+				
 				
 				$sql = "UPDATE space SET source_id = 'z_1_ee76ce40e' WHERE uuid = '".$uuid."' LIMIT 1;";
 				$db->query($sql, 2);
@@ -708,6 +718,9 @@ the fields used to describe post-cranial element measurements at Çatalhöyük.
 				";
 				
 				$result = $db->fetchAll($sql);
+				$result = false;
+				
+				
 				if($result){
 					 $itemLabel = $result[0]["space_label"];
 					 $itemContext = $result[0]["full_context"];
@@ -716,17 +729,21 @@ the fields used to describe post-cranial element measurements at Çatalhöyük.
 					 $projectUUID = $result[0]["project_id"];
 					 
 					 $sourceIDs = $spaceEdit->getSourceIDs($itemLabel, $itemContext, $sourceID, $classUUID);
-					 //$sourceData = $spaceEdit->itemDuplicateNoObs($uuid, $sourceIDs);
+					 $sourceData = $spaceEdit->itemDuplicateNoObs($uuid, $sourceIDs);
 					 
+					 //echo print_r($sourceIDs);
+					 //echo print_r($sourceData);
+					 //die;
 					 foreach($sourceData as $subjectUUID => $idArray){
 						  
 						  //delete the old observations
 						  $where = "subject_uuid = '$subjectUUID' ";
-						  //$db->delete("observe", $where);
+						  $db->delete("observe", $where);
 						  
 						  $id = $idArray["id"];
 						  
 						  $sql = "SELECT * FROM z_1_ee76ce40e AS otab WHERE id = $id LIMIT 1;";
+						  //echo " ".$sql." ";
 						  $originalData = $db->fetchAll($sql);
 						  foreach($originalData as $oRow){
 								foreach($oRow as $fieldKey => $value){
@@ -746,7 +763,7 @@ the fields used to describe post-cranial element measurements at Çatalhöyük.
 																  "property_uuid" => $propUUID
 																  );
 												try{
-													 //$db->insert('observe', $data );
+													 $db->insert('observe', $data );
 												}
 												catch (Exception $e) {
 												

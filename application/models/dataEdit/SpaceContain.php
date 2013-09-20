@@ -43,12 +43,12 @@ class dataEdit_SpaceContain  {
 				$itemParentUUIDs = $this->itemParentUUIDs;
 				foreach($result as $row){
 					 $parentUUID = $row["parent_uuid"];
+					 if($recursive){
+						  $itemParentUUIDs = $this->getParentItemsByUUID($parentUUID, $recursive);	
+					 }
 					 if(!in_array($parentUUID, $itemParentUUIDs)){
 						  $itemParentUUIDs[] = $parentUUID;
 						  $this->itemParentUUIDs = $itemParentUUIDs;
-						  if($recursive){
-								$this->getParentItemsByUUID($parentUUID, $recursive);	
-						  }
 					 }
 				}
 		  }
@@ -56,6 +56,27 @@ class dataEdit_SpaceContain  {
 		  return $this->itemParentUUIDs;
 	 }
 	 
+	 
+	 //add a new containment relation
+	 function addContainRelation($parentUUID, $childUUID, $projectUUID, $sourceID = "manual"){
+		  $output = false;
+		  $db = $this->startDB();
+		  
+		  $data = array("hash_all" =>  md5($parentUUID . '_' . $childUUID),
+							 "project_id" => $projectUUID,
+							 "source_id" => $sourceID,
+							 "parent_uuid" => $parentUUID,
+							 "child_uuid" => $childUUID
+							 );
+		  
+		  try{
+				$db->insert("space_contain",$data);
+				$output = true;
+		  }
+		  catch (Exception $e) {
+				 $output = false;
+		  }
+	 }
 	 
 	 
 	//startup the database

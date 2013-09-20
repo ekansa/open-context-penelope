@@ -170,7 +170,7 @@ class EditorialController extends Zend_Controller_Action{
 				$spaceTimeObj->chrontoTagItem($itemUUID);
 				
 				$publishedObj = new dataEdit_Published;
-				$publishedObj->deleteFromPublishedDocsByParentUUID($parentUUID); //deletes the item and it's children from the list of published items
+				$publishedObj->deleteFromPublishedDocsByParentUUID($itemUUID); //deletes the item and it's children from the list of published items
 				
 				$location = "../editorial/items?tab=chrono&uuid=".$itemUUID;
         }
@@ -203,6 +203,35 @@ class EditorialController extends Zend_Controller_Action{
             $location = "../editorial/items";
 				header("Location: ".$location);
         }
+	 }
+	 
+	 
+	 //adds a chronology tag to a given item
+	 function geoTagItemAction(){
+		  $this->_helper->viewRenderer->setNoRender();
+		  $requestParams =  $this->_request->getParams();
+		 
+		  Zend_Loader::loadClass('dataEdit_SpaceTime');
+		  Zend_Loader::loadClass('dataEdit_SpaceContain');
+		  Zend_Loader::loadClass('dataEdit_Published');
+		  
+		  if(isset($_REQUEST["uuid"])){
+            $itemUUID = $_REQUEST["uuid"];
+				$spaceTimeObj = new dataEdit_SpaceTime;
+				$spaceTimeObj->requestParams =  $requestParams;
+				$spaceTimeObj->geoTagItem($itemUUID);
+				
+				$publishedObj = new dataEdit_Published;
+				$publishedObj->deleteFromPublishedDocsByParentUUID($itemUUID); //deletes the item and it's children from the list of published items
+				
+				$location = "../editorial/items?tab=itemGeo&uuid=".$itemUUID;
+        }
+        else{
+            $location = "../editorial/items";
+        }
+		 
+		  
+		  header("Location: ".$location);
 	 }
 	 
 	 
@@ -324,6 +353,33 @@ class EditorialController extends Zend_Controller_Action{
 	 }
 	 
 	 
+	 function createSubjectItemAction(){
+		  $this->_helper->viewRenderer->setNoRender();
+		  $requestParams =  $this->_request->getParams();
+		  
+		  Zend_Loader::loadClass('dataEdit_Subject');
+		  Zend_Loader::loadClass('dataEdit_Link');
+		  Zend_Loader::loadClass('dataEdit_SpaceContain');
+		  Zend_Loader::loadClass('dataEdit_Published');
+		  
+		  $subjectObj = new dataEdit_Subject;
+		  $subjectObj->requestParams = $requestParams;
+		  $output = $subjectObj->createItem();
+		  
+		  if(!$output["errors"]){
+				$location = "../editorial/items?tab=itemDes&uuid=".$output["data"]["uuid"];
+		  }
+		  else{
+				$location = "../editorial/items?tab=itemNew";
+		  }
+		  //header("Location: ".$location);
+		  
+		  
+		  header('Content-Type: application/json; charset=utf8');
+		  echo Zend_Json::encode($output);
+		  
+	 }
+	 
 	 
 	 
 	 
@@ -347,11 +403,13 @@ class EditorialController extends Zend_Controller_Action{
 		  $this->_helper->viewRenderer->setNoRender();
 		  $requestParams =  $this->_request->getParams();
 		  Zend_Loader::loadClass('dataEdit_Media');
+		  Zend_Loader::loadClass('dataEdit_Link');
+		  Zend_Loader::loadClass('dataEdit_Published');
 		  
 		  $mediaObj = new dataEdit_Media;
 		  $mediaObj->requestParams = $requestParams;
 		  $uuid = $mediaObj->createMediaItem();
-		  /*
+		  
 		  if($uuid != false){
 				$location = "../editorial/items?tab=itemDes&uuid=".$uuid;
 		  }
@@ -359,10 +417,159 @@ class EditorialController extends Zend_Controller_Action{
 				$location = "../editorial/items?tab=itemNew";
 		  }
 		  header("Location: ".$location);
-		  */
-		   header('Content-Type: application/json; charset=utf8');
+		  
+		  /*
+		  header('Content-Type: application/json; charset=utf8');
 		  echo Zend_Json::encode($uuid);
+		  */
 	 }
 	 
+	 //create a new document item
+	 function createDocumentItemAction(){
+		  $this->_helper->viewRenderer->setNoRender();
+		  $requestParams =  $this->_request->getParams();
+		  Zend_Loader::loadClass('dataEdit_Document');
+		  Zend_Loader::loadClass('dataEdit_Link');
+		  Zend_Loader::loadClass('dataEdit_Published');
+		  
+		  $docObj = new dataEdit_Document;
+		  $docObj->requestParams = $requestParams;
+		  $output = $docObj->createItem();
+		  
+		  if(!$output["errors"]){
+				$location = "../editorial/items?tab=itemDes&uuid=".$output["data"]["uuid"];
+		  }
+		  else{
+				$location = "../editorial/items?tab=itemNew";
+		  }
+		  header("Location: ".$location);
+		  
+		  /*
+		  header('Content-Type: application/json; charset=utf8');
+		  echo Zend_Json::encode($uuid);
+		  */
+	 }
+	 
+	 //validates the XHTML of a document
+	 function validateXhtmlAction(){
+		  $this->_helper->viewRenderer->setNoRender();
+		  $requestParams =  $this->_request->getParams();
+		  Zend_Loader::loadClass('dataEdit_Document');
+		  $output = array("valid" => false);
+		  if(isset($_REQUEST["xhtml"])){
+				$xhtml = $_REQUEST["xhtml"];
+				$docObj = new dataEdit_Document;
+				$output["valid"] = $docObj->XHTMLvalid($xhtml);
+		  }
+		  
+		  header('Content-Type: application/json; charset=utf8');
+		  echo Zend_Json::encode($output);
+	 }
+	 
+	 
+	  //create a new person item
+	 function createPersonItemAction(){
+		  $this->_helper->viewRenderer->setNoRender();
+		  $requestParams =  $this->_request->getParams();
+		  Zend_Loader::loadClass('dataEdit_Person');
+		  Zend_Loader::loadClass('dataEdit_Link');
+		  Zend_Loader::loadClass('dataEdit_Published');
+		  
+		  $persObj = new dataEdit_Person;
+		  $persObj->requestParams = $requestParams;
+		  $output = $persObj->createItem();
+		  
+		  if(!$output["errors"]){
+				$location = "../editorial/items?tab=itemDes&uuid=".$output["data"]["uuid"];
+		  }
+		  else{
+				$location = "../editorial/items?tab=itemNew";
+		  }
+		  header("Location: ".$location);
+		  
+		  
+		  //header('Content-Type: application/json; charset=utf8');
+		  //echo Zend_Json::encode($output);
+		  
+	 }
+	 
+	 //create a new linking relationship for an item
+	 function createItemLinkAction(){
+		  $this->_helper->viewRenderer->setNoRender();
+		  $requestParams =  $this->_request->getParams();
+		  
+		  Zend_Loader::loadClass('dataEdit_Link');
+		  Zend_Loader::loadClass('dataEdit_Published');
+		  
+		  $linkObj = new dataEdit_Link;
+		  $linkObj->requestParams = $requestParams;
+		  $output = $linkObj->createItemLinkingRel();
+		  
+		  if(isset($requestParams["actItemUUID"])){
+				$location = "../editorial/items?tab=itemLinks&uuid=".$requestParams["actItemUUID"];
+		  }
+		  else{
+				$location = "../editorial/items";
+		  }
+		  header("Location: ".$location);
+		  
+		  /*
+		  header('Content-Type: application/json; charset=utf8');
+		  echo Zend_Json::encode($uuid);
+		  */
+	 }
+	 
+	  
+	  //update the relationship type for a specific link
+	 function updateItemLinkAction(){
+		  $this->_helper->viewRenderer->setNoRender();
+		  $requestParams =  $this->_request->getParams();
+		  
+		  Zend_Loader::loadClass('dataEdit_Link');
+		  Zend_Loader::loadClass('dataEdit_Published');
+		  
+		  $linkObj = new dataEdit_Link;
+		  $linkObj->requestParams = $requestParams;
+		  $output = $linkObj->updateLinkRelationType();
+		  
+		  if(isset($requestParams["originUUID"])){
+				$location = "../editorial/items?tab=itemLinks&uuid=".$requestParams["originUUID"];
+		  }
+		  else{
+				$location = "../editorial/items";
+		  }
+		  header("Location: ".$location);
+		  
+		  /*
+		  header('Content-Type: application/json; charset=utf8');
+		  echo Zend_Json::encode($uuid);
+		  */
+	 }
+	 
+	  //delete a specific link
+	 function deleteItemLinkAction(){
+		  $this->_helper->viewRenderer->setNoRender();
+		  $requestParams =  $this->_request->getParams();
+		  
+		  Zend_Loader::loadClass('dataEdit_Link');
+		  Zend_Loader::loadClass('dataEdit_Published');
+		  
+		  $linkObj = new dataEdit_Link;
+		  $linkObj->requestParams = $requestParams;
+		  $output = $linkObj->deleteLink();
+		  
+		  if(isset($requestParams["originUUID"])){
+				$location = "../editorial/items?tab=itemLinks&uuid=".$requestParams["originUUID"];
+		  }
+		  else{
+				$location = "../editorial/items";
+		  }
+		  header("Location: ".$location);
+		  
+		  /*
+		  header('Content-Type: application/json; charset=utf8');
+		  echo Zend_Json::encode($uuid);
+		  */
+	 }
 	 
 }

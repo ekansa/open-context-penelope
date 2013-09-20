@@ -6,10 +6,81 @@ class dataEdit_SpaceTime  {
     
     public $db;
 	 public $projectUUID;
-	
-	
 	 public $requestParams; //request parameters
+	 public $errros;
 	 
+	 //add a geo reference to an item
+	 function geoTagItem($uuid = false, $sourceID = "manual"){
+		  
+		  $requestParams = $this->requestParams;
+		  $errors = array();
+		  $data = array();
+		  
+		  if(!$uuid){
+				$actValue = $this->checkExistsNonBlank("uuid", $requestParams);
+				if($actValue != false){
+					 $data["uuid"] = $actValue;
+					 $uuid = $actValue;
+				}
+		  }
+		  else{
+				$data["uuid"] = $uuid;
+		  }
+		  
+		  if(!$uuid){
+				$errors[] = "Need an item UUID";
+		  }
+		  
+		  $actValue = $this->checkExistsNonBlank("projUUID", $requestParams);
+		  if($actValue != false){
+				if(stristr($actValue, "oc")){
+					 $actValue = 0;
+				}
+				$data["project_id"] = $actValue;
+		  }
+		  else{
+				$data["project_id"] = $this->getProjectUUID($uuid);
+		  }
+		  
+		  $data["source_id"] = $sourceID;
+		  
+		  $lat = false;
+		  $actValue = $this->checkExistsNonBlank("lat", $requestParams);
+		  if($actValue != false){
+				if($actValue >= -180 && $actValue <= 180){
+					 $lat = $actValue + 0;
+				}
+		  }
+		  $lon = false;
+		  $actValue = $this->checkExistsNonBlank("lon", $requestParams);
+		  if($actValue != false){
+				if($actValue >= -180 && $actValue <= 180){
+					 $lon = $actValue + 0;
+				}
+		  }
+		  
+		  if($lat != false && $lon != false){
+				$data["latitude"] = $lat;
+				$data["longitude"] = $lon;
+		  }
+		  else{
+				$errors[] = "Need valid Lat / Lon decimal degrees";
+		  }
+		  
+		  if(count($errors)<1){
+				$db = $this->startDB();
+				$where = array();
+				$where[] = "uuid  = '".$uuid."' ";
+				$db->delete('geo_space', $where);
+				$db->insert('geo_space', $data);
+				$pubObj = new dataEdit_Published;
+				$pubObj->deleteFromPublishedDocsByParentUUID($uuid); //since chronology is inherited, delete the children and this item from the published list
+		  }
+		  
+		  return array("data"=>$data, "errors" => $errors);
+	 }
+	 
+	 //add a chronological tag / time range to an item
 	 function chrontoTagItem($uuid = false){
 		  
 		  $requestParams = $this->requestParams;
@@ -43,7 +114,7 @@ class dataEdit_SpaceTime  {
 					 $dateLabel = "(".$this->makeNiceDate($tStart).")";
 				}
 		  
-				if(!isset($requestParams["projectUUID"])){
+				if(!isset($requestParams["projUUID"])){
 					 $projectUUID = $this->getProjectUUID($uuid);
 				}
 		  
@@ -53,16 +124,19 @@ class dataEdit_SpaceTime  {
 				$db->delete('initial_chrono_tag', $where);
 				
 				$data = array('project_id'=> $projectUUID,
-				'uuid'=> $uuid,
-				'creator_uuid'=> 'oc',
-				'label'=> $dateLabel,
-				'start_time'=> $tStart,
-				'end_time'=> $tEnd,
-				'note_id'=> 'Default set',
-				'public'=> 1
+					 'uuid'=> $uuid,
+					 'creator_uuid'=> 'oc',
+					 'label'=> $dateLabel,
+					 'start_time'=> $tStart,
+					 'end_time'=> $tEnd,
+					 'note_id'=> 'Default set',
+					 'public'=> 1
 				);
 				
 				$db->insert('initial_chrono_tag', $data);
+				$pubObj = new dataEdit_Published;
+				$pubObj->deleteFromPublishedDocsByParentUUID($uuid); //since chronology is inherited, delete the children and this item from the published list
+				
 		  }
 
 	 }
@@ -145,6 +219,16 @@ class dataEdit_SpaceTime  {
 	 }//end function
 	 
 	 
+	 function checkExistsNonBlank($key, $requestParams){
+		  $value = false;
+		  if(isset($requestParams[$key])){
+				$value = $requestParams[$key];
+				if(strlen($value)<1){
+					 $value = false;
+				}
+		  }
+		  return $value;
+	 }
 	
 	//startup the database
 	 function startDB(){

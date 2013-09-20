@@ -29,6 +29,7 @@ class dbXML_dbSpace  {
     public $geoLon;
     public $geoGML;
     public $geoKML;
+	 public $geoJSON;
     public $geoSource;
     public $geoSourceName;
     
@@ -53,19 +54,20 @@ class dbXML_dbSpace  {
         $this->db = $db;
         $this->children = false;
         $this->containment = false;
-	$this->describeContain = false;
+		  $this->describeContain = false;
         $this->observations = false;
-	$this->obsNumbers = false;
+		  $this->obsNumbers = false;
         $this->geoLat = false;
         $this->geoLon = false;
         $this->geoGML = false;
         $this->geoKML = false;
+		  $this->geoJSON = false;
         $this->geoSource = false;
         $this->geoSourceName = false;
         $this->chronoArray = false;
-	$this->propertiesObj = false;
-	$this->linksObj = false;
-	$this->metadataObj = false;
+		  $this->propertiesObj = false;
+		  $this->linksObj = false;
+		  $this->metadataObj = false;
     }
     
     public function getByID($id){
@@ -97,7 +99,7 @@ class dbXML_dbSpace  {
             $this->sourceID = $result[0]["source_id"];
             $this->contain_hash = $result[0]["hash_fcntxt"];
             $this->classID = $result[0]["class_uuid"];
-	    $this->label = $result[0]["space_label"];
+				$this->label = $result[0]["space_label"];
             $this->classLabelGet($this->classID);
         }
         
@@ -118,7 +120,7 @@ class dbXML_dbSpace  {
             $this->sourceID = $result[0]["source_id"];
             $this->contain_hash = $result[0]["contain_hash"];
             $this->classID = $result[0]["class_uuid"];
-	    $this->label = $result[0]["space_label"];
+				$this->label = $result[0]["space_label"];
             $this->classLabelGet($this->classID);
         }
         
@@ -150,58 +152,55 @@ class dbXML_dbSpace  {
         
         if($this->dbPenelope){
             
-	    $qallobs = "
-			SELECT DISTINCT links.targ_obs AS obs_numbers,
-                        links.project_id,
-                        links.source_id
-			FROM links
-			WHERE links.targ_uuid = '".$this->itemUUID."'
-			UNION
-			SELECT DISTINCT links.origin_obs AS obs_numbers,
-                        links.project_id,
-                        links.source_id
-			FROM links
-			WHERE links.origin_uuid = '".$this->itemUUID."'
-			UNION
-			SELECT DISTINCT observe.obs_num AS obs_numbers,
-                        observe.project_id,
-                        observe.source_id
-			FROM observe
-			WHERE observe.subject_uuid = '".$this->itemUUID."'
-			";
+				$qallobs = "
+				  SELECT DISTINCT links.targ_obs AS obs_numbers,
+									  links.project_id,
+									  links.source_id
+				  FROM links
+				  WHERE links.targ_uuid = '".$this->itemUUID."'
+				  UNION
+				  SELECT DISTINCT links.origin_obs AS obs_numbers,
+									  links.project_id,
+									  links.source_id
+				  FROM links
+				  WHERE links.origin_uuid = '".$this->itemUUID."'
+				  UNION
+				  SELECT DISTINCT observe.obs_num AS obs_numbers,
+									  observe.project_id,
+									  observe.source_id
+				  FROM observe
+				  WHERE observe.subject_uuid = '".$this->itemUUID."'
+				  ";
 	    
-	    
-	    
-	    
-	    $sql = "SELECT DISTINCT observe.obs_num, observe.source_id AS sourceID, obs_metadata.obs_type, obs_metadata.obs_name, obs_metadata.obs_notes
-            FROM observe
-            LEFT JOIN obs_metadata ON (observe.obs_num = obs_metadata.obs_num AND observe.source_id = obs_metadata.source_id)
-            WHERE observe.subject_uuid = '".$this->itemUUID."'
-            GROUP BY observe.obs_num
-			ORDER BY observe.obs_num
-            ";
+				$sql = "SELECT DISTINCT observe.obs_num, observe.source_id AS sourceID, obs_metadata.obs_type, obs_metadata.obs_name, obs_metadata.obs_notes
+					  FROM observe
+					  LEFT JOIN obs_metadata ON (observe.obs_num = obs_metadata.obs_num AND observe.source_id = obs_metadata.source_id)
+					  WHERE observe.subject_uuid = '".$this->itemUUID."'
+					  GROUP BY observe.obs_num
+				  ORDER BY observe.obs_num
+					  ";
         }
         else{
 	    
-	    $qallobs = "
-			SELECT DISTINCT links.targ_obs AS obs_numbers,
-                        links.project_id AS project_id,
-                        links.source_id	AS source_id
-			FROM links
-			WHERE links.targ_uuid = '".$this->itemUUID."'
-			UNION
-			SELECT DISTINCT links.origin_obs AS obs_numbers,
-                        links.project_id AS project_id,
-                        links.source_id	AS source_id
-			FROM links
-			WHERE links.origin_uuid = '".$this->itemUUID."'
-			UNION
-			SELECT DISTINCT observe.obs_num AS obs_numbers,
-                        observe.project_id AS project_id,
-                        observe.source_id AS source_id
-			FROM observe
-			WHERE observe.subject_uuid = '".$this->itemUUID."'
-			";
+				$qallobs = "
+				  SELECT DISTINCT links.targ_obs AS obs_numbers,
+									  links.project_id AS project_id,
+									  links.source_id	AS source_id
+				  FROM links
+				  WHERE links.targ_uuid = '".$this->itemUUID."'
+				  UNION
+				  SELECT DISTINCT links.origin_obs AS obs_numbers,
+									  links.project_id AS project_id,
+									  links.source_id	AS source_id
+				  FROM links
+				  WHERE links.origin_uuid = '".$this->itemUUID."'
+				  UNION
+				  SELECT DISTINCT observe.obs_num AS obs_numbers,
+									  observe.project_id AS project_id,
+									  observe.source_id AS source_id
+				  FROM observe
+				  WHERE observe.subject_uuid = '".$this->itemUUID."'
+				  ";
 	    
 	    
             $sql = "SELECT DISTINCT observe.obs_num, observe.source_id AS sourceID, 'primary' AS obs_type, 'public site' AS obs_name, 'public site' AS obs_notes
@@ -213,35 +212,35 @@ class dbXML_dbSpace  {
         $result = $db->fetchAll($sql, 2);
         if($result){
             $this->observations = $result;
-	    $obsNumbers = $this->obsNumbers;
-	    if(!$obsNumbers){
-		$obsNumbers = array();
-	    }
-	    
-	    foreach($result as $row){
-		if(!in_array($row["obs_num"], $obsNumbers)){
-		    $obsNumbers[] = $row["obs_num"];
-		}
-	    }
-	    
-	    $this->obsNumbers = $obsNumbers; 
+				$obsNumbers = $this->obsNumbers;
+				if(!$obsNumbers){
+					 $obsNumbers = array();
+				}
+				
+				foreach($result as $row){
+					 if(!in_array($row["obs_num"], $obsNumbers)){
+						  $obsNumbers[] = $row["obs_num"];
+					 }
+				}
+				
+				$this->obsNumbers = $obsNumbers; 
         }
 	
-	//echo $qallobs;
-	$resultB = $db->fetchAll($qallobs, 2);
-	//$resultB = false;
-	if($resultB){
-	    $obsNumbers = $this->obsNumbers;
-	    if(!is_array($obsNumbers)){
-		$obsNumbers = array();
-	    }
-	    foreach($resultB as $row){
-		if(!in_array($row["obs_numbers"], $obsNumbers)){
-		    $obsNumbers[] = $row["obs_numbers"];
-		}
-	    }
-	    $this->obsNumbers = $obsNumbers;
-	}
+		  //echo $qallobs;
+		  $resultB = $db->fetchAll($qallobs, 2);
+		  //$resultB = false;
+		  if($resultB){
+				$obsNumbers = $this->obsNumbers;
+				if(!is_array($obsNumbers)){
+					 $obsNumbers = array();
+				}
+				foreach($resultB as $row){
+					 if(!in_array($row["obs_numbers"], $obsNumbers)){
+						  $obsNumbers[] = $row["obs_numbers"];
+					 }
+				}
+				$this->obsNumbers = $obsNumbers;
+		  }
 	
     }
     
@@ -283,8 +282,8 @@ class dbXML_dbSpace  {
             //echo "/n".$sql;
             $result = $db->fetchAll($sql, 2);
             if($result){
-                $this->geoLat = $result[0]["latitude"];
-                $this->geoLon = $result[0]["longitude"];
+                $this->geoLat = $result[0]["latitude"] + 0 ;
+                $this->geoLon = $result[0]["longitude"] + 0 ;
                 
                 if(strlen($result[0]["gml_data"])>1){
                     $this->geoGML = $result[0]["gml_data"];
@@ -299,6 +298,22 @@ class dbXML_dbSpace  {
                 else{
                     $this->geoKML = false;
                 }
+					 
+					 
+					 $sql = "SELECT *
+                FROM geodata
+                WHERE geodata.uuid = '$parent' LIMIT 1";
+					 
+					 $resultGeoJson = $db->fetchAll($sql, 2);
+					 if($resultGeoJson){
+						  if(strlen($resultGeoJson[0]["geoJSON"])>1){
+								$this->geoJSON = Zend_Json::decode($resultGeoJson[0]["geoJSON"]);
+						  }
+					 }
+                else{
+                    $this->geoJSON = false;
+                }
+					 
                 
                 $this->geoSourceName = $result[0]["space_label"];
                 if($parent == $this->itemUUID){
@@ -400,73 +415,67 @@ class dbXML_dbSpace  {
         $parentID = $this->itemUUID;
         
         $sql = "SELECT DISTINCT space_contain.child_uuid as itemUUID, space.class_uuid as classID,
-	space.space_label as label,
-	sp_classes.sm_class_icon as smallClassIcon, sp_classes.class_label as className
-        FROM space_contain
-        JOIN space ON space.uuid = space_contain.child_uuid
-	LEFT JOIN sp_classes ON space.class_uuid = sp_classes.class_uuid
-        WHERE space_contain.parent_uuid = '".$parentID."'
-        ORDER BY space.class_uuid, space.label_sort, space.space_label
-        ";
-	
-	$sql = "SELECT DISTINCT space_contain.child_uuid as itemUUID, space.class_uuid as classID,
-	space.space_label as label,
-	sp_classes.sm_class_icon as smallClassIcon, sp_classes.class_label as className, labeling_options.labelVarUUID
-        FROM space_contain
-        JOIN space ON space.uuid = space_contain.child_uuid
-	LEFT JOIN sp_classes ON space.class_uuid = sp_classes.class_uuid
-	LEFT JOIN labeling_options ON (space.class_uuid = labeling_options.classUUID
-					AND space.project_id = labeling_options.project_id
-					AND labeling_options.relType = 'contain')
-        WHERE space_contain.parent_uuid = '".$parentID."'
-        ORDER BY space.class_uuid, space.label_sort, space.space_label
+				space.space_label as label,
+				sp_classes.sm_class_icon as smallClassIcon, sp_classes.class_label as className
+					  FROM space_contain
+					  JOIN space ON space.uuid = space_contain.child_uuid
+				LEFT JOIN sp_classes ON space.class_uuid = sp_classes.class_uuid
+					  WHERE space_contain.parent_uuid = '".$parentID."'
+					  ORDER BY space.class_uuid, space.label_sort, space.space_label
+					  ";
+				
+				$sql = "SELECT DISTINCT space_contain.child_uuid as itemUUID, space.class_uuid as classID,
+				space.space_label as label,
+				sp_classes.sm_class_icon as smallClassIcon, sp_classes.class_label as className, labeling_options.labelVarUUID
+					  FROM space_contain
+					  JOIN space ON space.uuid = space_contain.child_uuid
+				LEFT JOIN sp_classes ON space.class_uuid = sp_classes.class_uuid
+				LEFT JOIN labeling_options ON (space.class_uuid = labeling_options.classUUID
+								AND space.project_id = labeling_options.project_id
+								AND labeling_options.relType = 'contain')
+					  WHERE space_contain.parent_uuid = '".$parentID."'
+					  ORDER BY space.class_uuid, space.label_sort, space.space_label
         ";
         
         $result = $db->fetchAll($sql, 2);
         if($result){
-	    $finalResult = array();
-	    foreach($result as $row){
-		$outRow = $row;
-		$labelVarUUID = $row["labelVarUUID"];
-		$itemUUID = $row["itemUUID"];
-		if(strlen($labelVarUUID)>1){
-		    $sql = "SELECT val_tab.val_text
-		    FROM observe
-		    JOIN properties ON observe.property_uuid = properties.property_uuid
-		    JOIN val_tab ON properties.value_uuid = val_tab.value_uuid
-		    WHERE observe.subject_uuid = '$itemUUID'
-		    AND properties.variable_uuid = '$labelVarUUID'
-		    LIMIT 1;
-		    ";
-		    
-		    $resultB = $db->fetchAll($sql, 2);
-		    if($resultB){
-			$outRow["descriptor"] = $resultB[0]["val_text"];
-		    }
-		    else{
-			$outRow["descriptor"] = false;
-		    }
-		}
-		else{
-		    $outRow["descriptor"] = false;
-		}
+				$finalResult = array();
+				foreach($result as $row){
+					 $outRow = $row;
+					 $labelVarUUID = $row["labelVarUUID"];
+					 $itemUUID = $row["itemUUID"];
+					 if(strlen($labelVarUUID)>1){
+						  $sql = "SELECT val_tab.val_text
+						  FROM observe
+						  JOIN properties ON observe.property_uuid = properties.property_uuid
+						  JOIN val_tab ON properties.value_uuid = val_tab.value_uuid
+						  WHERE observe.subject_uuid = '$itemUUID'
+						  AND properties.variable_uuid = '$labelVarUUID'
+						  LIMIT 1;
+						  ";
+						  
+						  $resultB = $db->fetchAll($sql, 2);
+						  if($resultB){
+								$outRow["descriptor"] = $resultB[0]["val_text"];
+						  }
+						  else{
+								$outRow["descriptor"] = false;
+						  }
+					 }
+					 else{
+						  $outRow["descriptor"] = false;
+					 }
 		
-		unset($outRow["labelVarUUID"]);
-		$finalResult[] = $outRow;
-	    }
+				unset($outRow["labelVarUUID"]);
+				$finalResult[] = $outRow;
+				}
             $this->children = $finalResult;
         }
         else{
             $this->children = false;
         }
-    
     }
-    
-    
-   
-    
-    
-    
+
     public function oc_getChildren(){
         $db = $this->db;
         
@@ -492,7 +501,7 @@ class dbXML_dbSpace  {
     
     public function getParents(){
         $this->getNextParent($this->itemUUID);
-	$this->describeParents();
+		  $this->describeParents();
     }
     
     
@@ -556,26 +565,26 @@ class dbXML_dbSpace  {
 
     function describeParents(){
 	
-	if(is_array($this->containment)){
-	    
-	    $fullContain = array();
-	    $containArray = $this->containment;
-	    foreach($containArray as $treeKey => $containArray){
-		foreach($containArray as $containItem){
-		    $containObj = new dbXML_dbSpace;
-		    $containObj->initialize($this->db);
-		    $containObj->dbPenelope = true;
-		    $containObj->getByID($containItem);
-		    $fullContain[$treeKey][] = array("itemUUID" => $containItem,
-					   "label" => $containObj->label,
-					   "className" => $containObj->className,
-					   "smallClassIcon" => $containObj->smallClassIcon
-					   );
-		}
-	    }
-	    
-	    $this->describeContain = $fullContain;
-	}
+		  if(is_array($this->containment)){
+				
+				$fullContain = array();
+				$containArray = $this->containment;
+				foreach($containArray as $treeKey => $containArray){
+					 foreach($containArray as $containItem){
+						  $containObj = new dbXML_dbSpace;
+						  $containObj->initialize($this->db);
+						  $containObj->dbPenelope = true;
+						  $containObj->getByID($containItem);
+						  $fullContain[$treeKey][] = array("itemUUID" => $containItem,
+									 "label" => $containObj->label,
+									 "className" => $containObj->className,
+									 "smallClassIcon" => $containObj->smallClassIcon
+									 );
+					 }
+				}
+				
+				$this->describeContain = $fullContain;
+		  }
 	
     }
 
