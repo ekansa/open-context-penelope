@@ -37,7 +37,7 @@ class dataEdit_SpaceContain  {
 		  
 		  $db = $this->startDB();
 		  
-		  $sql = "SELECT parent_uuid FROM space_contain WHERE child_uuid = '$childUUID' ; ";
+		  $sql = "SELECT parent_uuid FROM space_contain JOIN space ON space.uuid = space_contain.parent_uuid WHERE child_uuid = '$childUUID' ; ";
 		  $result =  $db->fetchAll($sql);
 		  if($result){
 				$itemParentUUIDs = $this->itemParentUUIDs;
@@ -57,10 +57,51 @@ class dataEdit_SpaceContain  {
 	 }
 	 
 	 
+	 function makeParentPath($childUUID, $delimiter){
+		  
+		  $parentUUIDs = $this->getParentItemsByUUID($childUUID, true);
+		  //echo print_r($parentUUIDs);
+		  //die;
+		  //$path = $this->getItemLabelbyUUID($childUUID);
+		  $path = "";
+		  $firstLoop = true;
+		  foreach($parentUUIDs as $parentUUID){
+				if($firstLoop){
+					 $firstLoop = false;
+					 $path = $this->getItemLabelbyUUID($parentUUID);
+				}
+				else{
+					 $path .= $delimiter.$this->getItemLabelbyUUID($parentUUID);
+				}
+				
+		  }
+		  $path .= $delimiter.$this->getItemLabelbyUUID($childUUID);
+		  return $path;
+	 }
+	 
+	 function getItemLabelbyUUID($uuid){
+		  
+		  $db = $this->startDB();
+		  $sql = "SELECT space_label FROM space WHERE uuid = '$uuid' LIMIT 1 ; ";
+		  $result =  $db->fetchAll($sql);
+		  if($result){
+				return $result[0]["space_label"];
+		  }
+		  else{
+				return false;
+		  }
+	 }
+	 
+	 
+	 
 	 //add a new containment relation
 	 function addContainRelation($parentUUID, $childUUID, $projectUUID, $sourceID = "manual"){
 		  $output = false;
 		  $db = $this->startDB();
+		  
+		  if(!$projectUUID){
+				$projectUUID = "0";
+		  }
 		  
 		  $data = array("hash_all" =>  md5($parentUUID . '_' . $childUUID),
 							 "project_id" => $projectUUID,
@@ -77,6 +118,7 @@ class dataEdit_SpaceContain  {
 				 $output = false;
 		  }
 	 }
+	 
 	 
 	 
 	//startup the database

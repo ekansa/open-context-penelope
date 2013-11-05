@@ -195,7 +195,30 @@ class EditorialController extends Zend_Controller_Action{
             $propUUID = $_REQUEST["propUUID"];
 				$spaceTimeObj = new dataEdit_SpaceTime;
 				$spaceTimeObj->requestParams =  $requestParams;
-				$output = $spaceTimeObj->chrontoTagByProperty($propUUID);
+				$output = $spaceTimeObj->chronoTagByProperty($propUUID);
+				header('Content-Type: application/json; charset=utf8');
+				echo Zend_Json::encode($output);
+        }
+        else{
+            $location = "../editorial/items";
+				header("Location: ".$location);
+        }
+	 }
+	 
+	 //adds a chronology tag to a given item
+	 function chronoTagByVarsAction(){
+		  $this->_helper->viewRenderer->setNoRender();
+		  $requestParams =  $this->_request->getParams();
+		 
+		  Zend_Loader::loadClass('dataEdit_SpaceTime');
+		  Zend_Loader::loadClass('dataEdit_SpaceContain');
+		  Zend_Loader::loadClass('dataEdit_Published');
+		  
+		  if(isset($_REQUEST["AvarUUID"]) && isset($_REQUEST["BvarUUID"])){
+            $AvarUUID = $_REQUEST["AvarUUID"];
+				$BvarUUID = $_REQUEST["BvarUUID"];
+				$spaceTimeObj = new dataEdit_SpaceTime;
+				$output = $spaceTimeObj->chronoTagByTwoVariables($AvarUUID, $BvarUUID);
 				header('Content-Type: application/json; charset=utf8');
 				echo Zend_Json::encode($output);
         }
@@ -211,8 +234,11 @@ class EditorialController extends Zend_Controller_Action{
 		  $this->_helper->viewRenderer->setNoRender();
 		  $requestParams =  $this->_request->getParams();
 		 
+		  require ('/application/models/GeoSpace/gisconverter.php'); // first, include gisconverter.php library, but not as a Zend include
+		  Zend_Loader::loadClass('GeoSpace_ToGeoJSON');
 		  Zend_Loader::loadClass('dataEdit_SpaceTime');
 		  Zend_Loader::loadClass('dataEdit_SpaceContain');
+		  Zend_Loader::loadClass('dataEdit_Subject');
 		  Zend_Loader::loadClass('dataEdit_Published');
 		  
 		  if(isset($_REQUEST["uuid"])){
@@ -351,6 +377,35 @@ class EditorialController extends Zend_Controller_Action{
 		  
 		  header("Location: ".$location);
 	 }
+	 
+	 
+	 
+	   //update the relationship type for a specific link
+	 function updatePropValAction(){
+		  $this->_helper->viewRenderer->setNoRender();
+		  $requestParams =  $this->_request->getParams();
+		  
+		  Zend_Loader::loadClass('dataEdit_Property');
+		  Zend_Loader::loadClass('dataEdit_Published');
+		  
+		  $output = array();
+		  
+		  if(isset($requestParams["propUUID"]) && isset($requestParams["newPropValue"])){
+				$propObj = new dataEdit_Property;
+				$output = array();
+				$output["changedSubjects"] = $propObj->updatePropertyValue($requestParams["newPropValue"], $requestParams["propUUID"]);
+				$output["errors"] = false;
+		  }
+		  else{
+				$output["changedSubjects"] = 0;
+				$output["errors"] = "Need a 'propUUID' and 'newPropValue' parameter";
+		  }
+		  
+		  header('Content-Type: application/json; charset=utf8');
+		  echo Zend_Json::encode($output);
+	 }
+	 
+	 
 	 
 	 
 	 function createSubjectItemAction(){
@@ -517,6 +572,28 @@ class EditorialController extends Zend_Controller_Action{
 		  header('Content-Type: application/json; charset=utf8');
 		  echo Zend_Json::encode($uuid);
 		  */
+	 }
+	 
+	 
+	  //create a new linking relationship for a list of items that have a given property
+	 function createLinksByPropertyAction(){
+		  $this->_helper->viewRenderer->setNoRender();
+		  $requestParams =  $this->_request->getParams();
+		  
+		  Zend_Loader::loadClass('dataEdit_Property');
+		  Zend_Loader::loadClass('dataEdit_Link');
+		  Zend_Loader::loadClass('dataEdit_Published');
+		  
+		  if(isset($requestParams["propUUID"])){
+				$propertyUUID = $requestParams["propUUID"];
+				$propObj = new dataEdit_Property;
+				$propObj->requestParams = $requestParams;
+				$linkedItems = $propObj->createLinksByPropertyID($propertyUUID);	
+				$output = array("count" => count($linkedItems), "linkedItems" => $linkedItems);
+		  }
+		  
+		  header('Content-Type: application/json; charset=utf8');
+		  echo Zend_Json::encode($output);
 	 }
 	 
 	  

@@ -123,8 +123,12 @@ class PropertyController extends App_Controller_PenelopeController
                 )
             ->where ('f1.source_id = ?', $dataTableName)
             ->where ('f1.fk_field_describes is not null')
+            ->where ('f2.field_label is not null')
             ->order ('objName');
         $stmt           = $db->query($select);
+        //echo print_r($stmt);
+        //die;
+        
         $objFieldRows   = $stmt->fetchAll();
         //echo Zend_Json::encode($objFieldRows);
         foreach ($objFieldRows as $objFieldRow) 

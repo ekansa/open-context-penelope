@@ -25,7 +25,10 @@ class DBexport_PenToOC  {
 		  $data .= $this->makeSaveVars();
 		  $data .= $this->makeSaveVarNotes();
 		  $data .= $this->makeSaveVals();
-		  $this->saveGZIP(self::DBdirectory, "all-dump", $data);
+		  $data .= $this->makeSaveLD();
+		  $data .= $this->makeGeoData();
+		  $data .= $this->makeGeoSpace();
+		  $this->saveGZIP(self::DBdirectory, "ex-all", $data);
 		  unset($data);
 	 }
 	 
@@ -201,6 +204,112 @@ class DBexport_PenToOC  {
 				}
 				unset($result);
 				$this->saveSQL(self::DBdirectory, "exp-vals", $data);
+		  }
+		  
+		  return $data;
+	 }
+	 
+	 
+	 //saves a file for moving linked data
+	 function makeSaveLD(){
+		  
+		  $db = $this->startDB();
+		  
+		  $projCondition = "1";
+		  if(is_array($this->limitingProjArray)){
+				$projCondition = $this->makeORcondition($this->limitingProjArray, "fk_project_uuid", "linked_data");
+		  }
+		  
+		  
+		  $sql = "SELECT * 
+		  FROM linked_data
+		  WHERE $projCondition
+		  
+		  ;
+		  
+		  ";
+		  
+		  $result = $db->fetchAll($sql);
+		  $data = " SET collation_connection = utf8_unicode_ci; SET NAMES utf8; ";
+		  if($result){
+				$prefix = $this->makeInsertPrefix($result[0], "linked_data");
+				foreach($result as $row){
+					 $insertVals = $this->makeInsertValues($row);
+					 $data .= $prefix.$insertVals;
+				}
+				unset($result);
+				$this->saveSQL(self::DBdirectory, "exp-ld", $data);
+		  }
+		  
+		  return $data;
+	 }
+	 
+	 
+	  //saves a file for moving linked data
+	 function makeGeoData(){
+		  
+		  $db = $this->startDB();
+		  
+		  $projCondition = "1";
+		  if(is_array($this->limitingProjArray)){
+				$projCondition = $this->makeORcondition($this->limitingProjArray, "project_id", "geodata");
+		  }
+		  
+		  
+		  $sql = "SELECT * 
+		  FROM geodata
+		  WHERE $projCondition
+		  
+		  ;
+		  
+		  ";
+		  
+		  $result = $db->fetchAll($sql);
+		  $data = " SET collation_connection = utf8_unicode_ci; SET NAMES utf8; ";
+		  if($result){
+				$prefix = $this->makeInsertPrefix($result[0], "geodata");
+				foreach($result as $row){
+					 $insertVals = $this->makeInsertValues($row);
+					 $data .= $prefix.$insertVals;
+				}
+				unset($result);
+				$this->saveSQL(self::DBdirectory, "exp-geodata", $data);
+		  }
+		  
+		  return $data;
+	 }
+	 
+	 
+	 
+	  //saves a file for moving linked data
+	 function makeGeoSpace(){
+		  
+		  $db = $this->startDB();
+		  
+		  $projCondition = "1";
+		  if(is_array($this->limitingProjArray)){
+				$projCondition = $this->makeORcondition($this->limitingProjArray, "project_id", "geo_space");
+		  }
+		  
+		  
+		  $sql = "SELECT uuid, project_id, latitude, longitude, kml_data, gml_data 
+		  FROM geo_space
+		  WHERE $projCondition
+		  
+		  ;
+		  
+		  ";
+		  
+		  $result = $db->fetchAll($sql);
+		  $data = " SET collation_connection = utf8_unicode_ci; SET NAMES utf8; ";
+		  if($result){
+				$prefix = $this->makeInsertPrefix($result[0], "geo_space");
+				foreach($result as $row){
+					 $insertVals = $this->makeInsertValues($row);
+					 $data .= $prefix.$insertVals;
+				}
+				unset($result);
+				$this->saveSQL(self::DBdirectory, "exp-geo-space", $data);
 		  }
 		  
 		  return $data;

@@ -60,6 +60,7 @@ class xmlController extends Zend_Controller_Action {
 		$metadataObj->dbPenelope = true;
 		$metadataObj->getMetadata($itemObj->projectUUID, $itemObj->sourceID);
 		$metadataObj->getPersistentID($itemObj->itemUUID);
+		$metadataObj->getItemLinkedData($itemObj->itemUUID);
 		$itemObj->metadataObj = $metadataObj;
 		
 		if(!isset($_GET['xml'])){
@@ -146,6 +147,7 @@ class xmlController extends Zend_Controller_Action {
 		$metadataObj->dbPenelope = true;
 		$metadataObj->getMetadata($itemObj->projectUUID, $itemObj->sourceID);
 		$metadataObj->getPersistentID($itemObj->itemUUID);
+		$metadataObj->getItemLinkedData($itemObj->itemUUID);
 		$itemObj->metadataObj = $metadataObj;
 		
 		if(!isset($_GET['xml'])){
@@ -210,6 +212,7 @@ class xmlController extends Zend_Controller_Action {
 		$metadataObj->dbPenelope = true;
 		$metadataObj->getMetadata($itemObj->projectUUID);
 		$metadataObj->getProjectLicense($itemObj->projectUUID);
+		$metadataObj->getItemLinkedData($itemObj->projectUUID);
 		$itemObj->metadataObj = $metadataObj;
 		
 		if(!isset($_GET['xml'])){
@@ -336,6 +339,7 @@ class xmlController extends Zend_Controller_Action {
 		$metadataObj->dbPenelope = true;
 		$metadataObj->getMetadata($itemObj->projectUUID);
 		$metadataObj->getPersistentID($itemObj->itemUUID);
+		$metadataObj->getItemLinkedData($itemObj->itemUUID);
 		$itemObj->metadataObj = $metadataObj;
 		
 		if(!isset($_GET['xml'])){
@@ -422,6 +426,7 @@ class xmlController extends Zend_Controller_Action {
 		$metadataObj->dbPenelope = true;
 		$metadataObj->getMetadata($itemObj->projectUUID, $itemObj->sourceID);
 		$metadataObj->getPersistentID($itemObj->itemUUID);
+		$metadataObj->getItemLinkedData($itemObj->itemUUID);
 		$itemObj->metadataObj = $metadataObj;
 		
 		if(!isset($_GET['xml'])){

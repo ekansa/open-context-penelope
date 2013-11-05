@@ -275,7 +275,7 @@
 																						<xsl:if test="position() != 1">
 																								<xsl:attribute name="class">tab-pane fade</xsl:attribute>
 																						</xsl:if>
-																						<xsl:if test="count(descendant::arch:properties/arch:property[oc:show_val/text()]) !=0 or count(descendant::arch:notes/arch:note) !=0 ">
+																						<xsl:if test="count(descendant::arch:properties/arch:property[oc:show_val/text()]) !=0 or count(descendant::arch:notes/arch:note) !=0 or count(descendant::arch:links/oc:space_links/oc:link) != 0 or count(descendant::arch:links/oc:diary_links/oc:link) != 0">
 																								<div class="properties">
 																										  <xsl:if test="count(descendant::arch:properties/arch:property[oc:show_val/text()]) !=0">
 																												<xsl:choose>
@@ -312,6 +312,12 @@
 																																					 <a><xsl:attribute name="href">../properties/<xsl:value-of select="oc:propid"/></xsl:attribute>True</a>
 																																				</xsl:when>
 																																				<xsl:when test="(oc:var_label[@type = 'boolean']) and (oc:show_val = 'false')">
+																																					 <a><xsl:attribute name="href">../properties/<xsl:value-of select="oc:propid"/></xsl:attribute>False</a>
+																																				</xsl:when>
+																																				<xsl:when test="(oc:var_label[@type = 'boolean']) and (oc:show_val = '1')">
+																																					 <a><xsl:attribute name="href">../properties/<xsl:value-of select="oc:propid"/></xsl:attribute>True</a>
+																																				</xsl:when>
+																																				<xsl:when test="(oc:var_label[@type = 'boolean']) and (oc:show_val = '0')">
 																																					 <a><xsl:attribute name="href">../properties/<xsl:value-of select="oc:propid"/></xsl:attribute>False</a>
 																																				</xsl:when>
 																																				<xsl:when test="oc:var_label[@type = 'alphanumeric'] and oc:show_val[@type = 'xhtml']">

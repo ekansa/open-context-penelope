@@ -115,12 +115,13 @@ class MetadataController extends App_Controller_PenelopeController
             $where[] = 'project_id = "'.$projectID.'"';
             $where[] = 'dc_field = "'.$meta_tag.'"';
             $db->delete('dcmeta_proj', $where);
-            
+            $sort = 1;
             foreach($DCcreators as $act_meta){
                 $act_meta = trim($act_meta);
                 $dc_hash = md5($projectID."_".$meta_tag."_".$act_meta);
                 $dc_data = array('hash_id' => $dc_hash, 
                                  'project_id' => $projectID,
+                                 'sort' => $sort,
                                  'dc_field' => $meta_tag,
                                  'dc_value' => $act_meta
                                  );
@@ -132,6 +133,7 @@ class MetadataController extends App_Controller_PenelopeController
                 {
                     Zend_Debug::dump($e);
                 }
+                $sort++;
             }     
         }
         
@@ -142,13 +144,14 @@ class MetadataController extends App_Controller_PenelopeController
             $where[] = 'project_id = "'.$projectID.'"';
             $where[] = 'dc_field = "'.$meta_tag.'"';
             $db->delete('dcmeta_proj', $where);
-            
+            $sort = 1;
             foreach($DCsubjects as $act_meta)
             {
                 $act_meta = trim($act_meta);
                 $dc_hash = md5($projectID."_".$meta_tag."_".$act_meta);
                 $dc_data = array('hash_id' => $dc_hash, 
                                  'project_id' => $projectID,
+                                 'sort' => $sort,
                                  'dc_field' => $meta_tag,
                                  'dc_value' => $act_meta
                                  );
@@ -160,6 +163,7 @@ class MetadataController extends App_Controller_PenelopeController
                 {
                     Zend_Debug::dump($e);
                 }
+                $sort++;
             }
               
         }        

@@ -119,14 +119,26 @@ $tablePubObj = $this->tablePubObj;
                         <h2>Dublin Core Contributors</h2>
                         <ul>
                             <?php
+                            $contI = 1;
                             foreach($tablePubObj->rawContributors as $uri => $persArray){
                                         
                                 ?>        
                                     <li><a href="<?php echo $uri; ?>"><?php echo $persArray["name"]; ?></a> (<?php echo $persArray["count"]; ?>)</li>
-                                 <?php   
-                                }//end loop through the table array  
-                                ?>
+                                 <?php
+                                 $contI ++;
+                            }//end loop through the table array  
+                            ?>
+                            <li>
+                                <form method="POST" action="../table/add-person">
+                                    <input type="text" name="uuid" value="Person UUID" size="50" style="margin-top:1.5%" />
+                                    <input type="text" name="rank" value="<?php echo $contI; ?>" size="3" style="margin-top:1.5%" />
+                                    <input type="hidden" name="role" value="contributor"/>
+                                    <input type="hidden" name="table" value="<?php echo $tablePubObj->penelopeTabID; ?>" />
+                                    <input type="submit" value="+" class="btn btn-primary btn-mini" />
+                                </form>
+                            </li>
                         </ul>
+                        
                         <br/>
                         <h2>Associated Projects</h2>
                         <ul>

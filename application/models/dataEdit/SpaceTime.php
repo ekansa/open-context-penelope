@@ -59,15 +59,38 @@ class dataEdit_SpaceTime  {
 				}
 		  }
 		  
+		  $geoObj = new GeoSpace_ToGeoJSON;
+		  $geoLatLon = false;
+		  $geoKML = $this->checkExistsNonBlank("geoKML", $requestParams);
+		  $geoJSON  = $this->checkExistsNonBlank("geoJSON", $requestParams);
+		  if($geoKML != false){
+				if(!$geoJSON){
+					 $geoJSONString = $geoObj->kml_to_geojson($geoKML);
+					 $geoJSONObj = $geoObj->package_GeoJSON($geoJSONString);
+					 $geoJSON = Zend_Json::encode($geoJSONObj);
+					 $geoLatLon = $geoObj->GeoJSONcentroid($geoJSON);
+					 //$geoLatLon = array("latitude" => 1, "longitude" => 1);
+					 //echo print_r($geoLatLon);
+					 //die;
+					 $lat = $geoLatLon["latitude"];
+					 $lon = $geoLatLon["longitude"];
+				}
+		  }
+		  
 		  if($lat != false && $lon != false){
 				$data["latitude"] = $lat;
-				$data["longitude"] = $lon;
+				$data["longitude"] =  $lon; 
 		  }
 		  else{
 				$errors[] = "Need valid Lat / Lon decimal degrees";
 		  }
 		  
 		  if(count($errors)<1){
+				$geodata = $data;
+				if($geoKML != false){
+					 $data["kml_data"] = $geoKML;
+				}
+				
 				$db = $this->startDB();
 				$where = array();
 				$where[] = "uuid  = '".$uuid."' ";
@@ -75,6 +98,16 @@ class dataEdit_SpaceTime  {
 				$db->insert('geo_space', $data);
 				$pubObj = new dataEdit_Published;
 				$pubObj->deleteFromPublishedDocsByParentUUID($uuid); //since chronology is inherited, delete the children and this item from the published list
+				
+				if($geoJSON != false){
+					 unset($geodata["source_id"]);
+					 $subObj = new dataEdit_Subject;
+					 $geodata["path"] = $subObj->determineContextFromContainRelations($uuid, "/");
+					 $geodata["geoJSON"] = $geoJSON;
+					 $db->delete('geodata', $where);
+					 $db->insert('geodata', $geodata);
+				}
+				
 		  }
 		  
 		  return array("data"=>$data, "errors" => $errors);
@@ -114,8 +147,13 @@ class dataEdit_SpaceTime  {
 					 $dateLabel = "(".$this->makeNiceDate($tStart).")";
 				}
 		  
+				$projectUUID = false;
 				if(!isset($requestParams["projUUID"])){
 					 $projectUUID = $this->getProjectUUID($uuid);
+				}
+				
+				if(!$projectUUID){
+					 $projectUUID = "0";
 				}
 		  
 				$db = $this->startDB();
@@ -141,8 +179,117 @@ class dataEdit_SpaceTime  {
 
 	 }
 	 
+	 
+	 //assign a chronological tag via values associated with two variable UUIDs
+	 function chronoTagByTwoVariables($AvarUUID, $BvarUUID, $bceNegative = true){
+		  
+		  $output = array();
+		  $db = $this->startDB();
+		  
+		  $sql = "SELECT DISTINCT observe.project_id,
+		  observe.subject_uuid AS itemUUID,
+		  AvarProps.val_num AS aValnum,
+		  BvarProps.val_num AS bValnum,
+		  aVals.val_text AS aValText,
+		  bVals.val_text AS bValText
+		  FROM observe
+		  JOIN properties AS AvarProps ON (AvarProps.property_uuid = observe.property_uuid
+				AND AvarProps.variable_uuid = '$AvarUUID')
+		  JOIN val_tab AS aVals ON AvarProps.value_uuid = aVals.value_uuid
+		  JOIN properties AS BvarProps ON (AvarProps.property_uuid = observe.property_uuid
+				AND BvarProps.variable_uuid = '$BvarUUID')
+		  JOIN val_tab AS bVals ON BvarProps.value_uuid = bVals.value_uuid	
+		  ";
+		  
+		  $sql = "SELECT DISTINCT observe.project_id,
+		  observe.subject_uuid AS itemUUID,
+		  AvarProps.val_num AS aValnum,
+		  aVals.val_text AS aValText
+		  FROM observe
+		  JOIN properties AS AvarProps ON (AvarProps.property_uuid = observe.property_uuid
+				AND AvarProps.variable_uuid = '$AvarUUID')
+		  JOIN val_tab AS aVals ON AvarProps.value_uuid = aVals.value_uuid
+		  ";
+		  
+		  $result =  $db->fetchAll($sql);
+		  if($result){
+				foreach($result AS $row){
+					 
+					 $uuid = $row["itemUUID"];
+					 
+					 $sql = "SELECT BvarProps.val_num AS bValnum,
+					 bVals.val_text AS bValText
+					 FROM observe
+					 JOIN properties AS BvarProps ON (BvarProps.property_uuid = observe.property_uuid)
+					 JOIN val_tab AS bVals ON BvarProps.value_uuid = bVals.value_uuid
+					 WHERE observe.subject_uuid = '$uuid'
+					 AND BvarProps.variable_uuid = '$BvarUUID'
+					 LIMIT 1;
+					 ";
+					 
+					 $resultB =  $db->fetchAll($sql);
+					 if($resultB){
+						  $tStart = $row["aValText"] + 0 ;
+						  $tEnd = $resultB[0]["bValText"] + 0 ;
+						  
+						  if(!$bceNegative){
+								$tStart = $tStart * -1;
+								$tEnd = $tEnd * -1;
+						  }
+						  
+						  if($tStart > $tEnd){
+								//insure the aDate is less than the bDate
+								$tDate = $tEnd;
+								$tEnd = $tStart;
+								$tStart = $tDate;
+						  }
+						  
+						  if($tEnd != $tStart){        
+								$dateLabel = "(".$this->makeNiceDate($tStart)." - ".$this->makeNiceDate($tEnd).")";
+						  }
+						  else{
+								$dateLabel = "(".$this->makeNiceDate($tStart).")";
+						  }
+						  
+						  $projectUUID = $row["project_id"];
+						  $where = array();
+						  $where[] = "uuid  = '".$uuid."' ";
+						  $db->delete('initial_chrono_tag', $where);
+						  
+						  $data = array('project_id'=> $projectUUID,
+								'uuid'=> $uuid,
+								'creator_uuid'=> 'oc',
+								'label'=> $dateLabel,
+								'start_time'=> $tStart,
+								'end_time'=> $tEnd,
+								'note_id'=> 'Default set',
+								'public'=> 1
+						  );
+						  
+						  $db->insert('initial_chrono_tag', $data);
+						  $pubObj = new dataEdit_Published;
+						  $pubObj->deleteFromPublishedDocsByParentUUID($uuid); //since chronology is inherited, delete the children and this item from the published list
+	  
+						  $output[$dateLabel][] = $uuid;
+					 }
+				}
+		  
+		  }
+		  
+		  return $output;
+	 }
+	 
+	 
+	 
+	 
+	 
+	 
+	 
+	 
+	 
+	 
 	 //selects items by assocsiation with a property uuid, then chronology tags them
-	 function chrontoTagByProperty($propUUID){
+	 function chronoTagByProperty($propUUID){
 		  
 		  $output = array();
 		  $db = $this->startDB();

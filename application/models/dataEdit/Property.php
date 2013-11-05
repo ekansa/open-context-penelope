@@ -8,6 +8,108 @@ class dataEdit_Property  {
 	 public $projectUUID;
 	 public $sourceID;
     public $db;
+	 public $requestParams;
+	 
+	 
+	 function updatePropertyValue($valText, $propertyUUID){
+		  $db = $this->startDB();
+		  $output = false;
+		  $variableUUID = $this->getPropertyProjectVar($propertyUUID);
+		  if($variableUUID != false){
+				
+				$newValueUUID = $this->get_make_ValID($valText, $this->projectUUID);
+				$sql = "SELECT property_uuid FROM properties WHERE variable_uuid = '$variableUUID' AND value_uuid = '$newValueUUID' LIMIT 1; ";
+				$result = $db->fetchAll($sql, 2);
+				if(!$result){
+					 //the new variable value pair does not already exist, meaning we're safe just to adjust the propertyUUID to have the new valueID
+					 $where = "property_uuid = '".$propertyUUID."' ";
+					 $propHash   = md5($this->projectUUID . $variableUUID . $newValueUUID);
+					 $data = array('prop_hash' => $propHash,
+										'value_uuid' => $newValueUUID);
+					 
+					 if(is_numeric($valText)){
+						  $data["val_num"] = $valText;
+					 }
+					 $db->update("properties", $data, $where);
+					 $pubObj = new dataEdit_Published;
+					 $output = $pubObj->deleteFromPublishedDocsByObservationProperty($propertyUUID);
+				}
+				else{
+					 //essentially this property ($propertyUUID) is being merged with an existing property ($existingPropUUID)
+					 
+					 $pubObj = new dataEdit_Published;
+					 $output = $pubObj->deleteFromPublishedDocsByObservationProperty($propertyUUID); // remove from the published list
+					 
+					 $existingPropUUID = $result[0]["property_uuid"];
+					 $where = "property_uuid = '".$propertyUUID."' ";
+					 $obsData = array("property_uuid" => $existingPropUUID);
+					 $db->update("observe", $obsData, $where);
+					 $db->delete("properties", $where); // old property is gone
+				}
+				
+		  }
+		  return $output; // the number of subjects updated
+	 }
+	 
+	 
+	 //find the ID for the active project from the current property UUID
+	 function getPropertyProjectVar($propertyUUID){
+		 
+		  $db = $this->startDB();
+		  
+		  $sql = "SELECT project_id, variable_uuid FROM properties WHERE property_uuid = '$propertyUUID' LIMIT 1; ";
+		  $result = $db->fetchAll($sql, 2);
+		  if($result){
+				$this->projectUUID = $result[0]["project_id"];
+				return $result[0]["variable_uuid"];
+		  }
+		  else{
+				return false;
+		  }
+	 }// returns a variable ID
+	 
+	 
+	 
+	 function createLinksByPropertyID($propertyUUID){
+		  
+		  $output = false;
+		  $db = $this->startDB();
+		  
+		  $requestParams = $this->requestParams;
+		  
+		  $sql = "SELECT DISTINCT subject_uuid AS itemUUID, subject_type FROM observe WHERE property_uuid = '$propertyUUID' ; ";
+		  $result = $db->fetchAll($sql, 2);
+		  if($result){
+				
+				$output = array();
+				foreach($result AS $row){
+					 
+					 $actParmas = $requestParams;
+					 
+					 $itemUUID = $row["itemUUID"];
+					 $itemType = $row["subject_type"];
+					 
+					 $actParmas["actItemUUID"] = $itemUUID;
+					 $actParmas["actItemType"] = $itemType;
+					 
+					 $linkObj = new dataEdit_Link;
+					 $linkObj->requestParams = $actParmas;
+					 $output[$itemUUID] = $linkObj->createItemLinkingRel();
+					 unset($linkObj);
+				}
+		  }
+		  
+		  return $output;
+	 }
+	 
+	 
+	 
+	 
+	 
+	 
+	 
+	 
+	 
 	 
 	 
 	 //if you know the variable UUID, and the subjectUUID you can create and add a property.
@@ -85,6 +187,12 @@ class dataEdit_Property  {
 		  } catch (Exception $e) {
 				$output = false;
 		  }
+		  
+		  if($output){
+				$pubObj = new dataEdit_Published;
+				$pubObj->deleteFromPublishedDocsByUUID($subjectUUID);
+		  }
+		  
 		  return $output;
 	 }
 	 

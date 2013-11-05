@@ -182,6 +182,19 @@ class dbXML_xmlMetadata  {
 					 $coinsArray[] = "rft.identifier=".urlencode($stableID["stableType"].":".$stableID["stableID"]);
 				}
 		  }
+		  if(is_array($metadata->linkedData)){
+				//item linked data to add
+				$elementB = $doc->createElement("oc:links");
+				foreach($metadata->linkedData as $linkedData){
+					 $stableLinkHref = false;
+					 $elementC = $doc->createElement("oc:link");
+					 $elementC->setAttribute("ref", $linkedData["rel"]);
+					 $elementCtext = $doc->createTextNode($linkedData["href"]);
+					 $elementC->appendChild($elementCtext);
+					 $elementB->appendChild($elementC);
+				}
+				$element->appendChild($elementB);
+		  }
 		  
 		  
 		  $elementB = $doc->createElement("oc:project_name");

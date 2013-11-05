@@ -23,7 +23,7 @@ class dbXML_dbMetadata {
     public $licenseIconURI; //uri to license icon
     
     public $persistentIDs; //array of persistent IDs assigned to individual items
-	 
+	 public $linkedData; //array of linked data directly associated with an item (not via a property)
 	 
     public $dbName;
     public $dbPenelope;
@@ -59,6 +59,7 @@ class dbXML_dbMetadata {
 		  $this->licenseIconURI = false;
 	
 		  $this->persistentIDs = false;
+		  $this->linkedData = false;
     }
     
     public function getMetadata($projectUUID, $sourceID = false){
@@ -237,7 +238,21 @@ class dbXML_dbMetadata {
 		  }
 	 }
 	 
-	 
+	 //get linked data associated with the whole item, not via a property
+	 public function getItemLinkedData($itemUUID){
+		  
+		  $db = $this->db;
+		  $sql = "SELECT *  FROM linked_data WHERE itemUUID = '$itemUUID'; ";
+		  $result = $db->fetchAll($sql, 2);
+		  if($result){
+				$linkedData = array();
+				foreach($result as $row){
+					 $actLink = array("href" => $row["linkedURI"], "rel" => $row["linkedType"]);
+					 $linkedData[] = $actLink;
+				}
+				$this->linkedData = $linkedData;
+		  }
+	 }
 	 
     
     //get license information from Open Context
@@ -268,7 +283,9 @@ class dbXML_dbMetadata {
 			  
 			  $sql = "SELECT dc_field, dc_value
 			  FROM dcmeta_proj
-			  WHERE project_id = '$projectUUID'";
+			  WHERE project_id = '$projectUUID'
+			  ORDER BY dc_field, sort, dc_value
+			  ";
 				
 		  }
 		  else{

@@ -154,7 +154,7 @@ class dataEdit_Subject  {
 	 }
 	 
 	 //get the full-context path for an item based on containment relations
-	 function determineContextFromContainRelations($uuid){
+	 function determineContextFromContainRelations($uuid, $delimiter = self::contextDeliminator){
 		  $output = false;
 		  $containObj = new dataEdit_SpaceContain;
 		  $parentParents = $containObj->getParentItemsByUUID($uuid, true); //recursively get an array of the parents of a parent item
@@ -165,7 +165,7 @@ class dataEdit_Subject  {
 					 $output = $pName;
 				}
 				else{
-					 $output .= self::contextDeliminator.$pName;
+					 $output .= $delimiter.$pName;
 				}
 		  }
 		  

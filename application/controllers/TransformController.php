@@ -1015,7 +1015,7 @@ class TransformController extends App_Controller_PenelopeController
             
             $act_val = $ActVarVal["val"];
             $act_val = trim($act_val);
-			$act_val = addslashes($act_val);
+				
             $act_valID = $this->duo_field_getValId($act_val, $dataTableName, $projectUUID);
             $act_propID = $this->duo_field_getPropId($act_val, $act_valID, $act_varID, $dataTableName, $projectUUID);
             
@@ -1043,12 +1043,26 @@ class TransformController extends App_Controller_PenelopeController
         $db = Zend_Registry::get('db');
         $this->setUTFconnection($db);
         
-        $sql = "SELECT $dataTableName.id
-        FROM $dataTableName
-        WHERE $dataTableName.$var_fieldName = '$act_var'
-        AND $dataTableName.$val_fieldName = '$act_val'
-        ";
-        
+		  if(strlen($act_val) < 200){
+				$act_val = addslashes($act_val);
+				
+				$sql = "SELECT $dataTableName.id
+				FROM $dataTableName
+				WHERE $dataTableName.$var_fieldName = '$act_var'
+				AND $dataTableName.$val_fieldName = '$act_val'
+				";
+        }
+		  else{
+				
+				$qText = addslashes(substr($act_val,0,200));
+				
+				$sql = "SELECT $dataTableName.id
+				FROM $dataTableName
+				WHERE $dataTableName.$var_fieldName = '$act_var'
+				AND $dataTableName.$val_fieldName LIKE '".$qText."%'
+				";
+				
+		  }
         //echo $sql;
         
         $VarValRows = $db->fetchAll($sql, 2);
@@ -2535,16 +2549,18 @@ class TransformController extends App_Controller_PenelopeController
                 else{
                         $theValue_Prefix = $theValue;
                 }
-                
+               
                 $hashTxt    = md5($projectUUID . "_" . $theValue_Prefix);
-
+					 /*
                 //check to see if the parent record exists in the space table:
                 $spaceRow = $space->fetchRow("hash_fcntxt = '" . $hashTxt . "' AND project_id = '".$projectUUID."'");
     
                 if($spaceRow == null){
                     $spaceRow = $space->fetchRow("space_label = '" . $theValue_Prefix . "' AND project_id = '".$projectUUID."' AND source_id = '".$dataTableName."' ");
                 }
-    
+					 */
+					 
+					 $spaceRow = $space->fetchRow("space_label = '" . $theValue_Prefix . "' AND project_id = '".$projectUUID."' AND class_uuid = '".$classUUID."' ");
     
                 $makeNew = false; //add records without containment relations (false)
                 if($spaceRow == null)

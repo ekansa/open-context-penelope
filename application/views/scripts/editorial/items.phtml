@@ -74,7 +74,7 @@ else{
                                                 <a href="<?php echo $itemsObj->itemPreview; ?>" target="_blank"><?php echo $itemsObj->itemUUID; ?></a>
                                                 <br/>
                                                 <a href="<?php echo $itemsObj->itemJSONdata; ?>" target="_blank">[JSON]</a>
-                                                <a href="<?php echo $itemsObj->itemJSONdata; ?>" target="_blank">[XML]</a>
+                                                <a href="<?php echo $itemsObj->itemXMLdata; ?>" target="_blank">[XML]</a>
                                             </small>
                                         </p>
                                     </td>
@@ -717,6 +717,43 @@ else{
                                 </div>
                             
                             </div>
+                            
+                            <div class="divRow">
+                                <div class="divCell" style="width:66%; background-color:#f7f7f7;">
+                                    <h6>Two Variables Chronology Form</h6>
+                                    <form class="form-horizontal" method="post" action="../editorial/chrono-tag-by-vars">
+                                        <input type="hidden" name="uuid" value="<?php echo $itemsObj->itemUUID; ?>" />
+                                        <input type="hidden" name="projUUID" value="<?php echo $itemsObj->projectUUID; ?>" />
+                                        <div class="control-group">
+                                            <label class="control-label" for="aVar">Start Time</label>
+                                            <div class="controls">
+                                                <input name="AvarUUID" type="text" class="input-large" id="aVar" placeholder="(VarID with start time)" >
+                                            </div>
+                                        </div>
+                                         <div class="control-group">
+                                            <label class="control-label" for="bVar">Start Time</label>
+                                            <div class="controls">
+                                                <input name="BvarUUID" type="text" class="input-large" id="bVar" placeholder="(VarID with end time)" >
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="control-group">
+                                            <div class="controls">
+                                                <button type="submit" class="btn">Submit</button>
+                                            </div>
+                                        </div>
+                                    </form>
+                                
+                                
+                                </div>
+                                
+                                <div class="divCell" >
+                                    <h6>Instructions</h6>
+                                    <p>Ideally, most fields (variables) should have documentation.</p>
+                                </div>
+                            
+                            </div>
+                            
                         </div>
                     </div>
             
@@ -779,11 +816,21 @@ else{
                                             <label class="control-label" for="itemGeoJSON">GeoJSON</label>
                                             <div class="controls">
                                             <?php
+                                            $geoJSON = false;
                                             if(is_array($itemData)){
-                                                
+                                                if(is_array($itemData["geoJSON"])){
+                                                    $geoJSON = true;
+                                                }
+                                            }
+                                            
+                                            if($geoJSON){
                                             ?>
                                             
-                                            <textarea name="geoJSON" id="itemGeoJSON" class="field span4" rows="6"><?php echo Zend_Json::encode($itemData["geoJSON"]); ?></textarea>
+                                            <textarea name="geoJSON" id="itemGeoJSON" class="field span4" rows="6">
+                                            <?php
+                                                echo Zend_Json::encode($itemData["geoJSON"]);
+                                            ?>
+                                            </textarea>
                                             
                                             <?php
                                             }//end case with a variableUUID

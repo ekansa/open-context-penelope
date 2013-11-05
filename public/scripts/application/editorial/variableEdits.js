@@ -96,6 +96,7 @@ function valsLookUpDone(response){
     output += "<th>Property Link URI</th>";
     output += "<th>Property Link Label</th>";
     output += "<th>Property Note</th>";
+    output += "<th>Property Example</th>";
     output += "</tr>";
     output += "</thead>";
     output += "<tbody>";
@@ -106,10 +107,14 @@ function valsLookUpDone(response){
         output += "<tr>";
         output += "<td><button class=\"btn btn-inverse\" id=" + actPropUUID + " onclick=\"javascript:propSelect('" + actPropUUID + "');\">&#10004;</button></td>";
         output += "<td><p><small>" + actPropUUID + "</small></p></td>";
-        output += "<td id=\"val-" + actPropUUID + "\">" + actVal  + "</td>";
+        output += "<td id=\"val-" + actPropUUID + "\">"
+        output += "<input id=\"val-c-" + actPropUUID  + "\" type=\"text\" value=\"" + actVal + "\" /><br/>";
+        output += "<button class=\"btn btn-mini\" onclick=\"javascript:changePropVal('" + actPropUUID  + "');\">Update</button>";
+        output += "</td>";
         output += "<td>" +  "</td>";
         output += "<td>" +  "</td>";
         output += "<td>" +  "</td>";
+        output += "<td><a href=\"../editorial/items?uuid=" + respData[i].exampleUUID + "\">Example</a></td>";
         output += "</tr>";
     }
     output += "</tbody>";
@@ -118,15 +123,49 @@ function valsLookUpDone(response){
 }
 
 
-
 function propSelect(propUUID){
     
-    var propValDom = document.getElementById(('val-' + propUUID));
-    var propValue = propValDom.innerHTML;
+    var propValDom = document.getElementById(('val-c-' + propUUID));
+    var propValue = propValDom.value;
     
     var chronoPropUUIDdom = document.getElementById('chronoPropUUID');
     chronoPropUUIDdom.value = propUUID;
     
     var chronoPropValDom = document.getElementById('chronoPropVal');
     chronoPropValDom.value = propValue;
+    
+    var chronoPropUUIDdom = document.getElementById('LinkPropUUID');
+    chronoPropUUIDdom.value = propUUID;
+    
+    var chronoPropValDom = document.getElementById('LinkPropVal');
+    chronoPropValDom.value = propValue;
 }
+
+
+
+function changePropVal(actPropUUID){
+    
+    var pubURI = "../editorial/update-prop-val";
+    var valTextDom = document.getElementById('val-c-' + actPropUUID);
+    var valTextNew = valTextDom.value;
+
+    var myAjax = new Ajax.Request(pubURI,
+        {   method: 'post',
+            parameters:
+                {   propUUID: actPropUUID,
+                    newPropValue: valTextNew
+                },
+        onComplete: changePropValDone }
+    );
+    
+}
+
+
+function changePropValDone(response){
+    var respData = JSON.parse(response.responseText);
+    if(respData.changedSubjects >0 ){
+        alert("Items changed: " + respData.changedSubjects);
+        valsLookUp();
+    }
+}
+

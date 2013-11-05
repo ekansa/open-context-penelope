@@ -16,7 +16,8 @@ class dataEdit_Variable  {
 	 public $varType;
 	 public $varSort;
 	 public $varNote;
-	 public $varNoteXHTMLvalid; 
+	 public $varNoteXHTMLvalid;
+	 public $varLinks;
 	 
 	 
 	 const defaultActiveTab = "varsList";
@@ -53,6 +54,7 @@ class dataEdit_Variable  {
 					 $this->varSort = $result[0]["sortOrder"];
 					 
 					 $this->varNote = $this->getVariableNote($this->varUUID);
+					 $this->getVariableLinks($varUUID);
 					 return true;
 				}
 				else{
@@ -126,6 +128,25 @@ class dataEdit_Variable  {
 		  }
 		  
 		  return $output;
+	 }
+	 
+	 
+	 function getVariableLinks($varUUID){
+		  
+		  $db = $this->startDB();
+		  
+		  $sql = "SELECT * FROM linked_data WHERE itemUUID = '".$varUUID."' ";
+		  
+		  $result =  $db->fetchAll($sql);
+		  if($result){
+				$this->varLinks = $result;
+				return $result;
+		  }
+		  else{
+				$this->varLinks = false;
+				return false;
+		  }
+		  
 	 }
 	 
 	 
@@ -371,6 +392,7 @@ class dataEdit_Variable  {
 								$actVal = $row["val_num"];
 						  }
 						  $actOutput["val"] = $actVal;
+						  $actOutput["exampleUUID"] = $this->getPropertyExample($row["propUUID"]);
 						  $output[] = $actOutput;
 					 }
 				}
@@ -380,9 +402,17 @@ class dataEdit_Variable  {
 	 }//end function
 	 
 	 
-	 
-	 
-	 
+	 //get an example item uuid using a property
+	 function getPropertyExample($propertyUUID){	  
+		  $output = false;
+		  $db = $this->startDB();
+		  $sql = "SELECT subject_uuid FROM observe WHERE property_uuid = '$propertyUUID' LIMIT 1; ";
+		  $result =  $db->fetchAll($sql);
+		  if($result){
+				$output = $result[0]["subject_uuid"];
+		  } 
+		  return $output;
+	 }
 	 
 	 
 	 

@@ -39,6 +39,26 @@ class dataEdit_Published  {
 	 }
 	 
 	 
+	 //this deletes items from the published list based on their association with a given property
+	 function deleteFromPublishedDocsByObservationProperty($propertyUUID){
+		  
+		  $db = $this->startDB();
+		  
+		  $sql = "SELECT DISTINCT subject_uuid
+		  FROM observe
+		  WHERE observe.property_uuid = '$propertyUUID'
+		  ";
+		  
+		  $result = $db->fetchAll($sql, 2);
+		  foreach($result as $row){
+				$itemUUID = $row["subject_uuid"];
+				$this->deleteFromPublishedDocsByUUID($itemUUID);
+		  }
+		  
+		  return count($result); //returns the count of items marked for removal from the published list
+	 }
+	 
+	 
 	 //delete a single item from the published docs list, this makes it easier to know what needs to be
 	 //updated in Open Context
 	 function deleteFromPublishedDocsByUUID($itemUUID){

@@ -18,33 +18,327 @@ class ZooController extends Zend_Controller_Action {
     }
 	 
 	 
-	 private function kml_to_geojson ($text) {
-		  $decoder = new gisconverter\KML();
-		  return $decoder->geomFromText($text)->toGeoJSON();
-	 }
-	 
-	 
-	 //test conversion of KML to GeoJSON
-	 function kmlGeojsonAction(){
+	 //link pictures with items
+	 function georgiaGeoAction(){
+		  
 		  $this->_helper->viewRenderer->setNoRender();
-		  require ('/application/models/GeoSpace/gisconverter.php'); // first, include gisconverter.php library, but not as a Zend include
-		  /*
-		  $text = "<Polygon>
-          <outerBoundaryIs><LinearRing><coordinates> 40.815559,37.831376 40.815589,37.831362 40.815602,37.831379 40.815572,37.831395 40.815559,37.831376</coordinates></LinearRing></outerBoundaryIs>
-        </Polygon>";
+		  Zend_Loader::loadClass('ProjEdits_Dinaa');
+		  Zend_Loader::loadClass('dataEdit_Link');
+		  Zend_Loader::loadClass('dataEdit_Published');
+		  Zend_Loader::loadClass('dataEdit_SpaceTime');
+		  Zend_Loader::loadClass('dataEdit_SpaceContain');
+		  Zend_Loader::loadClass('dataEdit_Subject');
 		  
-		  echo $this->kml_to_geojson($text);
-		  */
-		  
-		  Zend_Loader::loadClass('GeoSpace_ToGeoJSON');
-		  $geoObj = new GeoSpace_ToGeoJSON;
-		  $output = $geoObj->convertKMLtoGeoJSON();
+		  $pObj = new ProjEdits_Dinaa;
+		  $pObj->projectUUID = "64013C33-4039-46C9-609A-A758CE51CA49";
+		  $output = $pObj->georgiaGeo(); 
+
 		  header('Content-Type: application/json; charset=utf8');
 		  
 		  echo Zend_Json::encode($output);
 	 }
 	 
 	 
+	 
+	 
+	 
+	 
+	 
+	 
+	 
+	 
+	 
+	 
+	 
+	 
+	 
+	 
+	 //link pictures with items
+	 function nippurPixAction(){
+		  
+		  $this->_helper->viewRenderer->setNoRender();
+		  Zend_Loader::loadClass('ProjEdits_Nippur');
+		  Zend_Loader::loadClass('Images_ThumbPreviewSize');
+		  Zend_Loader::loadClass('dataEdit_Media');
+		  Zend_Loader::loadClass('dataEdit_Link');
+		  Zend_Loader::loadClass('dataEdit_Published');
+		  
+		  $directory = "C:\\Users\\Eric C. Kansa\\Documents\\OC Imports\\Nippur Weights\\nippur-weights\\full\\";
+		  $nippurObj = new ProjEdits_Nippur;
+		  $nippurObj->projectUUID = "8F947319-3C69-4847-B7A2-09E00ED90B32";
+		  $output = $nippurObj->getImages($directory); 
+
+		  header('Content-Type: application/json; charset=utf8');
+		  
+		  echo Zend_Json::encode($output);
+	 }
+	 
+	 
+	 //fix paths messed up
+	 function cyprusPathFixAction(){
+		  
+		   $this->_helper->viewRenderer->setNoRender();
+		  Zend_Loader::loadClass('ProjEdits_Cyprus');
+		  Zend_Loader::loadClass('dataEdit_SpaceContain');
+		  
+		  $pObj = new ProjEdits_Cyprus;
+		  $pObj->projectUUID = "3F6DCD13-A476-488E-ED10-47D25513FCB2";
+		  $output = $pObj->fixPaths();
+
+		  header('Content-Type: application/json; charset=utf8');
+		  
+		  echo Zend_Json::encode($output);
+		  
+	 }
+	 
+	  //fix paths messed up
+	 function cyprusDotBatchesAction(){
+		  
+		   $this->_helper->viewRenderer->setNoRender();
+		  Zend_Loader::loadClass('ProjEdits_Cyprus');
+		  Zend_Loader::loadClass('dataEdit_SpaceContain');
+		  Zend_Loader::loadClass('dataEdit_Property');
+		  Zend_Loader::loadClass('dataEdit_Published');
+		  
+		  $pObj = new ProjEdits_Cyprus;
+		  $pObj->projectUUID = "3F6DCD13-A476-488E-ED10-47D25513FCB2";
+		  $output = $pObj->UNdotHandle();
+
+		  header('Content-Type: application/json; charset=utf8');
+		  
+		  echo Zend_Json::encode($output);
+		  
+	 }
+	 
+	 
+	 
+	 
+	 //link finds pox for cyprus
+	 function cyprusFindsPixAction(){
+		  
+		   $this->_helper->viewRenderer->setNoRender();
+		  Zend_Loader::loadClass('ProjEdits_Cyprus');
+		  Zend_Loader::loadClass('Images_ThumbPreviewSize');
+		  Zend_Loader::loadClass('dataEdit_Media');
+		  Zend_Loader::loadClass('dataEdit_Link');
+		  Zend_Loader::loadClass('dataEdit_Published');
+		  
+		  $directory = "C:\\GitHub\\open-context-penelope\\db-export\\cyprus\\full\\";
+		  $subDirectories = array("artifacts-1", "artifacts-2", "artifacts-3", "artifacts-4", "artifacts-5");
+		  $pObj = new ProjEdits_Cyprus;
+		  $pObj->projectUUID = "3F6DCD13-A476-488E-ED10-47D25513FCB2";
+		  $output = $pObj->getFindsImages($directory, $subDirectories);
+
+		  header('Content-Type: application/json; charset=utf8');
+		  
+		  echo Zend_Json::encode($output);
+		  
+	 }
+	 
+	 
+	 //link pictures for cyprus
+	 function cyprusPixAction(){
+		  
+		   $this->_helper->viewRenderer->setNoRender();
+		  Zend_Loader::loadClass('ProjEdits_Cyprus');
+		  Zend_Loader::loadClass('Images_ThumbPreviewSize');
+		  Zend_Loader::loadClass('dataEdit_Media');
+		  Zend_Loader::loadClass('dataEdit_Link');
+		  Zend_Loader::loadClass('dataEdit_Published');
+		  
+		  $directory = "C:\\GitHub\\open-context-penelope\\db-export\\cyprus\\full\\";
+		  $subDirectory = "500-1404-discovery";
+		  $pObj = new ProjEdits_Cyprus;
+		  $pObj->projectUUID = "3F6DCD13-A476-488E-ED10-47D25513FCB2";
+		  $output = $pObj->getImages($directory, $subDirectory); 
+
+		  header('Content-Type: application/json; charset=utf8');
+		  
+		  echo Zend_Json::encode($output);
+		  
+	 }
+	 
+	 //link pictures with items
+	 function cyprusKmzAction(){
+		  
+		  $this->_helper->viewRenderer->setNoRender();
+		  Zend_Loader::loadClass('ProjEdits_Cyprus');
+		  Zend_Loader::loadClass('Images_ThumbPreviewSize');
+		  Zend_Loader::loadClass('dataEdit_Media');
+		  Zend_Loader::loadClass('dataEdit_Link');
+		  Zend_Loader::loadClass('dataEdit_Published');
+		  Zend_Loader::loadClass('dataEdit_SpaceTime');
+		  Zend_Loader::loadClass('GeoSpace_ToGeoJSON');
+		  Zend_Loader::loadClass('dataEdit_SpaceContain');
+		  Zend_Loader::loadClass('dataEdit_Subject');
+		  
+		  require ('/application/models/GeoSpace/gisconverter.php'); // first, include gisconverter.php library, but not as a Zend include
+		  
+		  $directory = "C:\\GitHub\\open-context-penelope\\db-export\\cyprus\\";
+		  $pObj = new ProjEdits_Cyprus;
+		  $pObj->projectUUID = "3F6DCD13-A476-488E-ED10-47D25513FCB2";
+		  $output = $pObj->getKmz($directory); 
+
+		  header('Content-Type: application/json; charset=utf8');
+		  
+		  echo Zend_Json::encode($output);
+	 }
+	 
+	 
+	 function redoObjAction(){
+		  
+		  $this->_helper->viewRenderer->setNoRender();    
+		  
+		  $badUUIDs = array(
+	 		'7FF17B39-BFD9-4F41-A5FE-6420C09F9860'  
+		  );
+		  
+		  $db = Zend_Registry::get('db');
+		  Zend_Loader::loadClass('dataEdit_SpaceIdentity');
+		  Zend_Loader::loadClass('dataEdit_Property');
+		  Zend_Loader::loadClass('dataEdit_Published');
+		  Zend_Loader::loadClass('dataEdit_SpaceContain');
+		  
+		  $sql = "SELECT field_summary.field_name, field_summary.field_label,
+					 var_tab.variable_uuid, field_summary.project_id
+					 FROM field_summary
+					 LEFT JOIN var_tab ON (
+						  var_tab.var_label LIKE field_summary.field_label
+						  AND var_tab.project_id = field_summary.project_id
+						  )
+					 WHERE field_summary.source_id = 'z_5_c01d889bc'
+					 AND field_summary.field_type = 'Property'
+					 ";
+		  $tabFields = array();
+		  $rawTabFields = $db->fetchAll($sql);
+		  foreach($rawTabFields as $field){
+				if($field["variable_uuid"]){
+					 $fieldLabel = $field["field_name"];
+					 $tabFields[$fieldLabel] = $field["variable_uuid"];
+				}
+		  }
+		  
+		  
+		  $spaceEdit = new dataEdit_SpaceIdentity;
+		  $propEdit = new dataEdit_Property;
+		  $pubObj = new dataEdit_Published;
+		  
+		  $spaceEdit->actSourceTab = 'z_5_c01d889bc';
+		  
+	 
+		  
+		  $output = array();
+		  foreach($badUUIDs as $uuid){
+				
+				$pubObj->deleteFromPublishedDocsByUUID($uuid);
+				$pubObj->deleteFromPublishedDocsByChildUUID($uuid);
+				
+				
+				$sql = "UPDATE space SET source_id = 'z_5_c01d889bc' WHERE uuid = '".$uuid."' LIMIT 1;";
+				$db->query($sql, 2);
+				
+				$sql = "SELECT source_id, space_label, full_context, class_uuid, project_id
+				FROM space
+				WHERE uuid = '$uuid' LIMIT 1;
+				";
+				
+				$result = $db->fetchAll($sql);
+				$result = false;
+				
+				
+				if($result){
+					 $itemLabel = $result[0]["space_label"];
+					 $itemContext = $result[0]["full_context"];
+					 $sourceID = $result[0]["source_id"];
+					 $classUUID = $result[0]["class_uuid"];
+					 $projectUUID = $result[0]["project_id"];
+					 
+					 $sourceIDs = $spaceEdit->getSourceIDs($itemLabel, $itemContext, $sourceID, $classUUID);
+					 $sourceData = $spaceEdit->itemDuplicateNoObs($uuid, $sourceIDs);
+					 
+					 //echo print_r($sourceIDs);
+					 //echo print_r($sourceData);
+					 //die;
+					 foreach($sourceData as $subjectUUID => $idArray){
+						  
+						  //delete the old observations
+						  $where = "subject_uuid = '$subjectUUID' ";
+						  $db->delete("observe", $where);
+						  
+						  $id = $idArray["id"];
+						  
+						  $sql = "SELECT * FROM z_5_c01d889bc AS otab WHERE id = $id LIMIT 1;";
+						  //echo " ".$sql." ";
+						  $originalData = $db->fetchAll($sql);
+						  foreach($originalData as $oRow){
+								foreach($oRow as $fieldKey => $value){
+									 if($value){
+										  if(array_key_exists($fieldKey, $tabFields)){
+												$variableUUID = $tabFields[$fieldKey];
+												$valueUUID = $propEdit->get_make_ValID($value, $projectUUID);
+												$propUUID = $propEdit->get_make_PropID($variableUUID, $valueUUID, $projectUUID);
+												
+												$hashObs = md5($projectUUID . "_" . $subjectUUID . "_" . 1 . "_" . $propUUID);
+												$data = array("project_id" => $projectUUID,
+																  "source_id" => $sourceID,
+																  "hash_obs" => $hashObs,
+																  "subject_type" => "Locations or Objects",
+																  "subject_uuid" => $subjectUUID,
+																  "obs_num" => 1,
+																  "property_uuid" => $propUUID
+																  );
+												try{
+													 $db->insert('observe', $data );
+												}
+												catch (Exception $e) {
+												
+												}
+												
+												$output[$uuid][$id][$fieldKey] = array("link" => "http://penelope.oc/preview/space?UUID=".$subjectUUID,
+																									"subjectUUID" => $subjectUUID,
+																									"propUUID" => $propUUID,
+																									"variableUUID" => $variableUUID,
+																									"valueUUID" => $valueUUID,
+																									 "value" => $value);
+										  }
+									 }
+								}
+						  }
+						  
+						  $firstLoop = false;
+					 }//array of sourceData
+					 
+				}
+				
+		  }//end loop
+		  
+		  header('Content-Type: application/json; charset=utf8');
+		  echo Zend_Json::encode($output);
+		  
+	 }
+	 
+	  //add links from media items back to diary items
+	 function indianaArtAction(){
+		  
+		  $this->_helper->viewRenderer->setNoRender();
+		  Zend_Loader::loadClass('ProjEdits_Dinaa');
+		  
+		  $dinaaObj = new ProjEdits_Dinaa;
+		  $ngram = 3;
+		  $output = $dinaaObj->getIndianaArtifacts($ngram);
+		  
+		  //header('Content-Type: application/json; charset=utf8');
+		  //echo Zend_Json::encode($output);
+		  echo "<table>";
+		  foreach($output[$ngram."grams"] as $key => $val){
+				if($val>1){
+					 echo "<tr>";
+					 echo "<td>$key</td><td>$val</td>";
+					 echo "</tr>";
+				}
+		  }
+		  echo "</table>";
+	 }
 	 
 	 
 	 
@@ -320,9 +614,12 @@ the fields used to describe post-cranial element measurements at Çatalhöyük.
 		  
 		  $solrQuery = "http://localhost:8983/solr/select?facet=true&facet.mincount=1&fq=%7B%21cache%3Dfalse%7DNOT+project_id%3A0+%26%26+%28+%28item_type%3Aspatial%29+%29+%26%26+799fdbd6e04acf4144f6292d3c6fdd98a11df31a_lent_taxon%3Ahttp%5C%3A%2F%2Feol.org%2Fpages%2F2851411%2F%23sheepgoat++%26%26+top_lrel_taxon%3Ahttp%5C%3A%2F%2Fpurl.org%2FNET%2Fbiol%2Fns%23term_hasTaxonomy+&facet.field=e1ebfc4569d81cbc4d21b9ca08bc3e85ce09262d_lent_taxon&facet.field=799fdbd6e04acf4144f6292d3c6fdd98a11df31a_lent_taxon&facet.field=top_taxon&facet.field=def_context_0&facet.field=project_name&facet.field=item_class&facet.field=time_span&facet.field=geo_point&facet.field=geo_path&facet.query=image_media_count%3A%5B1+TO+%2A%5D&facet.query=other_binary_media_count%3A%5B1+TO+%2A%5D&facet.query=diary_count%3A%5B1+TO+%2A%5D&sort=interest_score+desc&wt=json&json.nl=map&q=%28%2A%3A%2A%29+%26%26+%28geo_path%3A1%2A%29&start=0&rows=1000";
 		  
+		  
+		  $solrQuery = "http://localhost:8983/solr/select?facet=true&facet.mincount=1&fq=%7B%21cache%3Dfalse%7Dproject_name%3ABalance%5C+Pan%5C+Weights%5C+from%5C+Nippur++%26%26+item_class%3AObjects++%26%26+NOT+project_id%3A0+%26%26+%28+%28item_type%3Aspatial%29+%29+%26%26+%28+%28%28+1cb74b66e1841f51f0dd886ac93d5b3dcdcb0678_taxon%3Atrue+%29%29+%29+&facet.field=639def04fabcf631f140c210ad095147a29d706d_taxon&facet.field=def_context_1&facet.field=project_name&facet.field=item_class&facet.field=creator&facet.field=time_path&facet.field=geo_point&facet.field=top_taxon&facet.field=top_taxon&facet.field=top_taxon&facet.field=person_link&facet.query=image_media_count%3A%5B1+TO+%2A%5D&facet.query=other_binary_media_count%3A%5B1+TO+%2A%5D&facet.query=diary_count%3A%5B1+TO+%2A%5D&sort=interest_score+desc&wt=json&json.nl=map&q=+%28default_context_path%3AIraq%2F%2A+%29+%7C%7C+%28default_context_path%3AIraq+%29&start=0&rows=100";
+		  
 		  $respJSONstring = file_get_contents($solrQuery);
 		  $solrJSON = Zend_Json::decode($respJSONstring);
-		  $projectUUID = "DF043419-F23B-41DA-7E4D-EE52AF22F92F";
+		 $projectUUID = '8F947319-3C69-4847-B7A2-09E00ED90B32';
 		  $output = array();
 		  $localPubBaseURI = "http://penelope.oc/publish/publishdoc?projectUUID=".$projectUUID."&itemType=space&doUpdate=true&itemUUID=";
 		  $ocPubBaseURI = "http://penelope.oc/publish/publishdoc?projectUUID=".$projectUUID."&itemType=space&doUpdate=true&pubURI=http://opencontext.org/publish/item-publish&itemUUID=";
@@ -347,12 +644,61 @@ the fields used to describe post-cranial element measurements at Çatalhöyük.
 	 }
 	 
 	 
+	 function republishListAction(){
+		  
+		  $this->_helper->viewRenderer->setNoRender();
+		  $badUUIDs = array("DCA11CDF-3E87-475F-C789-60DA86FBBE54",
+								"DB066511-7C7E-436C-9D8E-16BC1C07DE48",
+								"C854CEE1-69A7-4D95-8238-B4C5351E2194",
+								"E1A77095-6911-4F2B-B289-03E82E080B32",
+								"BFA9D025-CD31-4843-8668-A99F0398FBEE",
+								"E0945E36-640E-4DB9-9656-1817735584C7",
+								"0BAFF277-EE4B-4126-516A-262A3FDCA290",
+								"F64769C5-F02B-4B7D-8BBA-5E12A6B1875B",
+								"45C2AF9E-B8D8-48ED-6737-5E78FCD133B1",
+								"090D74C0-D96B-4E85-4821-9609C7D62478",
+								"713EB6BC-C6EE-40B3-E3D0-A261E318AF1C",
+								"80916EB2-1FFD-4A36-9F12-79725B29AA65",
+								"FE5E81DA-CE4C-4316-0C7B-96B0789F72B4",
+								"274BE5F6-5D40-410A-4C06-F1535284DDA2",
+								"2E678FF9-0B67-4EB3-DA97-632944DA6A93",
+								"60597BB4-ED03-42B4-36E5-38918F901CE5",
+								"C459F053-A3D1-4466-659D-EB5EF0A3676A",
+								"0D200853-7A31-48C0-4828-4686B5982C65"
+		  );
+		  
+		  $projectUUID = '8F947319-3C69-4847-B7A2-09E00ED90B32';
+		  $output = array();
+		  $localPubBaseURI = "http://penelope.oc/publish/publishdoc?projectUUID=".$projectUUID."&itemType=space&doUpdate=true&itemUUID=";
+		  $ocPubBaseURI = "http://penelope.oc/publish/publishdoc?projectUUID=".$projectUUID."&itemType=space&doUpdate=true&pubURI=http://opencontext.org/publish/item-publish&itemUUID=";
+		  
+		  foreach($badUUIDs as $uuid){
+				
+				$pubResp = array();
+				$resp = file_get_contents($localPubBaseURI.$uuid);
+				$pubResp["local"] = Zend_Json::decode($resp);
+				sleep(1);
+				
+				$resp = file_get_contents($ocPubBaseURI.$uuid);
+				$pubResp["oc"] = Zend_Json::decode($resp);
+				
+				$output[$uuid] = $pubResp;
+				unset($pubResp);
+		  }
+		  
+		  header('Content-Type: application/json; charset=utf8');
+		  echo Zend_Json::encode($output);
+		  
+	 }
+	 
+	 
 	 
 	 function finishIndexAction(){
 		  
 		  $this->_helper->viewRenderer->setNoRender();
 		  Zend_Loader::loadClass('ProjEdits_Murlo');
 		  $jsonURL = "http://opencontext/publish/index-update";
+		  //$jsonURL = "http://opencontext.org/publish/index-update";
 		  //$jsonURL = "http://penelope.oc/csv-export/murlo-trenches-b.txt";
 		  $itemCount = 1;
 		  $loopCount = 0;
