@@ -100,6 +100,7 @@ else{
                     <li <?php echo $itemsObj->makeTabLiClass("itemLinks");?> ><a href="#itemLinks" data-toggle="tab">Item Links</a></li>
                     <li <?php echo $itemsObj->makeTabLiClass("chrono");?> ><a href="#chrono" data-toggle="tab">Chronology</a></li>
                     <li <?php echo $itemsObj->makeTabLiClass("itemGeo");?> ><a href="#itemGeo" data-toggle="tab">Geospatial</a></li>
+                    <li <?php echo $itemsObj->makeTabLiClass("linkedData");?> ><a href="#linkedData" data-toggle="tab">Linked Data</a></li>
                     <li class="dropdown">
                         <a href="#" class="dropdown-toggle" data-toggle="dropdown">New Items <b class="caret"></b></a>
                         <ul class="dropdown-menu">
@@ -1454,6 +1455,114 @@ else{
                                 </div>
                             </div>
                         </div>
+                    </div>
+                  
+                    <div <?php echo $itemsObj->makeTabDivClass("linkedData");?> id="linkedData">
+                        <h4>Item Linked Data</h4>
+                        <table class="table table-striped table-condensed table-hover table-bordered data-tab">
+                            <thead>
+                                <tr>
+                                    <th>Delete</th>
+                                    <th>Predicate</th>
+                                    <th>Object ID / URI</th>
+                                    <th>Add / Update</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            <?php
+                                
+                        if(isset($itemData["metadataObj"]["linkedData"])){
+                            if(is_array($itemData["metadataObj"]["linkedData"])){
+                                foreach($itemData["metadataObj"]["linkedData"] as $linkArray){
+                            
+                                    ?>    
+                                    <tr>
+                                        <td>
+                                            <form method="POST" action="../editorial/delete-linked-data">
+                                                <input type="hidden" name="subjectUUID" value="<?php echo $itemsObj->itemUUID; ?>" />
+                                                <input type="hidden" name="predicateURI" value="<?php echo $linkArray["rel"]; ?>" />
+                                                <input type="hidden" name="objectURI" value="<?php echo $linkArray["href"]; ?>" />
+                                                <button class="btn btn-warning btn-mini" type="submit" title="Remove property from item">X</button>
+                                            </form>
+                                        </td>
+                                        <form method="POST" action="../editorial/add-update-linked-data">
+                                            <input type="hidden" name="subjectUUID" value="<?php echo $itemsObj->itemUUID; ?>" />
+                                            <input type="hidden" name="subjectType" value="<?php echo $itemsObj->itemType; ?>" />
+                                            <input type="hidden" name="projectUUID" value="<?php echo $itemsObj->projectUUID; ?>" />
+                                            <input type="hidden" name="replacePredicate" value="1" />
+                                            <td><input type="text" name="predicateURI" value="<?php echo $linkArray["rel"]; ?>" />
+                                                <p><small><a target="_blank" title="<?php echo $linkArray["rel"]; ?>" href="<?php echo $linkArray["rel"]; ?>"><?php echo $linkArray["rel"]; ?></small></p>
+                                            </td>
+                                            <td><input type="text" name="predicateURI" value="<?php echo $linkArray["href"]; ?>" />
+                                                <p><small><a target="_blank" title="<?php echo $linkArray["href"]; ?>" href="<?php echo $linkArray["href"]; ?>"><?php echo $linkArray["href"]; ?></small></p>
+                                            </td>
+                                            <td>
+                                                <button class="btn btn-info btn-mini" type="submit" title="Update Link">X</button>
+                                            </td>
+                                        </form>
+                                    </tr>
+                            <?php
+                                }//end loop through linkes
+                            }//end case with array of linked data
+                        }//end case with linked data
+                        
+                        if(isset($itemData["metadataObj"]["persistentIDs"])){
+                            if(is_array($itemData["metadataObj"]["persistentIDs"])){
+                                foreach($itemData["metadataObj"]["persistentIDs"] as $linkArray){
+                            
+                                    ?>    
+                                    <tr>
+                                        <td>
+                                            <form method="POST" action="../editorial/delete-linked-data">
+                                                <input type="hidden" name="subjectUUID" value="<?php echo $itemsObj->itemUUID; ?>" />
+                                                <input type="hidden" name="predicateURI" value="<?php echo $linkArray["stableType"]; ?>" />
+                                                <input type="hidden" name="objectURI" value="<?php echo $linkArray["stableID"]; ?>" />
+                                                <button class="btn btn-warning btn-mini" type="submit" title="Remove ID from item">X</button>
+                                            </form>
+                                        </td>
+                                        <form method="POST" action="../editorial/add-update-linked-data">
+                                            <input type="hidden" name="subjectUUID" value="<?php echo $itemsObj->itemUUID; ?>" />
+                                            <input type="hidden" name="subjectType" value="<?php echo $itemsObj->itemType; ?>" />
+                                            <input type="hidden" name="projectUUID" value="<?php echo $itemsObj->projectUUID; ?>" />
+                                            <input type="hidden" name="replacePredicate" value="1" />
+                                            <td><input type="text" name="predicateURI" value="<?php echo $linkArray["stableType"]; ?>" />
+                                                <p><small><a target="_blank" title="<?php echo $linkArray["stableType"]; ?>" href="<?php echo $linkArray["stableType"]; ?>"><?php echo $linkArray["stableType"]; ?></small></p>
+                                            </td>
+                                            <td><input type="text" name="objectURI" value="<?php echo $linkArray["stableID"]; ?>" />
+                                                <p><small><a target="_blank" title="<?php echo $linkArray["stableID"]; ?>" href="<?php echo $linkArray["stableID"]; ?>"><?php echo $linkArray["stableID"]; ?></small></p>
+                                            </td>
+                                            <td>
+                                                <button class="btn btn-info btn-mini" type="submit" title="Update ID">X</button>
+                                            </td>
+                                        </form>
+                                    </tr>
+                            <?php
+                                }//end loop through linkes
+                            }//end case with array of linked data
+                        }//end case with linked data
+                        ?>
+                            
+                                <form method="POST" action="../editorial/add-update-linked-data">
+                                    <input type="hidden" name="subjectUUID" value="<?php echo $itemsObj->itemUUID; ?>" />
+                                    <input type="hidden" name="subjectType" value="<?php echo $itemsObj->itemType; ?>" />
+                                    <input type="hidden" name="projectUUID" value="<?php echo $itemsObj->projectUUID; ?>" />
+                                    <td>Replace Predictate with New?
+                                        <input type="radio" name="replacePredicate" value="1" checked />
+                                        <input type="radio" name="replacePredicate" value="0" />
+                                    </td>
+                                    <td>
+                                        <input type="text" name="predicateURI" value="" />
+                                    </td>
+                                    <td>
+                                        <input type="text" name="objectURI" value="" />
+                                    </td>
+                                    <td>
+                                        <button class="btn btn-info btn-mini" type="submit" title="Update ID">X</button>
+                                    </td>
+                            
+                                </form>
+                            </tbody>
+                        </table>
                     </div>
                   </div>
                   <!--end tab content -->

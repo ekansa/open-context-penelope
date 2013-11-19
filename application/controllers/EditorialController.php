@@ -649,4 +649,60 @@ class EditorialController extends Zend_Controller_Action{
 		  */
 	 }
 	 
+	 
+	 
+	 function deleteLinkedDataAction(){
+		  $this->_helper->viewRenderer->setNoRender();
+		  $requestParams =  $this->_request->getParams();
+		  
+		  Zend_Loader::loadClass('dataEdit_Items');
+		  Zend_Loader::loadClass('dataEdit_LinkedData');
+		  Zend_Loader::loadClass('dataEdit_Published');
+		  
+		  $linkDataObj = new dataEdit_LinkedData;
+		  $linkDataObj->requestParams = $requestParams;
+		  $output = $linkDataObj->deleteLinkedData();
+		  
+		  if(isset($requestParams["subjectUUID"])){
+				$location = "../editorial/items?tab=linkedData&uuid=".$requestParams["subjectUUID"];
+		  }
+		  else{
+				$location = "../editorial/items";
+		  }
+		  header("Location: ".$location);
+		  
+		  /*
+		  header('Content-Type: application/json; charset=utf8');
+		  echo Zend_Json::encode($uuid);
+		  */
+	 }
+	 
+	 function addUpdateLinkedDataAction(){
+		  $this->_helper->viewRenderer->setNoRender();
+		  $requestParams =  $this->_request->getParams();
+		  
+		  Zend_Loader::loadClass('dataEdit_Items');
+		  Zend_Loader::loadClass('dataEdit_LinkedData');
+		  Zend_Loader::loadClass('dataEdit_Published');
+		  
+		  $linkDataObj = new dataEdit_LinkedData;
+		  $linkDataObj->requestParams = $requestParams;
+		  $output = $linkDataObj->addUpdateLinkedData();
+		  
+		  if(isset($requestParams["subjectUUID"])){
+				$location = "../editorial/items?tab=linkedData&uuid=".$requestParams["subjectUUID"];
+		  }
+		  else{
+				$location = "../editorial/items";
+		  }
+		  header("Location: ".$location);
+		  
+		  
+		  //header('Content-Type: application/json; charset=utf8');
+		  //echo Zend_Json::encode($output );
+		  
+	 }
+	 
+	 
+	 
 }
