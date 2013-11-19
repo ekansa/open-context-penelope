@@ -48,6 +48,8 @@ class TabOut_Table  {
 	 const OCprojectURIbase = "http://opencontext.org/projects/";
 	 const contextDelim = "|xx|";
 	 
+	 const multiValueDelim = "; "; //delimeter for multiple values in a field.
+	 
 	 public $queries = array();
 	 public $recordQueries = false;
 	 
@@ -431,7 +433,16 @@ class TabOut_Table  {
 										  $actRecord[$fieldLabel] = "";
 									 }
 									 else{
-											$actRecord[$fieldLabel] = $linkedObject[0][$fieldKey]; //add the value returned from the database for a given field key
+										  //$actRecord[$fieldLabel] = $linkedObject[0][$fieldKey]; //add the value returned from the database for a given field key
+										  $actRecord[$fieldLabel] = false;
+										  foreach($linkedObject as $linkeVals){
+												if(!$actRecord[$fieldLabel]){
+													 $actRecord[$fieldLabel] = $linkeVals[$fieldKey];
+												}
+												else{
+													 $actRecord[$fieldLabel] .= self::multiValueDelim.$linkeVals[$fieldKey];
+												}
+										  }
 									 }
 								}//end loop through field keys
 						  }
@@ -460,11 +471,15 @@ class TabOut_Table  {
 		  $props = $this->itemProperties($itemUUID);
 		  foreach($this->actVarLabels as $actLabel){
 				$tabField = $actLabel." [Source]";
-				$tabCell = "";
+				$tabCell = false;
 				foreach($props as $row){
 					 if($row["var_label"] == $actLabel){
-						  $tabCell = $row["val"];
-						  break;
+						  if(!$tabCell){
+								$tabCell = $row["val"];
+						  }
+						  else{
+								$tabCell .= self::multiValueDelim.$row["val"];
+						  }
 					 }
 				}
 				$actRecord[$tabField] = $tabCell;
@@ -601,7 +616,7 @@ class TabOut_Table  {
 			  LEFT JOIN properties ON observe.property_uuid = properties.property_uuid
 			  LEFT JOIN var_tab ON properties.variable_uuid = var_tab.variable_uuid
 			  LEFT JOIN val_tab ON properties.value_uuid = val_tab.value_uuid
-			  WHERE observe.subject_uuid = '$itemUUID' 
+			  WHERE observe.subject_uuid = '$itemUUID' AND observe.obs_num >= 0 
 			  ORDER BY var_tab.sort_order";
 		  
 		  return $db->fetchAll($sql);
@@ -923,7 +938,7 @@ class TabOut_Table  {
 				JOIN properties ON observe.property_uuid = properties.property_uuid
 				JOIN var_tab ON properties.variable_uuid = var_tab.variable_uuid
 				$linkedDataJoin
-				WHERE space.class_uuid = '$classUUID' $projCondition $varCondition $limitingTypeCondition $limitingSourceTabCoundition
+				WHERE observe.obs_num >= 0 AND  space.class_uuid = '$classUUID' $projCondition $varCondition $limitingTypeCondition $limitingSourceTabCoundition
 				GROUP BY var_tab.variable_uuid
 				ORDER BY sCount DESC, var_tab.sort_order, var_tab.var_label
 				";
@@ -934,7 +949,7 @@ class TabOut_Table  {
 				JOIN properties ON observe.property_uuid = properties.property_uuid
 				JOIN var_tab ON properties.variable_uuid = var_tab.variable_uuid
 				$linkedDataJoin
-				WHERE space.class_uuid = '$classUUID' $projCondition $varCondition $limitingTypeCondition $limitingSourceTabCoundition
+				WHERE observe.obs_num >= 0 AND space.class_uuid = '$classUUID' $projCondition $varCondition $limitingTypeCondition $limitingSourceTabCoundition
 				GROUP BY var_tab.variable_uuid
 				ORDER BY ".$this->sortForSourceVars."
 				";
