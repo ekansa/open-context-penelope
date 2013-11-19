@@ -666,7 +666,7 @@ class TransformController extends App_Controller_PenelopeController
                     
                     if($propertyRecord == null)
                     {
-                        $propHash   = md5($projectUUID . $variableUUID . $valueUUID);
+                        //$propHash   = md5($projectUUID . $variableUUID . $valueUUID);
                         $propUUID   = GenericFunctions::generateUUID();
                         //insert the property into the properties table:
 					 
