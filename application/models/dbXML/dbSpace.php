@@ -32,6 +32,8 @@ class dbXML_dbSpace  {
 	 public $geoJSON;
     public $geoSource;
     public $geoSourceName;
+	 public $geoSpecificity;
+	 public $geoNote;
     
     public $chronoArray; //array of chronological tags, handled differently from Geo because can have multiple
     
@@ -175,7 +177,7 @@ class dbXML_dbSpace  {
 				$sql = "SELECT DISTINCT observe.obs_num, observe.source_id AS sourceID, obs_metadata.obs_type, obs_metadata.obs_name, obs_metadata.obs_notes
 					  FROM observe
 					  LEFT JOIN obs_metadata ON (observe.obs_num = obs_metadata.obs_num AND observe.source_id = obs_metadata.source_id)
-					  WHERE observe.subject_uuid = '".$this->itemUUID."'
+					  WHERE observe.subject_uuid = '".$this->itemUUID."' AND observe.obs_num >= 0
 					  GROUP BY observe.obs_num
 				  ORDER BY observe.obs_num
 					  ";
@@ -206,6 +208,7 @@ class dbXML_dbSpace  {
             $sql = "SELECT DISTINCT observe.obs_num, observe.source_id AS sourceID, 'primary' AS obs_type, 'public site' AS obs_name, 'public site' AS obs_notes
             FROM observe
             WHERE observe.subject_uuid = '".$this->itemUUID."'
+				AND observe.obs_num >= 0
             ORDER BY observe.obs_num";
         }
         
@@ -298,6 +301,20 @@ class dbXML_dbSpace  {
                 else{
                     $this->geoKML = false;
                 }
+					 
+					 if(isset($result[0]["specificity"])){
+						  $this->geoSpecificity = $result[0]["specificity"];
+					 }
+					 else{
+						  $this->geoSpecificity = false;
+					 }
+					 
+					 $this->geoNote = false;
+					 if(isset($result[0]["note"])){
+						  if(strlen($result[0]["note"])>1){
+								 $this->geoNote = $result[0]["note"];
+						  }
+					 }
 					 
 					 
 					 $sql = "SELECT *
