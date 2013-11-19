@@ -43,7 +43,7 @@
         
         foreach($data as $row){
         ?>
-            <tr>
+            <tr id="prop-<?php echo $row["property_uuid"]; ?>">
                 <form action="prop-link" method="post" >
                     
                     <input type="hidden" name="showPropCounts" value="<?php echo $linkVarObj->showPropCounts; ?>" />
