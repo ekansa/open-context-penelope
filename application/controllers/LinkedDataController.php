@@ -211,7 +211,7 @@ class LinkedDataController extends Zend_Controller_Action
 		  $this->link_label_Update($linkedLabel, $linkURI, $projectUUID, $db);
 		  
 		  if(!isset($_REQUEST['noRedirect'])){
-				$headerLink = "var?varUUID=".$varUUID."&showPropCounts=".$_REQUEST['showPropCounts'];
+				$headerLink = "var?varUUID=".$varUUID."&showPropCounts=".$_REQUEST['showPropCounts']."#prop-".$propertyUUID;
 				header("Location: $headerLink");
 		  }
 		  else{
