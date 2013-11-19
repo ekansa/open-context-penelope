@@ -79,7 +79,7 @@ class dbXML_dbProperties  {
 			  LEFT JOIN var_tab ON properties.variable_uuid = var_tab.variable_uuid
 			  LEFT JOIN val_tab ON properties.value_uuid = val_tab.value_uuid
 			  LEFT JOIN var_notes ON var_tab.variable_uuid = var_notes.variable_uuid
-			  WHERE observe.subject_uuid = '$id' AND properties.variable_uuid <> 'NOTES'
+			  WHERE observe.subject_uuid = '$id' AND properties.variable_uuid <> 'NOTES' AND observe.obs_num >= 0 
 			  $obsTerm
 			  ORDER BY var_tab.sort_order, var_notes.field_num
 			  

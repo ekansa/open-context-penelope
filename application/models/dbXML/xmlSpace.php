@@ -329,7 +329,9 @@ class dbXML_xmlSpace  {
 							  "geoGML" => $itemObj->geoGML,
 							  "geoKML" => $itemObj->geoKML,
 							  "geoSource" => $itemObj->geoSource,
-							  "geoSourceName" => $itemObj->geoSourceName
+							  "geoSourceName" => $itemObj->geoSourceName,
+							  "geoSpecificity" => $itemObj->geoSpecificity,
+							  "geoNote" => $itemObj->geoNote
 							  );
 		  $xmlMetadata->chronoData = $itemObj->chronoArray;
 		  
