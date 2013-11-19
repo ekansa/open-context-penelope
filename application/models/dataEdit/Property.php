@@ -12,6 +12,7 @@ class dataEdit_Property  {
 	 
 	 
 	 function updatePropertyValue($valText, $propertyUUID){
+		  
 		  $db = $this->startDB();
 		  $output = false;
 		  $variableUUID = $this->getPropertyProjectVar($propertyUUID);
@@ -126,7 +127,7 @@ class dataEdit_Property  {
 		  $propertyUUID = $this->get_make_PropID($variableUUID, $valueUUID, $projectUUID, $sourceID);
 		  $output = $this->add_obs_property($propertyUUID, $subjectUUID, $subjectType, $obs, $projectUUID, $sourceID);
 		  
-		  return $output;
+		  return $propertyUUID;
 	 }
 	 
 	 //delete a given variable from the obserevations

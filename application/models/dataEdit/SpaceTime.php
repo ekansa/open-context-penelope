@@ -117,12 +117,12 @@ class dataEdit_SpaceTime  {
 	 function chrontoTagItem($uuid = false){
 		  
 		  $requestParams = $this->requestParams;
-		  $tStart = $_REQUEST['tStart'];
-        $tEnd = $_REQUEST['tEnd'];
+		  $tStart = $requestParams['tStart'];
+        $tEnd = $requestParams['tEnd'];
 		  
 		  if(!$uuid){
-				if(isset($_REQUEST['uuid'])){
-					 $uuid =  $_REQUEST['uuid'];
+				if(isset($requestParams['uuid'])){
+					 $uuid =  $requestParams['uuid'];
 				}
 		  }
 		  
