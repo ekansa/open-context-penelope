@@ -251,6 +251,20 @@ class dbXML_xmlMetadata  {
 				}
 				$elementC->setAttribute("href", self::spaceRootURI.$geoSource);
 				
+				if(isset($geoData["geoSpecificity"])){
+					 if($geoData["geoSpecificity"]){
+						  $elementC->setAttribute("specificity", $geoData["geoSpecificity"]);
+					 }
+				}
+				if(isset($geoData["geoNote"])){
+					 if($geoData["geoNote"]){
+						  $elementD = $doc->createElement("oc:note");
+						  $elementDtext = $doc->createTextNode($geoData["geoNote"]);
+						  $elementD->appendChild($elementDtext);
+						  $elementC->appendChild($elementD);
+					 }
+				}
+				
 				$elementD = $doc->createElement("oc:source_name");
 				$elementDtext = $doc->createTextNode($geoData["geoSourceName"]);
 				$elementD->appendChild($elementDtext);
