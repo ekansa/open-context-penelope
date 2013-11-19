@@ -11,6 +11,691 @@ class ProjEdits_Dinaa  {
 	 public $db;
 	 public $projectUUID;
 	 
+	 
+	 const GeoUsername = "ekansa"; //geonames API name
+    const APIsleep = .5; //
+    const GeoNamesBaseURI = "http://www.geonames.org/";
+	 const GeoNamesBaseAPI = "http://api.geonames.org/";
+	 
+	
+	 
+	 
+	 function floridaMissingRepub(){
+		  
+		  $localPubBaseURI = "http://penelope.oc/publish/publishdoc?projectUUID=".$this->projectUUID."&itemType=space&doUpdate=true&itemUUID=";
+			
+		  $output = array();
+		  $output["redoCount"] = 0;
+		  $db = $this->startDB();
+		  
+		  
+		  $sql = "SELECT space.uuid
+		  FROM space
+		  LEFT JOIN fsites ON space.uuid = fsites.uuid
+		  WHERE fsites.uuid IS NULL
+		  AND space.project_id = '81204AF8-127C-4686-E9B0-1202C3A47959'";
+		  
+		  $resultA = $db->fetchAll($sql, 2);
+		  foreach($resultA as $rowA){
+				$uuid = $rowA["uuid"];
+				$resp = file_get_contents($localPubBaseURI.$uuid);
+				$output["redone"][$uuid] = Zend_Json::decode($resp);
+				
+		  }
+		  $output["redoCount"] = count($output["redone"]);
+		  return $output;
+	 }
+	 
+	 
+	 function floridaCountyRepub(){
+		  
+		  $localPubBaseURI = "http://penelope.oc/publish/publishdoc?projectUUID=".$this->projectUUID."&itemType=space&doUpdate=true&itemUUID=";
+			
+		  $output = array();
+		  $output["redoCount"] = 0;
+		  $db = $this->startDB();
+		  
+		  $url = "http://opencontext/sets/United+States/Florida.json?cat=Site";
+		  $jString = file_get_contents($url);
+		  $json = Zend_Json::decode($jString );
+		  $contexts = $json["facets"]["context"];
+		  unset($json );
+		  unset($jString );
+		  
+		  $sql = "SELECT COUNT( uuid ) AS itemCount, field_7
+		  FROM  z_ex_florida_sites_main
+		  WHERE 1 
+		  GROUP BY field_7
+		  ORDER BY itemCount DESC";
+		  
+		  $resultA = $db->fetchAll($sql, 2);
+		  foreach($resultA as $rowA){
+				$county = $rowA["field_7"];
+				$countyCount = $rowA["itemCount"];
+				$redoCounty = true;
+				foreach( $contexts as $context){
+					 if($county == $context["name"]){
+						  if($countyCount == $context["count"]){
+								$redoCounty = false;
+								break;
+						  }
+					 }
+				}
+				if($redoCounty){
+					 $output["redoCount"] = $output["redoCount"] + $countyCount;
+					 $output[$county] = $countyCount;
+					 $sql = "SELECT uuid FROM z_ex_florida_sites_main WHERE field_7 = '$county' ";
+					 $result = $db->fetchAll($sql, 2);
+					 foreach($result as $row){
+						  $uuid = $row["uuid"];
+						  $urlItem = $url."&q=".$uuid;
+						  $jString = file_get_contents($url);
+						  $json = Zend_Json::decode($jString );
+						  if($json["numFound"] < 1){
+								$resp = file_get_contents($localPubBaseURI.$uuid);
+								$output["redone"][$uuid] = Zend_Json::decode($resp);
+						  }
+					 }
+				}
+				
+		  }	
+		  return $output;
+	 }
+	 
+	 
+	 function georgiaCountyRepub(){
+		  
+		  $localPubBaseURI = "http://penelope.oc/publish/publishdoc?projectUUID=".$this->projectUUID."&itemType=space&doUpdate=true&itemUUID=";
+			
+		  $output = array();
+		  $output["redoCount"] = 0;
+		  $db = $this->startDB();
+		  
+		  $url = "http://opencontext/sets/United+States/Georgia.json?proj=Georgia+SHPO&cat=Site";
+		  $jString = file_get_contents($url);
+		  $json = Zend_Json::decode($jString );
+		  $contexts = $json["facets"]["context"];
+		  unset($json );
+		  unset($jString );
+		  
+		  $sql = "SELECT COUNT( uuid ) AS itemCount, field_7
+		  FROM  z_ex_georgia_sites 
+		  WHERE 1 
+		  GROUP BY field_7
+		  ORDER BY itemCount DESC";
+		  
+		  $resultA = $db->fetchAll($sql, 2);
+		  foreach($resultA as $rowA){
+				$county = $rowA["field_7"];
+				$countyCount = $rowA["itemCount"];
+				$redoCounty = true;
+				foreach( $contexts as $context){
+					 if($county == $context["name"]){
+						  if($countyCount == $context["count"]){
+								$redoCounty = false;
+								break;
+						  }
+					 }
+				}
+				if($redoCounty){
+					 $output["redoCount"] = $output["redoCount"] + $countyCount;
+					 $output[$county] = $countyCount;
+					 $sql = "SELECT uuid FROM z_ex_georgia_sites WHERE field_7 = '$county' ";
+					 $result = $db->fetchAll($sql, 2);
+					 foreach($result as $row){
+						  $uuid = $row["uuid"];
+						  $urlItem = $url."&q=".$uuid;
+						  $jString = file_get_contents($url);
+						  $json = Zend_Json::decode($jString );
+						  if($json["numFound"] < 1){
+								$resp = file_get_contents($localPubBaseURI.$uuid);
+								$output["redone"][$uuid] = Zend_Json::decode($resp);
+						  }
+					 }
+				}
+				
+		  }	
+		  return $output;
+	 }
+	 
+	 
+	 
+	 
+	 function floridaGeo(){
+		  
+		  $output = array();
+		  $db = $this->startDB();
+		  $sql = "SELECT * FROM z_florida_geo
+		  WHERE 1
+		  GROUP BY siteID
+		  ";
+		  
+		  $result = $db->fetchAll($sql, 2);
+        if($result){
+				foreach($result as $row){
+					 
+					 $site = trim($row["siteID"]);
+					 $uuid = $this->getSiteUUID($site);
+					 if($uuid != false){
+						  $lat = $row["lat"];
+						  $lon = $row["lon"];
+						  $data = array("uuid" => $uuid,
+											 "project_id" => $this->projectUUID,
+											 "source_id" => "geo-tile approx",
+											 "latitude" => $lat,
+											 "longitude" => $lon,
+											 "specificity" => -11,
+											 "note" => "Approximated by geotile to zoom level 11"
+											 );
+						  
+						  try{
+								$db->insert("geo_space", $data);
+								//$output[$site][] = "Geo $uuid added"; 
+						  }
+						  catch(Exception $e){
+								$output[$site][] = "Geo for $uuid already in"; 
+						  }
+						  
+					 }
+					 else{
+						  $output[$site] = "Error! No UUID";
+					 }
+					 
+					 
+				}
+		  
+		  
+		  }
+		  
+		  return $output;
+	 }
+	 
+	 
+	 function countyGeo($state){
+		  $db = $this->startDB();
+		  
+		  $vars = array("County name" => "87556028-677C-4C59-BA35-AE509BC825AD",
+					  "Gazetteer reference" => "B90CA9CC-B313-4525-8F26-0896AE7D3ED2"
+					  );
+		  
+		  
+		  $output = array();
+		  $propObj = new dataEdit_Property;
+		  $LDobj = new dataEdit_LinkedData;
+		  
+		  $sql = "SELECT space.uuid, space.space_label, space.project_id
+		  FROM space
+		  LEFT JOIN geo_space ON geo_space.uuid = space.uuid
+		  WHERE space.class_uuid = '34B626E9-5188-427B-C732-6BFFFA998C64'
+		  AND space.full_context LIKE 'United States|xx|".$state."%'
+		  AND space.space_label != '$state'
+		  AND geo_space.uuid IS NULL
+		  ORDER BY space.space_label
+		  ";
+		  
+		  $result = $db->fetchAll($sql, 2);
+		  if($result){
+				$urlBase = self::GeoNamesBaseAPI."searchJSON?formatted=true&maxRows=30&lang=en&style=full&username=".self::GeoUsername;
+				foreach($result as $row){
+					 $actout = array();
+					 $uuid = $row["uuid"];
+					 $name = $row["space_label"];
+					 $projectUUID = $row["project_id"];
+					 $url = $urlBase."&q=".urlencode($name." County")."+".$state;
+					 $actout["oc-name"] = $name;
+					 $actout["url"] = $url;
+					 @$jsonString = file_get_contents($url);
+					 if($jsonString != false){
+						  $geoAll = Zend_Json::decode($jsonString);
+						  if(is_array($geoAll)){
+								$geo = $geoAll["geonames"];
+								$actout["geo"] = $geo;
+								$i = 0;
+								$goodGeo = false;
+								foreach($geoAll["geonames"] as $checkGeo){
+									 if((strtolower($checkGeo["name"]) == strtolower($name." county") || strtolower($checkGeo["toponymName"]) == strtolower($name." county")) && isset($checkGeo["bbox"]) && $checkGeo["fcodeName"] != "airport" && !stristr($checkGeo["toponymName"], "airport")){
+										  if(!$goodGeo){
+												$goodGeo = $checkGeo;
+												break;
+										  }
+									 }
+									 elseif(strtolower($checkGeo["name"]) == strtolower(str_replace("St.", "Saint",$name)." county") && isset($checkGeo["bbox"]) && $checkGeo["fcodeName"] != "airport" && !stristr($checkGeo["toponymName"], "airport")){
+										  if(!$goodGeo){
+												$goodGeo = $checkGeo;
+												break;
+										  }
+									 }
+								}
+								
+								if(is_array($goodGeo)){
+									 $countyName = $goodGeo["name"];
+									 
+									 $propObj->add_obs_varUUID_value($countyName, "87556028-677C-4C59-BA35-AE509BC825AD", $uuid, "Locations or Objects", 1, $projectUUID, 'api.geonames.org');
+									 $geoRef = $countyName . " (GeoNames:".$goodGeo["geonameId"].")";
+									 $geoURI = self::GeoNamesBaseURI.$goodGeo["geonameId"];
+									 $propertyUUID = $propObj->add_obs_varUUID_value($geoRef, "B90CA9CC-B313-4525-8F26-0896AE7D3ED2", $uuid, "Locations or Objects", 1, $projectUUID, 'api.geonames.org'); 
+									 $requestParams = array();
+									 $requestParams["projectUUID"] = $projectUUID;
+									 $requestParams["subjectUUID"] = $propertyUUID;
+									 $requestParams["subjectType"] = "property";
+									 $requestParams["sourceID"] = "api.geonames.org";
+									 $requestParams["predicateURI"] = "type";
+									 $requestParams["objectURI"] = $geoURI;
+									 $requestParams["objectLabel"] = $countyName;
+									 $requestParams["replacePredicate"] = "1";
+									 $LDobj->requestParams = $requestParams;
+									 $actout["ld"] = $LDobj->addUpdateLinkedData();
+									 
+									 if(is_array($goodGeo["bbox"])){
+										  $lat =  ($goodGeo["bbox"]["south"] + $goodGeo["bbox"]["north"] )/2;
+										  $lon =  ($goodGeo["bbox"]["east"] + $goodGeo["bbox"]["west"] )/2;
+										  $propObj->add_obs_varUUID_value($countyName, "87556028-677C-4C59-BA35-AE509BC825AD", $uuid, "Locations or Objects", 1, $projectUUID, 'api.geonames.org');
+										  $geoRef = $countyName . " (GeoNames:".$goodGeo["geonameId"].")";
+										  $geoURI = self::GeoNamesBaseURI.$goodGeo["geonameId"];
+										  $propertyUUID = $propObj->add_obs_varUUID_value($geoRef, "B90CA9CC-B313-4525-8F26-0896AE7D3ED2", $uuid, "Locations or Objects", 1, $projectUUID, 'api.geonames.org'); 
+										  $requestParams = array();
+										  $requestParams["projectUUID"] = $projectUUID;
+										  $requestParams["subjectUUID"] = $propertyUUID;
+										  $requestParams["subjectType"] = "property";
+										  $requestParams["sourceID"] = "api.geonames.org";
+										  $requestParams["predicateURI"] = "type";
+										  $requestParams["objectURI"] = $geoURI;
+										  $requestParams["objectLabel"] = $countyName;
+										  $requestParams["replacePredicate"] = "1";
+										  $LDobj->requestParams = $requestParams;
+										  $ld = $LDobj->addUpdateLinkedData();
+										  
+										  $data = array("uuid" => $uuid,
+														"project_id" => $projectUUID,
+														"source_id" => "api.geonames.org",
+														"latitude" => $lat,
+														"longitude" => $lon,
+														"specificity" => -1,
+														"note" => "Data from geonames.org"
+														);
+								
+										  try{
+												$db->insert("geo_space", $data);
+												$actout["geo_space"] = true;
+										  }
+										  catch(Exception $e){
+												$actout["geo_space"] = "Geo for already in"; 
+										  }
+									 }
+									 else{
+										  $actout["geo_space"] = "No Bounding Box!!";
+									 }//end case with no bounding box
+								}//end case with good geo found
+								else{
+									 $actout["error"] = "No match found";
+								}
+						  }
+					 }
+					 $output[$uuid] = $actout;
+					 sleep(self::APIsleep);
+				}
+		  }
+		  
+		  return $output;
+	 }
+	 
+	 
+	 
+	 function floridaDateFix(){
+		  $output = array();
+		  $db = $this->startDB();
+		  $sql = "SELECT properties.property_uuid, val_tab.val_text
+		  FROM properties
+		  JOIN val_tab ON val_tab.value_uuid = properties.value_uuid
+		  WHERE properties.variable_uuid = 'EBBEDF7D-46FD-4C44-2C94-A337D4A3B4F1'
+		  ";
+		  
+		  $result = $db->fetchAll($sql, 2);
+		  if($result){
+				
+				$proObj = new dataEdit_Property;
+				foreach($result as $row){
+					 $propertyUUID = $row["property_uuid"];
+					 $excelDate = $row["val_text"]; 
+					 $unixDate = ($excelDate - 25569) * 86400;
+					 $OCdate = gmdate("Y-m-d", $unixDate);
+					 $proObj->updatePropertyValue($OCdate, $propertyUUID);
+					 $output[$propertyUUID] = array("excel" => $excelDate, "oc" => $OCdate);
+				}	 
+		  }
+		  
+		  return $output;
+	 }
+	 
+	 
+	 function floridaDates(){
+		  $output = array();
+		  $output["found"] = 0;
+		  $spaceTimeObj = new  dataEdit_SpaceTime;
+		  $spaceTimeObj->projectUUID = $this->projectUUID;
+		  
+		  $db = $this->startDB();
+		  
+		  $sql = "SELECT DISTINCT observe.subject_uuid
+		  FROM observe
+		  JOIN properties ON observe.property_uuid = properties.property_uuid
+		  WHERE properties.variable_uuid = '6C9781E9-D3CF-422C-51FB-FAF7A91ABAE0'
+		  ";
+		  
+		  $resultA = $db->fetchAll($sql, 2);
+		  if($resultA){
+				foreach($resultA as $rowA){
+					 $itemUUID = $rowA["subject_uuid"];
+					 //$where = "uuid = '$itemUUID' ";
+					 //$db->delete("initial_chrono_tag", $where);
+					 
+					 $sql = "SELECT MIN(fl.startBCE) as tStart, MAX(fl.endBCE) as tEnd
+					 FROM observe
+					 JOIN properties ON observe.property_uuid = properties.property_uuid
+					 JOIN val_tab ON val_tab.value_uuid = properties.value_uuid
+					 JOIN z_florida_dates AS fl ON (fl.label = val_tab.val_text OR fl.label_n = val_tab.val_text)
+					 WHERE properties.variable_uuid = '6C9781E9-D3CF-422C-51FB-FAF7A91ABAE0'
+					 AND observe.subject_uuid = '$itemUUID'
+					 ";
+					 
+					 $result = $db->fetchAll($sql, 2);
+					 if($result){
+						  $requestParams = array();
+						  $requestParams["uuid"] = $itemUUID;
+						  $requestParams["projUUID"] = $this->projectUUID;
+						  $requestParams["tStart"] = $result[0]["tStart"];
+						  $requestParams["tEnd"] = $result[0]["tEnd"];
+						  $spaceTimeObj->requestParams = $requestParams;
+						  $spaceTimeObj->chrontoTagItem();
+						  $output["found"]++;
+					 }
+					 else{
+						  $output["missing"][] = $itemUUID;
+					 }
+				}
+		  }
+	 
+		  return $output;
+	 }
+	 
+	 
+	 function floridaVarTypes(){
+		  $db = $this->startDB();
+		  $output = array();
+		  $varTypes = array("Artifact Category" => "Nominal",
+								  "Artifact Disposition" => "Nominal",
+								  "Diagnostic Type" => "Nominal",
+								 );
+		  
+		  
+		  foreach($varTypes as $varKey => $varType){
+				$sql = "SELECT var_tab.variable_uuid
+				FROM var_tab
+				WHERE var_tab.var_label LIKE '".$varKey."%' AND var_tab.var_label NOT LIKE '%Count%'
+				AND var_tab.project_id = '81204AF8-127C-4686-E9B0-1202C3A47959'
+				";
+				
+				$result = $db->fetchAll($sql, 2);
+				if($result){
+					 foreach($result as $row){
+						  $uuid = $row["variable_uuid"];
+						  $where = "variable_uuid = '$uuid' ";
+						  $data = array("var_type" => $varType);
+						  $db->update("var_tab", $data, $where);
+						  $output[$uuid] =  $varType;
+					 }
+				}
+		  }
+		 
+		  return $output;
+	 }
+	 
+	 
+	 function floridaDisp(){
+		  $db = $this->startDB();
+		  $output = array();
+		  $output["varTypes"] = $this->floridaVarTypes();
+		  
+		  $newVals = array("A" => "all of category was collected (Code: \"A\")",
+								 "ALL" => "all of category was collected",
+								 "OBSV" => "observed by not collected",
+								 "SOME" => "items in this category collected",
+								 "INFO" => "category reported second hand",
+								 "OBCO" => "observed or collected per early FMSF records",
+								 "UNSP" => "unspecified on form",
+								 "REBU" => "collected and subsequently reburied at the site",
+								 "UNKN" => "unknown",
+								 "OTHR" => "other"
+								 );
+		  
+		  
+		  
+		  $sql = "SELECT properties.property_uuid, val_tab.val_text
+		  FROM properties
+		  JOIN var_tab ON var_tab.variable_uuid = properties.variable_uuid
+		  JOIN val_tab ON val_tab.value_uuid = properties.value_uuid
+		  WHERE var_tab.var_label LIKE 'Artifact Disposition%'
+		  AND properties.project_id = '81204AF8-127C-4686-E9B0-1202C3A47959'
+		  ";
+		  
+		  $result = $db->fetchAll($sql, 2);
+		  if($result){
+				
+				$proObj = new dataEdit_Property;
+				foreach($result as $row){
+					 $propertyUUID = $row["property_uuid"];
+					 $oldVal = $row["val_text"];
+					 if(array_key_exists($oldVal, $newVals)){
+						  $newValue = $newVals[$oldVal];
+						   $output["updated"][] = $proObj->updatePropertyValue($newValue, $propertyUUID);
+					 }
+					 else{
+						  $output["missing"][] = $row;
+					 }
+				}
+		  }
+		  
+		  return $output;
+	 }
+	 
+	 
+	 function floridaVarSort(){
+		  $db = $this->startDB();
+		  
+		  
+		  /*
+		  $sql = "SELECT * FROM z_3_da588ef3f ORDER BY field_1, id";
+		  
+		  $result = $db->fetchAll($sql, 2);
+		  $prevSiteID = false;
+		  $c = 1;
+		  $s = 1;
+		  foreach($result as $row){
+				$id = $row["id"];
+				$siteID = $row["field_1"];
+				if($prevSiteID != $siteID){
+					 if(stristr($row["field_4"], "Culture")){
+						  $c = 1;
+						  $s = 0;
+					 }
+					 else{
+						  $c = 0;
+						  $s = 1;
+					 }
+					 
+					 $field3 = $row["field_3"]." (1)";
+					 $field4 = $row["field_4"]." (1)";
+				}
+				else{
+					 if(stristr($row["field_4"], "Culture")){
+						  $c++;
+						  $field3 = $row["field_3"]." ($c)";
+						  $field4 = $row["field_4"]." ($c)";
+					 }
+					 if(stristr($row["field_4"], "Site")){
+						  $s++; 
+						  $field3 = $row["field_3"]." ($s)";
+						  $field4 = $row["field_4"]." ($s)";
+					 }
+				}
+				$prevSiteID = $siteID;
+				$data = array("field_3" => $field3,
+								  "field_4" => $field4
+								  );
+				$where = "id = $id ";
+				$db->update("z_3_da588ef3f", $data, $where);
+		  }
+		  */
+		  
+		  
+		  
+		  $output = array();
+		  $sources = array("z_3_489edaa4d" => 1,
+								 "z_3_da588ef3f" => 1000,
+								 "z_3_44a78fbb5" => 5000,
+								 "z_3_22f80063a" => 10000,
+								 "z_3_2e33eaf43" => 150
+								 );
+		  
+		  
+		  $varBases = array("Diagnostic Type" => 10,
+								  "Diagnostic Type Count" => 11,
+								"Artifact Category Code" => 10,
+								"Artifact Category" => 11,
+								"Artifact Disposition" => 12,
+								"Culture Code" => 4,
+								"Culture" => 5,
+								"Site Type Code" => 6,
+								"Site Type" => 7
+		  );
+		  
+	
+		  foreach($sources as $sourceID => $sourceBaseSort){
+				
+				$sql = "SELECT * FROM var_tab WHERE source_id = '$sourceID' ";
+				
+				$result = $db->fetchAll($sql, 2);
+				if($result){
+					 foreach($result as $row){
+						  
+						  $uuid = $row["variable_uuid"];
+						  $varLabel = $row["var_label"];
+						  foreach($varBases as $base => $varBaseOrder){
+								if(stristr($varLabel, $base)){
+									 $varNum = str_replace($base, "", $varLabel);
+									 $varNum = str_replace("(", "", $varNum );				  
+									 $varNum = str_replace(")", "", $varNum );
+									 $varNum = trim($varNum);
+									 if(is_numeric($varNum)){
+										  
+										  $sort = $sourceBaseSort + $varBaseOrder + (5 * $varNum);
+										  $where = "variable_uuid = '$uuid' ";
+										  $data = array("sort_order" => $sort);
+										  $db->update("var_tab", $data, $where);
+										  $output[] = array("varLabel" => $varLabel, "base of" => $base, "varNum" => $varNum, "finalSort"=> $sort );
+									 }
+									 
+								}
+						  }
+					 }
+				
+				
+				}
+		  }
+		  
+		  return $output;
+	 }
+	 
+	 
+	 
+	 
+	 
+	 function georgiaDateFix(){
+		  $output = array();
+		  $db = $this->startDB();
+		  $sql = "SELECT properties.property_uuid, val_tab.val_text
+		  FROM properties
+		  JOIN val_tab ON val_tab.value_uuid = properties.value_uuid
+		  WHERE properties.variable_uuid = '8AEC0EB1-4CA8-46CD-BCF0-327941B87EF3'
+		  ";
+		  
+		  $result = $db->fetchAll($sql, 2);
+		  if($result){
+				
+				$proObj = new dataEdit_Property;
+				foreach($result as $row){
+					 $propertyUUID = $row["property_uuid"];
+					 $oldDate = $row["val_text"]; 
+					 $OCdate = date("Y-m-d", strtotime($oldDate));
+					 $proObj->updatePropertyValue($OCdate, $propertyUUID);
+					 $output[$propertyUUID] = array("old" => $oldDate, "oc" => $OCdate);
+				}	 
+		  }
+		  
+		  return $output;
+	 }
+	 
+	 
+	 
+	 function georgiaDates(){
+		  $output = array();
+		  $output["found"] = 0;
+		  $spaceTimeObj = new  dataEdit_SpaceTime;
+		  $spaceTimeObj->projectUUID = $this->projectUUID;
+		  
+		  $db = $this->startDB();
+		  
+		  $sql = "SELECT DISTINCT observe.subject_uuid
+		  FROM observe
+		  JOIN properties ON observe.property_uuid = properties.property_uuid
+		  WHERE properties.variable_uuid = '9AD6D837-C89F-4F6F-08C6-34ACB757EDC9'
+		  ";
+		  
+		  $resultA = $db->fetchAll($sql, 2);
+		  if($resultA){
+				foreach($resultA as $rowA){
+					 $itemUUID = $rowA["subject_uuid"];
+					 //$where = "uuid = '$itemUUID' ";
+					 //$db->delete("initial_chrono_tag", $where);
+					 
+					 $sql = "SELECT MAX(grg.beginBP) as tStart, MIN(grg.endBP) as tEnd
+					 FROM observe
+					 JOIN properties ON observe.property_uuid = properties.property_uuid
+					 JOIN val_tab ON val_tab.value_uuid = properties.value_uuid
+					 JOIN z_georgia_dates AS grg ON grg.label = val_tab.val_text
+					 WHERE properties.variable_uuid = '9AD6D837-C89F-4F6F-08C6-34ACB757EDC9'
+					 AND observe.subject_uuid = '$itemUUID'
+					 ";
+					 
+					 $result = $db->fetchAll($sql, 2);
+					 if($result){
+						  $requestParams = array();
+						  $requestParams["uuid"] = $itemUUID;
+						  $requestParams["projUUID"] = $this->projectUUID;
+						  $requestParams["tStart"] = 1950 - $result[0]["tStart"];
+						  $requestParams["tEnd"] = 1950 - $result[0]["tEnd"];
+						  $spaceTimeObj->requestParams = $requestParams;
+						  $spaceTimeObj->chrontoTagItem();
+						  $output["found"]++;
+					 }
+					 else{
+						  $output["missing"][] = $itemUUID;
+					 }
+				}
+		  }
+		  
+		  return $output;
+	 }
+	 
+	 
+	 
+	 
+	 
+	 
+	 
+	 
+	 
+	 
 	
 	 function georgiaGeo(){
 		  

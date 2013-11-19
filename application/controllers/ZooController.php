@@ -18,6 +18,177 @@ class ZooController extends Zend_Controller_Action {
     }
 	 
 	 
+	  //link pictures with items
+	 function floridaGeoAction(){
+		  
+		  $this->_helper->viewRenderer->setNoRender();
+		  Zend_Loader::loadClass('ProjEdits_Dinaa');
+		  Zend_Loader::loadClass('dataEdit_Link');
+		  Zend_Loader::loadClass('dataEdit_Published');
+		  Zend_Loader::loadClass('dataEdit_SpaceTime');
+		  Zend_Loader::loadClass('dataEdit_SpaceContain');
+		  Zend_Loader::loadClass('dataEdit_Subject');
+		  
+		  $pObj = new ProjEdits_Dinaa;
+		  $pObj->projectUUID = "81204AF8-127C-4686-E9B0-1202C3A47959";
+		  $output = $pObj->floridaGeo(); 
+
+		  header('Content-Type: application/json; charset=utf8');
+		  
+		  echo Zend_Json::encode($output);
+	 }
+	 
+	 
+	 
+	 //link pictures with items
+	 function dinaaCountyAction(){
+		  
+		  $this->_helper->viewRenderer->setNoRender();
+		  Zend_Loader::loadClass('ProjEdits_Dinaa');
+		  Zend_Loader::loadClass('dataEdit_Property');
+		  Zend_Loader::loadClass('dataEdit_Published');
+		  Zend_Loader::loadClass('dataEdit_SpaceContain');
+		  Zend_Loader::loadClass('dataEdit_LinkedData');
+		  $state = "Florida";
+		  $pObj = new ProjEdits_Dinaa;
+		  $output = $pObj->countyGeo($state); 
+
+		  header('Content-Type: application/json; charset=utf8');
+		  
+		  echo Zend_Json::encode($output);
+	 }
+	 
+	 
+	 
+	 
+	 //link pictures with items
+	 function floridaDatesAction(){
+		  
+		  $this->_helper->viewRenderer->setNoRender();
+		  Zend_Loader::loadClass('ProjEdits_Dinaa');
+		  Zend_Loader::loadClass('dataEdit_Property');
+		  Zend_Loader::loadClass('dataEdit_SpaceTime');
+		  Zend_Loader::loadClass('dataEdit_Published');
+		  Zend_Loader::loadClass('dataEdit_SpaceContain');
+		  
+		  $pObj = new ProjEdits_Dinaa;
+		  $pObj->projectUUID = "81204AF8-127C-4686-E9B0-1202C3A47959";
+		  $output = $pObj->floridaDates(); 
+
+		  header('Content-Type: application/json; charset=utf8');
+		  
+		  echo Zend_Json::encode($output);
+	 }
+	 
+	 
+	 //link pictures with items
+	 function floridaDispAction(){
+		  
+		  $this->_helper->viewRenderer->setNoRender();
+		  Zend_Loader::loadClass('ProjEdits_Dinaa');
+		  Zend_Loader::loadClass('dataEdit_Property');
+		  Zend_Loader::loadClass('dataEdit_Published');
+		  
+		  $pObj = new ProjEdits_Dinaa;
+		  $pObj->projectUUID = "81204AF8-127C-4686-E9B0-1202C3A47959";
+		  $output = $pObj->floridaDisp(); 
+
+		  header('Content-Type: application/json; charset=utf8');
+		  
+		  echo Zend_Json::encode($output);
+	 }
+	 
+	 
+	 
+	 //link pictures with items
+	 function floridaVarSortAction(){
+		  
+		  $this->_helper->viewRenderer->setNoRender();
+		  Zend_Loader::loadClass('ProjEdits_Dinaa');
+		 
+		  
+		  $pObj = new ProjEdits_Dinaa;
+		  $pObj->projectUUID = "81204AF8-127C-4686-E9B0-1202C3A47959";
+		  $output = $pObj->floridaVarSort(); 
+
+		  header('Content-Type: application/json; charset=utf8');
+		  
+		  echo Zend_Json::encode($output);
+	 }
+	 
+	 
+	  //link pictures with items
+	 function floridaMissingRepubAction(){
+		  
+		  $this->_helper->viewRenderer->setNoRender();
+		  Zend_Loader::loadClass('ProjEdits_Dinaa');
+		  
+		  $pObj = new ProjEdits_Dinaa;
+		  $pObj->projectUUID = "81204AF8-127C-4686-E9B0-1202C3A47959";
+		  $output = $pObj->floridaMissingRepub(); 
+
+		  header('Content-Type: application/json; charset=utf8');
+		  
+		  echo Zend_Json::encode($output);
+	 }
+	 
+	 
+	 //link pictures with items
+	 function georgiaCountyRepubAction(){
+		  
+		  $this->_helper->viewRenderer->setNoRender();
+		  Zend_Loader::loadClass('ProjEdits_Dinaa');
+		  
+		  $pObj = new ProjEdits_Dinaa;
+		  $pObj->projectUUID = "64013C33-4039-46C9-609A-A758CE51CA49";
+		  $output = $pObj->georgiaCountyRepub(); 
+
+		  header('Content-Type: application/json; charset=utf8');
+		  
+		  echo Zend_Json::encode($output);
+	 }
+	 
+	 
+	 
+	 //link pictures with items
+	 function georgiaDateFixAction(){
+		  
+		  $this->_helper->viewRenderer->setNoRender();
+		  Zend_Loader::loadClass('ProjEdits_Dinaa');
+		  Zend_Loader::loadClass('dataEdit_Property');
+		  Zend_Loader::loadClass('dataEdit_SpaceTime');
+		  Zend_Loader::loadClass('dataEdit_Published');
+		  Zend_Loader::loadClass('dataEdit_SpaceContain');
+		  
+		  $pObj = new ProjEdits_Dinaa;
+		  $pObj->projectUUID = "64013C33-4039-46C9-609A-A758CE51CA49";
+		  $output = $pObj->georgiaDateFix(); 
+
+		  header('Content-Type: application/json; charset=utf8');
+		  
+		  echo Zend_Json::encode($output);
+	 }
+	 
+	 
+	 function georgiaDatesAction(){
+		  
+		  $this->_helper->viewRenderer->setNoRender();
+		  Zend_Loader::loadClass('ProjEdits_Dinaa');
+		  Zend_Loader::loadClass('dataEdit_Property');
+		  Zend_Loader::loadClass('dataEdit_SpaceTime');
+		  Zend_Loader::loadClass('dataEdit_Published');
+		  Zend_Loader::loadClass('dataEdit_SpaceContain');
+		  
+		  $pObj = new ProjEdits_Dinaa;
+		  $pObj->projectUUID = "64013C33-4039-46C9-609A-A758CE51CA49";
+		  $output = $pObj->georgiaDates(); 
+
+		  header('Content-Type: application/json; charset=utf8');
+		  
+		  echo Zend_Json::encode($output);
+	 }
+	 
+	 
 	 //link pictures with items
 	 function georgiaGeoAction(){
 		  
@@ -612,14 +783,12 @@ the fields used to describe post-cranial element measurements at Çatalhöyük.
 		  $solrQuery = "http://localhost:8983/solr/select?facet=true&facet.mincount=1&fq=%7B%21cache%3Dfalse%7DNOT+project_id%3A0+%26%26+%28+%28item_type%3Aspatial%29+%29&facet.field=def_context_1&facet.field=project_name&facet.field=item_class&facet.field=time_span&facet.field=geo_point&facet.field=geo_path&facet.query=image_media_count%3A%5B1+TO+%2A%5D&facet.query=other_binary_media_count%3A%5B1+TO+%2A%5D&facet.query=diary_count%3A%5B1+TO+%2A%5D&sort=interest_score+desc&wt=json&json.nl=map&q=%28+%28default_context_path%3AItaly%2F%2A+%29+%7C%7C+%28default_context_path%3AItaly+%29%29+%26%26+%28geo_path%3A12023202222130310%2A%29&start=0&rows=400";
 		  */
 		  
-		  $solrQuery = "http://localhost:8983/solr/select?facet=true&facet.mincount=1&fq=%7B%21cache%3Dfalse%7DNOT+project_id%3A0+%26%26+%28+%28item_type%3Aspatial%29+%29+%26%26+799fdbd6e04acf4144f6292d3c6fdd98a11df31a_lent_taxon%3Ahttp%5C%3A%2F%2Feol.org%2Fpages%2F2851411%2F%23sheepgoat++%26%26+top_lrel_taxon%3Ahttp%5C%3A%2F%2Fpurl.org%2FNET%2Fbiol%2Fns%23term_hasTaxonomy+&facet.field=e1ebfc4569d81cbc4d21b9ca08bc3e85ce09262d_lent_taxon&facet.field=799fdbd6e04acf4144f6292d3c6fdd98a11df31a_lent_taxon&facet.field=top_taxon&facet.field=def_context_0&facet.field=project_name&facet.field=item_class&facet.field=time_span&facet.field=geo_point&facet.field=geo_path&facet.query=image_media_count%3A%5B1+TO+%2A%5D&facet.query=other_binary_media_count%3A%5B1+TO+%2A%5D&facet.query=diary_count%3A%5B1+TO+%2A%5D&sort=interest_score+desc&wt=json&json.nl=map&q=%28%2A%3A%2A%29+%26%26+%28geo_path%3A1%2A%29&start=0&rows=1000";
+		  $solrQuery = "http://localhost:8983/solr/select?facet=true&facet.mincount=1&fq=%7B%21cache%3Dfalse%7Ditem_class%3ARegion++%26%26+NOT+project_id%3A0+%26%26+%28+%28item_type%3Aspatial%29+%29&facet.field=def_context_2&facet.field=project_name&facet.field=item_class&facet.field=creator&facet.field=time_path&facet.field=geo_point&facet.field=top_taxon&facet.field=top_taxon&facet.field=person_link&facet.query=image_media_count%3A%5B1+TO+%2A%5D&facet.query=other_binary_media_count%3A%5B1+TO+%2A%5D&facet.query=diary_count%3A%5B1+TO+%2A%5D&sort=interest_score+desc&wt=json&json.nl=map&q=+%28default_context_path%3AUnited%5C+States%2FFlorida%2F%2A+%29+%7C%7C+%28default_context_path%3AUnited%5C+States%2FFlorida+%29&start=0&rows=1000";
 		  
-		  
-		  $solrQuery = "http://localhost:8983/solr/select?facet=true&facet.mincount=1&fq=%7B%21cache%3Dfalse%7Dproject_name%3ABalance%5C+Pan%5C+Weights%5C+from%5C+Nippur++%26%26+item_class%3AObjects++%26%26+NOT+project_id%3A0+%26%26+%28+%28item_type%3Aspatial%29+%29+%26%26+%28+%28%28+1cb74b66e1841f51f0dd886ac93d5b3dcdcb0678_taxon%3Atrue+%29%29+%29+&facet.field=639def04fabcf631f140c210ad095147a29d706d_taxon&facet.field=def_context_1&facet.field=project_name&facet.field=item_class&facet.field=creator&facet.field=time_path&facet.field=geo_point&facet.field=top_taxon&facet.field=top_taxon&facet.field=top_taxon&facet.field=person_link&facet.query=image_media_count%3A%5B1+TO+%2A%5D&facet.query=other_binary_media_count%3A%5B1+TO+%2A%5D&facet.query=diary_count%3A%5B1+TO+%2A%5D&sort=interest_score+desc&wt=json&json.nl=map&q=+%28default_context_path%3AIraq%2F%2A+%29+%7C%7C+%28default_context_path%3AIraq+%29&start=0&rows=100";
 		  
 		  $respJSONstring = file_get_contents($solrQuery);
 		  $solrJSON = Zend_Json::decode($respJSONstring);
-		 $projectUUID = '8F947319-3C69-4847-B7A2-09E00ED90B32';
+		 $projectUUID = '81204AF8-127C-4686-E9B0-1202C3A47959';
 		  $output = array();
 		  $localPubBaseURI = "http://penelope.oc/publish/publishdoc?projectUUID=".$projectUUID."&itemType=space&doUpdate=true&itemUUID=";
 		  $ocPubBaseURI = "http://penelope.oc/publish/publishdoc?projectUUID=".$projectUUID."&itemType=space&doUpdate=true&pubURI=http://opencontext.org/publish/item-publish&itemUUID=";
@@ -632,8 +801,8 @@ the fields used to describe post-cranial element measurements at Çatalhöyük.
 				$pubResp["local"] = Zend_Json::decode($resp);
 				sleep(1);
 				
-				$resp = file_get_contents($ocPubBaseURI.$uuid);
-				$pubResp["oc"] = Zend_Json::decode($resp);
+				//$resp = file_get_contents($ocPubBaseURI.$uuid);
+				//$pubResp["oc"] = Zend_Json::decode($resp);
 				
 				$output[$uuid] = $pubResp;
 				unset($pubResp);
