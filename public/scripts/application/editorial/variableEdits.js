@@ -92,6 +92,7 @@ function valsLookUpDone(response){
     output += "<tr>";
     output += "<th>Select</th>";
     output += "<th>Property UUID</th>";
+    output += "<th>Property String</th>";
     output += "<th>Property Text</th>";
     output += "<th>Property Link URI</th>";
     output += "<th>Property Link Label</th>";
@@ -104,9 +105,11 @@ function valsLookUpDone(response){
     for (i=0; i< respData.length; i++){
         var actPropUUID = respData[i].propUUID;
         var actVal = respData[i].val;
+        var actValText = respData[i].val_text;
         output += "<tr>";
         output += "<td><button class=\"btn btn-inverse\" id=" + actPropUUID + " onclick=\"javascript:propSelect('" + actPropUUID + "');\">&#10004;</button></td>";
         output += "<td><p><small>" + actPropUUID + "</small></p></td>";
+        output += "<td>" + actValText + "</td>";
         output += "<td id=\"val-" + actPropUUID + "\">"
         output += "<input id=\"val-c-" + actPropUUID  + "\" type=\"text\" value=\"" + actVal + "\" /><br/>";
         output += "<button class=\"btn btn-mini\" onclick=\"javascript:changePropVal('" + actPropUUID  + "');\">Update</button>";

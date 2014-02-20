@@ -17,8 +17,202 @@ class ZooController extends Zend_Controller_Action {
         require_once 'App/Util/GenericFunctions.php';
     }
 	 
+	  //link geo with items
+	 function iowaGeoAction(){
+		  
+		  $this->_helper->viewRenderer->setNoRender();
+		  Zend_Loader::loadClass('ProjEdits_Dinaa');
+		  Zend_Loader::loadClass('dataEdit_Link');
+		  Zend_Loader::loadClass('dataEdit_Published');
+		  Zend_Loader::loadClass('dataEdit_SpaceTime');
+		  Zend_Loader::loadClass('dataEdit_SpaceContain');
+		  Zend_Loader::loadClass('dataEdit_Subject');
+		  Zend_Loader::loadClass('dataEdit_Property');
+		  Zend_Loader::loadClass('dataEdit_LinkedData');
+		  
+		  $pObj = new ProjEdits_Dinaa;
+		  $pObj->projectUUID = "8492AEC3-E406-44C6-03CA-2BF280D8F5B0";
+		  $output = array();
+		  $output["geo"] = $pObj->iowaGeo(); 
+		  $output["county"] = $pObj->countyGeo('Iowa'); 
+		  
+		  header('Content-Type: application/json; charset=utf8');
+		  
+		  echo Zend_Json::encode($output);
+	 }
 	 
-	  //link pictures with items
+	  //link geo with items
+	 function alabamaGeoAction(){
+		  
+		  $this->_helper->viewRenderer->setNoRender();
+		  Zend_Loader::loadClass('ProjEdits_Dinaa');
+		  Zend_Loader::loadClass('dataEdit_Link');
+		  Zend_Loader::loadClass('dataEdit_Published');
+		  Zend_Loader::loadClass('dataEdit_SpaceTime');
+		  Zend_Loader::loadClass('dataEdit_SpaceContain');
+		  Zend_Loader::loadClass('dataEdit_Subject');
+		  Zend_Loader::loadClass('dataEdit_Property');
+		  Zend_Loader::loadClass('dataEdit_LinkedData');
+		  
+		  $pObj = new ProjEdits_Dinaa;
+		  $pObj->projectUUID = "F905BD53-C843-4349-0A46-48FF32B5F1BE";
+		  $output = array();
+		  $output["geo"] = $pObj->alabamaGeo(); 
+		  $output["county"] = $pObj->countyGeo('Alabama'); 
+		  
+		  header('Content-Type: application/json; charset=utf8');
+		  
+		  echo Zend_Json::encode($output);
+	 }
+	 
+	  //link geo with items
+	 function indianaGeoAction(){
+		  
+		  $this->_helper->viewRenderer->setNoRender();
+		  Zend_Loader::loadClass('ProjEdits_Dinaa');
+		  Zend_Loader::loadClass('dataEdit_Link');
+		  Zend_Loader::loadClass('dataEdit_Published');
+		  Zend_Loader::loadClass('dataEdit_SpaceTime');
+		  Zend_Loader::loadClass('dataEdit_SpaceContain');
+		  Zend_Loader::loadClass('dataEdit_Subject');
+		  Zend_Loader::loadClass('dataEdit_Property');
+		  Zend_Loader::loadClass('dataEdit_LinkedData');
+		  
+		  $pObj = new ProjEdits_Dinaa;
+		  $pObj->projectUUID = "D42FC0EB-61B0-4937-700E-4EFEAB008677";
+		  $output = array();
+		  $output["geo"] = $pObj->indianageo(); 
+		  $output["county"] = $pObj->countyGeo('Indiana'); 
+		  
+		  header('Content-Type: application/json; charset=utf8');
+		  
+		  echo Zend_Json::encode($output);
+	 }
+	 
+	 
+	  //link geo with items
+	 function moDatesAction(){
+		  
+		  $this->_helper->viewRenderer->setNoRender();
+		  Zend_Loader::loadClass('ProjEdits_Dinaa');
+		  Zend_Loader::loadClass('dataEdit_Link');
+		  Zend_Loader::loadClass('dataEdit_Published');
+		  Zend_Loader::loadClass('dataEdit_SpaceTime');
+		  Zend_Loader::loadClass('dataEdit_SpaceContain');
+		  Zend_Loader::loadClass('dataEdit_Subject');
+		  Zend_Loader::loadClass('dataEdit_Property');
+		  Zend_Loader::loadClass('dataEdit_LinkedData');
+		  
+		  $pObj = new ProjEdits_Dinaa;
+		  $pObj->projectUUID = "4B5721E9-2BB3-423F-5D04-1B948FA65FAB";
+		  $output = array();
+		  $output["dates"] = $pObj->moDates(); 
+		  
+		  header('Content-Type: application/json; charset=utf8');
+		  
+		  echo Zend_Json::encode($output);
+	 }
+	 
+	 
+	  //link geo with items
+	 function moGeoAction(){
+		  
+		  $this->_helper->viewRenderer->setNoRender();
+		  Zend_Loader::loadClass('ProjEdits_Dinaa');
+		  Zend_Loader::loadClass('dataEdit_Link');
+		  Zend_Loader::loadClass('dataEdit_Published');
+		  Zend_Loader::loadClass('dataEdit_SpaceTime');
+		  Zend_Loader::loadClass('dataEdit_SpaceContain');
+		  Zend_Loader::loadClass('dataEdit_Subject');
+		  Zend_Loader::loadClass('dataEdit_Property');
+		  Zend_Loader::loadClass('dataEdit_LinkedData');
+		  
+		  $pObj = new ProjEdits_Dinaa;
+		  $pObj->projectUUID = "4B5721E9-2BB3-423F-5D04-1B948FA65FAB";
+		  $output = array();
+		  $output["geo"] = $pObj->MOgeo(); 
+		  $output["county"] = $pObj->countyGeo('Missouri'); 
+		  
+		  header('Content-Type: application/json; charset=utf8');
+		  
+		  echo Zend_Json::encode($output);
+	 }
+	 
+	 
+	 //link pictures with items
+	 function reloadFromJsonAction(){
+		  
+		  $this->_helper->viewRenderer->setNoRender();
+		  Zend_Loader::loadClass('PublishedData_JSONaccession');
+		  Zend_Loader::loadClass('PublishedData_Space');
+		  Zend_Loader::loadClass('PublishedData_Observe');
+		  Zend_Loader::loadClass('PublishedData_Properties');
+		  Zend_Loader::loadClass('PublishedData_Links');
+		  Zend_Loader::loadClass('PublishedData_Resource');
+		  Zend_Loader::loadClass('dataEdit_Items');
+		  Zend_Loader::loadClass('dbXML_xmlSpace');
+		  
+		  Zend_Loader::loadClass('dbXML_xmlMedia');
+
+		  
+		  
+		  $listURL = "http://opencontext/sets/.json?proj=Petra+Great+Temple+Excavations&recs=100";
+		  $JSONaccessionObj = new PublishedData_JSONaccession;
+		  $JSONaccessionObj->baseSpaceURI = "http://opencontext/subjects/";
+		  $JSONaccessionObj->baseMediaURI = "http://opencontext/media/";
+		  $JSONaccessionObj->JSONlist($listURL);
+		  
+		  header('Content-Type: application/json; charset=utf8');
+		  
+		  echo Zend_Json::encode($JSONaccessionObj);
+	 }
+	 
+	 
+	 function scDatesAction(){
+		  
+		  $this->_helper->viewRenderer->setNoRender();
+		  Zend_Loader::loadClass('ProjEdits_Dinaa');
+		  Zend_Loader::loadClass('dataEdit_Property');
+		  Zend_Loader::loadClass('dataEdit_SpaceTime');
+		  Zend_Loader::loadClass('dataEdit_Published');
+		  Zend_Loader::loadClass('dataEdit_SpaceContain');
+		  
+		  $pObj = new ProjEdits_Dinaa;
+		  $pObj->projectUUID = "0EE6A09E-62E5-45F0-1CB9-F5CDA44F4D9E";
+		  $output = $pObj->scDates(); 
+
+		  header('Content-Type: application/json; charset=utf8');
+		  
+		  echo Zend_Json::encode($output);
+	 }
+	 
+	  //link geo with items
+	 function scGeoAction(){
+		  
+		  $this->_helper->viewRenderer->setNoRender();
+		  Zend_Loader::loadClass('ProjEdits_Dinaa');
+		  Zend_Loader::loadClass('dataEdit_Link');
+		  Zend_Loader::loadClass('dataEdit_Published');
+		  Zend_Loader::loadClass('dataEdit_SpaceTime');
+		  Zend_Loader::loadClass('dataEdit_SpaceContain');
+		  Zend_Loader::loadClass('dataEdit_Subject');
+		  Zend_Loader::loadClass('dataEdit_Property');
+		  Zend_Loader::loadClass('dataEdit_LinkedData');
+		  
+		  $pObj = new ProjEdits_Dinaa;
+		  $pObj->projectUUID = "0EE6A09E-62E5-45F0-1CB9-F5CDA44F4D9E";
+		  $output = array();
+		  $output["geo"] = $pObj->SCgeo(); 
+		  $output["county"] = $pObj->countyGeo('South Carolina'); 
+		  
+		  header('Content-Type: application/json; charset=utf8');
+		  
+		  echo Zend_Json::encode($output);
+	 }
+	 
+	 
+	 
+	  //link geo with items
 	 function floridaGeoAction(){
 		  
 		  $this->_helper->viewRenderer->setNoRender();
@@ -783,12 +977,12 @@ the fields used to describe post-cranial element measurements at Çatalhöyük.
 		  $solrQuery = "http://localhost:8983/solr/select?facet=true&facet.mincount=1&fq=%7B%21cache%3Dfalse%7DNOT+project_id%3A0+%26%26+%28+%28item_type%3Aspatial%29+%29&facet.field=def_context_1&facet.field=project_name&facet.field=item_class&facet.field=time_span&facet.field=geo_point&facet.field=geo_path&facet.query=image_media_count%3A%5B1+TO+%2A%5D&facet.query=other_binary_media_count%3A%5B1+TO+%2A%5D&facet.query=diary_count%3A%5B1+TO+%2A%5D&sort=interest_score+desc&wt=json&json.nl=map&q=%28+%28default_context_path%3AItaly%2F%2A+%29+%7C%7C+%28default_context_path%3AItaly+%29%29+%26%26+%28geo_path%3A12023202222130310%2A%29&start=0&rows=400";
 		  */
 		  
-		  $solrQuery = "http://localhost:8983/solr/select?facet=true&facet.mincount=1&fq=%7B%21cache%3Dfalse%7Ditem_class%3ARegion++%26%26+NOT+project_id%3A0+%26%26+%28+%28item_type%3Aspatial%29+%29&facet.field=def_context_2&facet.field=project_name&facet.field=item_class&facet.field=creator&facet.field=time_path&facet.field=geo_point&facet.field=top_taxon&facet.field=top_taxon&facet.field=person_link&facet.query=image_media_count%3A%5B1+TO+%2A%5D&facet.query=other_binary_media_count%3A%5B1+TO+%2A%5D&facet.query=diary_count%3A%5B1+TO+%2A%5D&sort=interest_score+desc&wt=json&json.nl=map&q=+%28default_context_path%3AUnited%5C+States%2FFlorida%2F%2A+%29+%7C%7C+%28default_context_path%3AUnited%5C+States%2FFlorida+%29&start=0&rows=1000";
+		  $solrQuery = "http://localhost:8983/solr/select?facet=true&facet.mincount=1&fq=%7B%21cache%3Dfalse%7Dproject_name%3ASouth%5C+Carolina%5C+SHPO++%26%26+NOT+project_id%3A0+%26%26+%28+%28item_type%3Aspatial%29+%29+%26%26+%28+%28%28+170a28a9db6d27d7212fc6dc249434a57517e7bc_taxon%3AMississippian+%29%29+%29++%26%26+top_lrel_taxon%3Ahttp%5C%3A%2F%2Fopencontext.org%2Fvocabularies%2Fdinaa%2F00001++%26%26+top_lrel_taxon%3Ahttp%5C%3A%2F%2Fopencontext.org%2Fvocabularies%2Fdinaa%2F00001+&facet.field=9afdb760867cd7af5a6ff993acf4ca612ac370ce_taxon&facet.field=cfceec204bf3bd3238368b4e54d40bbfb713d3f1_lent_taxon&facet.field=cfceec204bf3bd3238368b4e54d40bbfb713d3f1_lent_taxon&facet.field=def_context_1&facet.field=project_name&facet.field=item_class&facet.field=time_path&facet.field=geo_point&facet.field=top_taxon&facet.field=geo_path&facet.query=image_media_count%3A%5B1+TO+%2A%5D&facet.query=other_binary_media_count%3A%5B1+TO+%2A%5D&facet.query=diary_count%3A%5B1+TO+%2A%5D&sort=interest_score+desc&wt=json&json.nl=map&q=%28+%28default_context_path%3AUnited%5C+States%2F%2A+%29+%7C%7C+%28default_context_path%3AUnited%5C+States+%29%29+%26%26+%28geo_path%3A03%2A%29&start=0&rows=1500";
 		  
 		  
 		  $respJSONstring = file_get_contents($solrQuery);
 		  $solrJSON = Zend_Json::decode($respJSONstring);
-		 $projectUUID = '81204AF8-127C-4686-E9B0-1202C3A47959';
+		 $projectUUID = '0EE6A09E-62E5-45F0-1CB9-F5CDA44F4D9E';
 		  $output = array();
 		  $localPubBaseURI = "http://penelope.oc/publish/publishdoc?projectUUID=".$projectUUID."&itemType=space&doUpdate=true&itemUUID=";
 		  $ocPubBaseURI = "http://penelope.oc/publish/publishdoc?projectUUID=".$projectUUID."&itemType=space&doUpdate=true&pubURI=http://opencontext.org/publish/item-publish&itemUUID=";
@@ -1500,12 +1694,14 @@ the fields used to describe post-cranial element measurements at Çatalhöyük.
         $this->_helper->viewRenderer->setNoRender();        
         
         //get selected root item then add it and all children to database
-        $tableID = "z_21_df38a0fd9";
+        $tableID = "z_24_9c70c5804";
         
 		  Zend_Loader::loadClass('LinkedData_BoneMeasurement');
 		  
 		  $linkingObj = new LinkedData_BoneMeasurement;
 		  $linkingObj->doShortVariableLabels = false;
+		  $varList = $linkingObj->getVarTableList($tableID);
+		  $linkingObj->fixCapitalsVars($varList);
 		  $varList = $linkingObj->getVarTableList($tableID);
 		  $doneList = $linkingObj->processVars($varList);
 		 

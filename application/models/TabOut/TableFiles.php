@@ -50,6 +50,8 @@ class TabOut_TableFiles  {
 		  $recordCount = $tablePublishObj->recordCount; //total number of records
 		  $this->recordCount = $recordCount;
 		  $baseFilename = $tablePublishObj->tableID;
+		  $baseFilename = str_replace("/", "_", $baseFilename); //do this for tables broken into different parts
+		  
 		  $sampleBatchSize = $tablePublishObj->getDefaultSampleSize(); //get the total number of records retrieved in a sample
 		  $this->tableID = $tablePublishObj->tableID;
 		  $this->projects  =  $tablePublishObj->projects;
@@ -579,7 +581,7 @@ class TabOut_TableFiles  {
 	 
 	 //populate the saveFileSizes array with saved filesizes
 	 function getAllFileSizes($baseFilename){
-		  
+		  $baseFilename = str_replace("/", "_", $baseFilename); //do this for tables broken into different parts
 		  $fileExtensions = $this->fileExtensions;
 		  foreach($fileExtensions as $fileType => $ext){
 				$this->getFileSize(self::CSVdirectory, $baseFilename, $fileType);

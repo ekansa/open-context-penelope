@@ -101,6 +101,38 @@ class LinkedData_BoneMeasurement  {
 		  return $doneVars;
 	 }
 	 
+	 
+	 
+	 function fixCapitalsVars($varList){
+		  $doneVars = false;
+		  if(is_array($varList)){
+				$db = $this->startDB();
+				foreach($varList as $varUUID => $varLabel){
+					 $sql = "SELECT linkedLabel FROM linked_data WHERE itemUUID = '$varUUID' AND (linkedType = 'Measurement type' OR linkedType = 'unit-type') LIMIT 1; ";
+					 
+					 $result =  $db->fetchAll($sql);
+					 if($result){
+						  
+						  $goodLabel = $result[0]["linkedLabel"];
+						  if($varLabel != $goodLabel){
+								$data = array("var_label" => $goodLabel);
+								$where = "variable_uuid = '$varUUID' ";
+								$db->update("var_tab", $data, $where);
+						  }
+					 }
+				}
+		  }
+	 }
+	 
+	 
+	 
+	 
+	 
+	 
+	 
+	 
+	 
+	 
 	 function OLDcheckAddTerm($varUUID, $varLabel){
 		  $output = false;
 		  $ontology = $this->ontology;

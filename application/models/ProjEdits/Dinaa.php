@@ -17,6 +17,356 @@ class ProjEdits_Dinaa  {
     const GeoNamesBaseURI = "http://www.geonames.org/";
 	 const GeoNamesBaseAPI = "http://api.geonames.org/";
 	 
+	 
+	 function iowaGeo(){
+		  
+		  $output = array();
+		  $output["count"] = 0;
+		  $db = $this->startDB();
+		  $sql = "SELECT * FROM z_6_cedd958e8
+		  WHERE 1
+		  GROUP BY field_2
+		  ";
+		  
+		  $result = $db->fetchAll($sql, 2);
+        if($result){
+				foreach($result as $row){
+					 //$site = "Site ".trim($row["field_2"]);
+					 $site = trim($row["field_2"]);
+					 //$site = str_replace("_", "-", $site);
+					 $uuid = $this->getSiteUUID($site);
+					 if($uuid != false){
+						  
+						  $where = "uuid  = '$uuid' ";
+						  $db->delete("geo_space", $where);
+						  
+						  $lat = $row["field_12"];
+						  $lon = $row["field_13"];
+						  $data = array("uuid" => $uuid,
+											 "project_id" => $this->projectUUID,
+											 "source_id" => "geo-tile approx",
+											 "latitude" => $lat,
+											 "longitude" => $lon,
+											 "specificity" => -11,
+											 "note" => "Approximated by geotile to zoom level 11"
+											 );
+						  
+						  try{
+								$db->insert("geo_space", $data);
+								//$output[$site][] = "Geo $uuid added";
+								$output["count"]++; 
+						  }
+						  catch(Exception $e){
+								$output[$site][] = "Geo for $uuid already in"; 
+						  }
+						  
+					 }
+					 else{
+						  $output[$site] = "Error! No UUID";
+					 }
+					 
+					 
+				}
+		  
+		  
+		  }
+		  
+		  return $output;
+	 }
+	 
+	 
+	 function alabamaGeo(){
+		  
+		  $output = array();
+		  $output["count"] = 0;
+		  $db = $this->startDB();
+		  $sql = "SELECT * FROM z_7_6e98f6fc9
+		  WHERE 1
+		  GROUP BY field_2
+		  ";
+		  
+		  $result = $db->fetchAll($sql, 2);
+        if($result){
+				foreach($result as $row){
+					 //$site = "Site ".trim($row["field_2"]);
+					 $site = trim($row["field_2"]);
+					 $site = str_replace("_", "-", $site);
+					 $uuid = $this->getSiteUUID($site);
+					 if($uuid != false){
+						  
+						  $where = "uuid  = '$uuid' ";
+						  $db->delete("geo_space", $where);
+						  
+						  $lat = $row["field_11"];
+						  $lon = $row["field_12"];
+						  $data = array("uuid" => $uuid,
+											 "project_id" => $this->projectUUID,
+											 "source_id" => "geo-tile approx",
+											 "latitude" => $lat,
+											 "longitude" => $lon,
+											 "specificity" => -11,
+											 "note" => "Approximated by geotile to zoom level 11"
+											 );
+						  
+						  try{
+								$db->insert("geo_space", $data);
+								//$output[$site][] = "Geo $uuid added";
+								$output["count"]++; 
+						  }
+						  catch(Exception $e){
+								$output[$site][] = "Geo for $uuid already in"; 
+						  }
+						  
+					 }
+					 else{
+						  $output[$site] = "Error! No UUID";
+					 }
+					 
+					 
+				}
+		  
+		  
+		  }
+		  
+		  return $output;
+	 }
+	 
+	 
+	 function moDates(){
+		  $output = array();
+		  $output["found"] = 0;
+		  $spaceTimeObj = new  dataEdit_SpaceTime;
+		  $spaceTimeObj->projectUUID = $this->projectUUID;
+		  
+		  $db = $this->startDB();
+		  
+		  $sql = "SELECT DISTINCT observe.subject_uuid
+		  FROM observe
+		  JOIN properties ON observe.property_uuid = properties.property_uuid
+		  WHERE properties.variable_uuid = '188E4300-87AA-44E4-CCC7-185032762F40'
+		  ";
+		  
+		  $resultA = $db->fetchAll($sql, 2);
+		  if($resultA){
+				foreach($resultA as $rowA){
+					 $itemUUID = $rowA["subject_uuid"];
+					 //$where = "uuid = '$itemUUID' ";
+					 //$db->delete("initial_chrono_tag", $where);
+					 
+					 $sql = "SELECT MAX(grg.start_bp) as tStart, MIN(grg.end_bp) as tEnd, properties.property_uuid, grg.dinaa_uri
+					 FROM observe
+					 JOIN properties ON observe.property_uuid = properties.property_uuid
+					 JOIN val_tab ON val_tab.value_uuid = properties.value_uuid
+					 JOIN z_missouri_dates AS grg ON grg.label = val_tab.val_text
+					 WHERE properties.variable_uuid = '188E4300-87AA-44E4-CCC7-185032762F40'
+					 AND observe.subject_uuid = '$itemUUID'
+					 ";
+					 
+					 $result = $db->fetchAll($sql, 2);
+					 if($result){
+						  $requestParams = array();
+						  $requestParams["uuid"] = $itemUUID;
+						  $requestParams["projUUID"] = $this->projectUUID;
+						  $requestParams["tStart"] = 1950 - $result[0]["tStart"];
+						  $requestParams["tEnd"] = 1950 - $result[0]["tEnd"];
+						  $spaceTimeObj->requestParams = $requestParams;
+						  $spaceTimeObj->chrontoTagItem();
+						  $output["found"]++;
+						  
+						  $propUUID = $result[0]["property_uuid"];
+						  $linkURI = $result[0]["dinaa_uri"];
+						  $hashID = sha1($propUUID. $linkURI);
+						  $data = array("hashID" => $hashID ,
+									 "fk_project_uuid" => $this->projectUUID ,
+									 "source_id" => "table" ,
+									 "itemUUID" =>   $propUUID ,
+									 "itemType" => "property",
+									 "linkedLabel" => "",
+									 "linkedType" => "type",
+									 "linkedURI" => $linkURI
+									 );
+						  try{
+								$db->insert("linked_data", $data);
+						  }
+						  catch (Exception $e){
+								
+						  }
+						  
+					 }
+					 else{
+						  $output["missing"][] = $itemUUID;
+					 }
+				}
+		  }
+		  
+		  return $output;
+	 }
+	 
+	 
+	 
+	 function indianageo(){
+		  
+		  $output = array();
+		  $output["count"] = 0;
+		  $db = $this->startDB();
+		  $sql = "SELECT * FROM z_5_30a61ec52
+		  WHERE 1
+		  GROUP BY field_1
+		  ";
+		  
+		  $result = $db->fetchAll($sql, 2);
+        if($result){
+				foreach($result as $row){
+					 
+					 $site = "Site ".trim($row["field_1"]);
+					 $site = str_replace("_", "-", $site);
+					 $uuid = $this->getSiteUUID($site);
+					 if($uuid != false){
+						  
+						  $where = "uuid  = '$uuid' ";
+						  $db->delete("geo_space", $where);
+						  
+						  $lat = $row["field_11"];
+						  $lon = $row["field_12"];
+						  $data = array("uuid" => $uuid,
+											 "project_id" => $this->projectUUID,
+											 "source_id" => "geo-tile approx",
+											 "latitude" => $lat,
+											 "longitude" => $lon,
+											 "specificity" => -11,
+											 "note" => "Approximated by geotile to zoom level 11"
+											 );
+						  
+						  try{
+								$db->insert("geo_space", $data);
+								//$output[$site][] = "Geo $uuid added";
+								$output["count"]++; 
+						  }
+						  catch(Exception $e){
+								$output[$site][] = "Geo for $uuid already in"; 
+						  }
+						  
+					 }
+					 else{
+						  $output[$site] = "Error! No UUID";
+					 }
+					 
+					 
+				}
+		  
+		  
+		  }
+		  
+		  return $output;
+	 }
+	 
+	 
+	 
+	 function MOgeo(){
+		  
+		  $output = array();
+		  $db = $this->startDB();
+		  $sql = "SELECT * FROM z_4_9b1e456b2
+		  WHERE 1
+		  GROUP BY field_3
+		  ";
+		  
+		  $result = $db->fetchAll($sql, 2);
+        if($result){
+				foreach($result as $row){
+					 
+					 $site = trim($row["field_3"]);
+					 $site = str_replace("_", "-", $site);
+					 $uuid = $this->getSiteUUID($site);
+					 if($uuid != false){
+						  
+						  $where = "uuid  = '$uuid' ";
+						  $db->delete("geo_space", $where);
+						  
+						  $lat = $row["field_14"];
+						  $lon = $row["field_15"];
+						  $data = array("uuid" => $uuid,
+											 "project_id" => $this->projectUUID,
+											 "source_id" => "geo-tile approx",
+											 "latitude" => $lat,
+											 "longitude" => $lon,
+											 "specificity" => -11,
+											 "note" => "Approximated by geotile to zoom level 11"
+											 );
+						  
+						  try{
+								$db->insert("geo_space", $data);
+								//$output[$site][] = "Geo $uuid added";
+								$output["count"]++; 
+						  }
+						  catch(Exception $e){
+								$output[$site][] = "Geo for $uuid already in"; 
+						  }
+						  
+					 }
+					 else{
+						  $output[$site] = "Error! No UUID";
+					 }
+					 
+					 
+				}
+		  
+		  
+		  }
+		  
+		  return $output;
+	 }
+	 
+	 
+	 function scDates(){
+		  $output = array();
+		  $output["found"] = 0;
+		  $spaceTimeObj = new  dataEdit_SpaceTime;
+		  $spaceTimeObj->projectUUID = $this->projectUUID;
+		  
+		  $db = $this->startDB();
+		  
+		  $sql = "SELECT DISTINCT observe.subject_uuid
+		  FROM observe
+		  JOIN properties ON observe.property_uuid = properties.property_uuid
+		  WHERE properties.variable_uuid = 'CB162430-02A5-413F-D036-92E45EC96E50'
+		  ";
+		  
+		  $resultA = $db->fetchAll($sql, 2);
+		  if($resultA){
+				foreach($resultA as $rowA){
+					 $itemUUID = $rowA["subject_uuid"];
+					 //$where = "uuid = '$itemUUID' ";
+					 //$db->delete("initial_chrono_tag", $where);
+					 
+					 $sql = "SELECT MAX(grg.beginBP) as tStart, MIN(grg.endBP) as tEnd
+					 FROM observe
+					 JOIN properties ON observe.property_uuid = properties.property_uuid
+					 JOIN val_tab ON val_tab.value_uuid = properties.value_uuid
+					 JOIN z_sc_dates AS grg ON grg.label = val_tab.val_text
+					 WHERE properties.variable_uuid = 'CB162430-02A5-413F-D036-92E45EC96E50'
+					 AND observe.subject_uuid = '$itemUUID'
+					 ";
+					 
+					 $result = $db->fetchAll($sql, 2);
+					 if($result){
+						  $requestParams = array();
+						  $requestParams["uuid"] = $itemUUID;
+						  $requestParams["projUUID"] = $this->projectUUID;
+						  $requestParams["tStart"] = 1950 - $result[0]["tStart"];
+						  $requestParams["tEnd"] = 1950 - $result[0]["tEnd"];
+						  $spaceTimeObj->requestParams = $requestParams;
+						  $spaceTimeObj->chrontoTagItem();
+						  $output["found"]++;
+					 }
+					 else{
+						  $output["missing"][] = $itemUUID;
+					 }
+				}
+		  }
+		  
+		  return $output;
+	 }
 	
 	 
 	 
@@ -211,6 +561,61 @@ class ProjEdits_Dinaa  {
 	 }
 	 
 	 
+	  function SCgeo(){
+		  
+		  $output = array();
+		  $db = $this->startDB();
+		  $sql = "SELECT * FROM z_scarolina_geo
+		  WHERE 1
+		  GROUP BY siteID
+		  ";
+		  
+		  $result = $db->fetchAll($sql, 2);
+        if($result){
+				foreach($result as $row){
+					 
+					 $site = trim($row["siteID"]);
+					 $site = str_replace("_", "-", $site);
+					 $uuid = $this->getSiteUUID($site);
+					 if($uuid != false){
+						  
+						  $where = "uuid  = '$uuid' ";
+						  $db->delete("geo_space", $where);
+						  
+						  $lat = $row["lat"];
+						  $lon = $row["lon"];
+						  $data = array("uuid" => $uuid,
+											 "project_id" => $this->projectUUID,
+											 "source_id" => "geo-tile approx",
+											 "latitude" => $lat,
+											 "longitude" => $lon,
+											 "specificity" => -11,
+											 "note" => "Approximated by geotile to zoom level 11"
+											 );
+						  
+						  try{
+								$db->insert("geo_space", $data);
+								//$output[$site][] = "Geo $uuid added"; 
+						  }
+						  catch(Exception $e){
+								$output[$site][] = "Geo for $uuid already in"; 
+						  }
+						  
+					 }
+					 else{
+						  $output[$site] = "Error! No UUID";
+					 }
+					 
+					 
+				}
+		  
+		  
+		  }
+		  
+		  return $output;
+	 }
+	 
+	 
 	 function countyGeo($state){
 		  $db = $this->startDB();
 		  
@@ -265,7 +670,48 @@ class ProjEdits_Dinaa  {
 												break;
 										  }
 									 }
+									 elseif(strtolower($checkGeo["name"]) == strtolower(str_replace(" ", "", $name)." county") && isset($checkGeo["bbox"]) && $checkGeo["fcodeName"] != "airport" && !stristr($checkGeo["toponymName"], "airport")){
+										  if(!$goodGeo){
+												$goodGeo = $checkGeo;
+												break;
+										  }
+									 }
 								}
+								
+								if(!is_array($goodGeo)){
+									 $spName = str_replace(" ", "", $name);
+									 $url = $urlBase."&q=".urlencode($spName." County")."+".$state;
+									 @$jsonString = file_get_contents($url);
+									 if($jsonString != false){
+										  $geoAll = Zend_Json::decode($jsonString);
+										  if(is_array($geoAll)){
+												$goodGeo = false;
+												$geo = $geoAll["geonames"];
+												$actout["geo"] = $geo;
+												foreach($geoAll["geonames"] as $checkGeo){
+													 if((strtolower($checkGeo["name"]) == strtolower($name." county") || strtolower($checkGeo["toponymName"]) == strtolower($name." county")) && isset($checkGeo["bbox"]) && $checkGeo["fcodeName"] != "airport" && !stristr($checkGeo["toponymName"], "airport")){
+														  if(!$goodGeo){
+																$goodGeo = $checkGeo;
+																break;
+														  }
+													 }
+													 elseif(strtolower($checkGeo["name"]) == strtolower(str_replace("St.", "Saint",$name)." county") && isset($checkGeo["bbox"]) && $checkGeo["fcodeName"] != "airport" && !stristr($checkGeo["toponymName"], "airport")){
+														  if(!$goodGeo){
+																$goodGeo = $checkGeo;
+																break;
+														  }
+													 }
+													 elseif(strtolower($checkGeo["name"]) == strtolower(str_replace(" ", "", $name)." county") && isset($checkGeo["bbox"]) && $checkGeo["fcodeName"] != "airport" && !stristr($checkGeo["toponymName"], "airport")){
+														  if(!$goodGeo){
+																$goodGeo = $checkGeo;
+																break;
+														  }
+													 }
+												}
+										  }
+									 }
+								}
+								
 								
 								if(is_array($goodGeo)){
 									 $countyName = $goodGeo["name"];

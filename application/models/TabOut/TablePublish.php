@@ -27,7 +27,8 @@ class TabOut_TablePublish  {
 	 public $rawContributors; //array and count of associated records of dublin core rawContributors
 	 public $projects; //array and count of associated projects represented in a table
 	 public $tableID; //ID for the table
-	 public $tablePage; //page number for the table. 
+	 public $tablePage; //page number for the table.
+	 public $tableGroupID; //id for the table group used where a single dataset is broken into multiple tables
 	 
 	 public $cache_id; //id for the table
 	 public $setLastPublished; //publication time for the set
@@ -43,7 +44,7 @@ class TabOut_TablePublish  {
 	 
 	 public $versionControl; //link to a the data under version control (like GitHub)
 	 public $license; //array with URI to the copyright license for the table
-	 public $file; //array of filenames and their sizes
+	 public $files; //array of filenames and their sizes
 	 
 	 public $tableFieldsTemp; //array of table fields, temporary for internal use.
 	 public $tableFields; //array of table fields
@@ -63,6 +64,7 @@ class TabOut_TablePublish  {
 	 const closeMatchURI = "http://www.w3.org/2004/02/skos/core#closeMatch";
 	 const closeMatch = "closeMatch";
 	 
+	 const JSONldVersion = .5;
 	 //get saved metadata from the database
 	 function getSavedMetadata(){
 		  
@@ -84,6 +86,20 @@ class TabOut_TablePublish  {
 					 $this->tableID = false;
 				}
 				$this->tablePage = $result[0]["page"] +0 ;
+				if($this->tablePage > 0 || strstr($this->tableID, "/")){
+					 if(strlen($result[0]["tableGroupID"])>1){
+						  $this->tableGroupID = $result[0]["tableGroupID"];
+					 }
+					 else{
+						  $tabIDex = explode("/", $this->tableID);
+						  $this->tableGroupID = $tabIDex[0];
+						  $this->tablePage  = $tabIDex[1];
+					 }
+				}
+				else{
+					 $this->tableGroupID = $this->tableID;
+				}
+		  
 				$this->published = $result[0]["published"];
 				$this->publishedURI = $result[0]["publishedURI"];
 				if($this->published){
@@ -91,14 +107,25 @@ class TabOut_TablePublish  {
 					 $this->pubUpdate = $result[0]["pub_update"];
 				}
 				else{
-					 $this->pubCreated = false;
+					 if(substr($result[0]["pub_created"],0,4) != "0000"){
+						  $this->pubCreated = $result[0]["pub_created"];
+					 }
+					 else{
+						  $this->pubCreated = false;
+					 }
 					 $this->pubUpdate = true;
 				}
 				$metadataJSON = $result[0]["metadata"];
-				$metadata = Zend_Json::decode($metadataJSON);
-				$metadata["tableID"] = $this->tableID;
-				$this->metadata = $metadata;
-				$this->checkSavedFiles();
+				@$metadata = Zend_Json::decode($metadataJSON);
+				if(is_array($metadata)){
+					 $metadata["tableID"] = $this->tableID;
+					 $this->metadata = $metadata;
+					 $this->checkSavedFiles();
+				}
+				else{
+					 $this->autoMetadataOnly();
+					 
+				}
 				return true;
 		  }
 		  else{
@@ -214,8 +241,22 @@ class TabOut_TablePublish  {
 		  $where = "source_id = '".$this->penelopeTabID."' ";
 		  $db->delete("export_tabs_meta", $where);
 		  
+		  if($this->tablePage < 1){
+				if(strstr($this->tableID, "/")){
+					 $tableEx = explode("/", $this->tableID);
+					 $this->tablePage = $tableEx[1];
+					 $this->tableGroupID = $tableEx[0];
+				}
+		  }
+		  if(strstr($this->tableGroupID, "/")){
+				$tableEx = explode("/", $this->tableGroupID);
+				$this->tableGroupID = $tableEx[0];
+		  }
+		  
 		  $data = array(	"source_id" => $this->penelopeTabID,
 								"tableID" => $this->tableID,
+								"tableGroupID" => $this->tableGroupID,
+								"page" => $this->tablePage,
 								"title" => $this->tableName,
 								"published" => $this->published,
 								"pub_created" => $this->pubCreated,
@@ -231,6 +272,7 @@ class TabOut_TablePublish  {
 	 function generateJSON(){
 		  $metadata = array();
 		  $metadata["tableID"] = $this->tableID;
+		  $metadata["tableGroupID"] = $this->tableGroupID;
 		  $metadata["tablePage"] = $this->tablePage +0 ;
 		  $metadata["title"] = $this->tableName;
 		  $metadata["description"] = $this->tableDesciption;
@@ -257,7 +299,7 @@ class TabOut_TablePublish  {
 		  $metadata = $this->metadata;
 		  $JSON_LD = array();
 		  
-		  
+		  $JSON_LD["metadata-version"] = self::JSONldVersion;
 		  $JSON_LD["@context"] = array(
 
 				"type" => "@type",
@@ -270,8 +312,10 @@ class TabOut_TablePublish  {
 				"doi" => "http://purl.org/ontology/bibo/doi",
 				"ark" => "http://en.wikipedia.org/wiki/Archival_Resource_Key",
 				"versionControl" => "http://purl.org/dc/terms/hasVersion",
+				//"editorList" => array("@id" => "http://purl.org/ontology/bibo/editorList", "@container" => "@list"),
 				"editorList" => "http://purl.org/ontology/bibo/editorList",
 				"editor" => "http://purl.org/ontology/bibo/editor",
+				//"contributorList" => array("@id" => "http://purl.org/ontology/bibo/contributorList", "@container" => "@list"),
 				"contributorList" => "http://purl.org/ontology/bibo/contributorList",
 				"contributor" => "http://purl.org/dc/terms/contributor",
 				"references" => "http://purl.org/dc/terms/references",
@@ -281,14 +325,20 @@ class TabOut_TablePublish  {
 				"recordCount" => "http://rdfs.org/ns/void#entities", //number of entities
 				"fieldCount" => "http://rdfs.org/ns/void#properties", //number of properties
 				"license" => "http://www.w3.org/1999/xhtml/vocab/#license", //copyright license
-				"publisher" => "http://purl.org/dc/terms/publisher"
+				"publisher" => "http://purl.org/dc/terms/publisher",
+				"partOf" => "http://purl.org/dc/terms/isPartOf"
 				);
 		  
 		  $JSON_LD["id"] = $this->generateTableURI();
 		  $JSON_LD["tableID"] = $this->getGenerateTableID();
 		  $JSON_LD["title"] = $metadata["title"];
 		  $JSON_LD["description"] = $metadata["description"];
-		  $JSON_LD["published"] = date("Y-m-d\TH:i:s\-07:00", time());
+		  if($this->pubCreated){
+				$JSON_LD["published"] = date("Y-m-d\TH:i:s\-07:00", strtotime($this->pubCreated));
+		  }
+		  else{
+				$JSON_LD["published"] = date("Y-m-d\TH:i:s\-07:00", time());
+		  }
 		  $JSON_LD["updated"] = date("Y-m-d\TH:i:s\-07:00", time());
 		  $JSON_LD["recordCount"] = $metadata["recordCount"];
 		  $JSON_LD["fieldCount"] = count($metadata["tableFields"]);
@@ -302,6 +352,9 @@ class TabOut_TablePublish  {
 		  if($metadata["ark"] != false){
 				$JSON_LD["ark"] = $metadata["ark"];
 		  }
+		  if($this->tablePage > 1){
+				$JSON_LD["partOf"] = $this->generateParentPartURI();
+		  }
 		  if(isset($metadata["versionControl"])){
 				if($metadata["versionControl"] != false){
 					 $JSON_LD["versionControl"] = $metadata["versionControl"];
@@ -309,8 +362,9 @@ class TabOut_TablePublish  {
 		  }
 		  
 		  if(count($metadata["rawCreators"])>0){
+				$JSON_LD["editorList"]["@id"] = "#editor-list";
 				foreach($metadata["rawCreators"] as $uriKey => $nameArray){
-					 $JSON_LD["editorList"][]["editor"] = array("name" => $nameArray["name"],
+					 $JSON_LD["editorList"]["editor"][] = array("name" => $nameArray["name"],
 																			  "count" => $nameArray["count"],
 																			  "id" => $uriKey
 																			  );
@@ -318,8 +372,9 @@ class TabOut_TablePublish  {
 				}
 		  }
 		  if(count($metadata["rawContributors"])>0){
+				$JSON_LD["contributorList"]["@id"] = "#contributor-list";
 				foreach($metadata["rawContributors"] as $uriKey => $nameArray){
-					 $JSON_LD["contributorList"][]["contributor"] = array("name" => $nameArray["name"],
+					 $JSON_LD["contributorList"]["contributor"][] = array("name" => $nameArray["name"],
 																			  "count" => $nameArray["count"],
 																			  "id" => $uriKey
 																			  );
@@ -346,12 +401,16 @@ class TabOut_TablePublish  {
 	 
 	 function generateTableURI(){
 		  $tableURI = self::tableBaseURI.($this->tableID);
-		  if($this->tablePage > 1){
+		  if($this->tablePage > 1 && !strstr($this->tableID, "/")){
 				$tableURI .= "/".($this->tablePage);
 		  }
 		  return $tableURI;
 	 }
 	 
+	 function generateParentPartURI(){
+		  $tableURI = self::tableBaseURI.($this->tableGroupID);
+		  return $tableURI;
+	 }
 	 
 	 
 	 //publish the table metadata to a URI
@@ -456,6 +515,11 @@ class TabOut_TablePublish  {
 				$this->versionControl = $chValue;
 		  }
 		  
+		  $chValue = $this->checkParam("pubCreated");
+		  if($chValue != false){
+				$this->pubCreated = $chValue;
+		  }
+		  
 		  $chValue = $this->checkParam("tags"); 
 		  if($chValue != false ){
 				if(stristr($chValue, self::tagDelim)){
@@ -501,6 +565,30 @@ class TabOut_TablePublish  {
 		  $this->getTableFields(); //get the fields in a table.
 		  $this->getSampleRecords(); //get the fields in a table.
 	 }
+	 
+	 function autoMetadataOnly(){
+		  
+		  $this->tableName = "[Not titled]";
+		  $this->tableDesciption = "[Not described]";
+		  $this->tableTags = false;
+		  $this->tableDOI = false;
+		  $this->tableARK = false;
+		  $this->published = false;
+		  $this->pubCreated = false;
+		  $this->pubUpdate = false;
+		  $this->license = $this->DBgetLicense();
+		  $this->getProjects();
+		  $this->getPersons();
+		  $this->getProjectCreators();
+		  $this->getGenerateTableID(); //create a table ID based in the metadata for the table
+		  $this->saveMetadata(); //save the results
+		  
+		  $this->getTableSize(); //get the number of records in a table
+		  $this->getTableFields(); //get the fields in a table.
+		  $this->getSampleRecords(); //get the fields in a table.
+		  
+	 }
+	 
 	 
 	 
 	 //this function makes some metadata automatically, based on the table's associations
@@ -587,6 +675,46 @@ class TabOut_TablePublish  {
 		  return $changesMade;
 	 }
 	 
+	 
+	 //consolidate persons
+	 function consolidatePersons(){
+		  
+		  $this->getMakeMetadata();
+		  $changesMade = false;
+		  $requestParams = $this->requestParams;
+		  if(isset($requestParams["role"])){
+				
+				if($requestParams["role"] == "creator"){
+					 $persons = $this->rawCreators;
+					 $persons = $this->consolidateRelatedURIs($persons);
+					 $persons = $this->orderURIs($persons);
+					 $this->rawCreators = $persons;
+					 $changesMade = true;
+				}
+				elseif($requestParams["role"] == "contributor"){
+					 $persons = $this->rawContributors;
+					 $persons = $this->consolidateRelatedURIs($persons);
+					 $persons = $this->orderURIs($persons);
+					 $this->rawContributors = $persons;
+					 $changesMade = true;
+				}
+				elseif($requestParams["role"] == "person"){
+					 $persons = $this->rawLinkedPersons;
+					 $persons = $this->consolidateRelatedURIs($persons);
+					 $persons = $this->orderURIs($persons);
+					 $this->rawLinkedPersons = $persons;
+					 $changesMade = true;
+				}
+				else{
+					
+				}
+		  }
+		 
+		  if($changesMade){
+				$this->saveMetadata(); //save the results
+		  }
+		  return $changesMade;
+	 }
 	 
 	 
 	 
@@ -939,7 +1067,7 @@ class TabOut_TablePublish  {
 				OR
 				(linkedURI = '".$personURI."')
 		  )
-		  AND linkedType = '".self::closeMatch."' 
+		  AND (linkedType = '".self::closeMatch."' OR linkedType = '".self::closeMatchURI."' )
 		  ";
 		  
 		  $result = $db->fetchAll($sql);
@@ -967,9 +1095,18 @@ class TabOut_TablePublish  {
 				$doneURIs = array();
 				foreach($persArray as $uriKey => $person){
 					 $doneRelURIs = array();
+					 $uriEx = explode("/",$uriKey);
+					 $personUUID = $uriEx[count($uriEx) -1];
 					 $actName = $person["name"];
 					 $actCount = $person["count"];
-					 if(isset($person["rel"])){
+					 $linkedPersonURIs = $this->getLinkedPerson($personUUID);
+					 
+					 if(isset($person["rel"]) ||  is_array($linkedPersonURIs)){
+						  
+						  if(!isset($person["rel"]) && is_array($linkedPersonURIs)){
+								$person["rel"] = $linkedPersonURIs;
+						  }
+						  
 						  if(is_array($person["rel"])){
 								$maxCount = $actCount;
 								foreach($person["rel"] as $relURI){
@@ -1001,6 +1138,8 @@ class TabOut_TablePublish  {
 		  else{
 				$newPersArray = $persArray;
 		  }
+		  
+		 
 		  return $newPersArray;
 		  //return $persArray;
 	 }

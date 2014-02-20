@@ -195,8 +195,8 @@ class ClassifyController extends App_Controller_PenelopeController
         $goodLabel = "";
         $first = true;
         foreach($bad_field_array as $badpart){
-            $badpart = strtolower($badpart);
-            $badpart = ucwords($badpart);
+            //$badpart = strtolower($badpart);
+            //$badpart = ucwords($badpart);
             if($badpart == "L"){
                 $badpart = "Left";
             }

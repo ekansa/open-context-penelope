@@ -36,37 +36,40 @@ class PublishedData_Space  {
 				$itemXML->registerXPathNamespace($prefix, $nsURI);
 		  }
 		  $this->addBasic($itemXML);
-		  $this->addChildren($itemXML);
 		  
-		  $obsObj = new PublishedData_Observe;
-		  $obsObj->db = $db;
-		  $obsObj->itemUUID = $this->itemUUID;
-		  $obsObj->projectUUID = $this->projectUUID;
-		  $obsObj->sourceID = $this->sourceID;
-		  $obsObj->addObservations($itemXML, $this->originType);
-		  $errors["obs"] = $obsObj->errors; 
-		  unset($obsObj);
-		  
-		  $propsObj = new PublishedData_Properties;
-		  $propsObj->db = $db;
-		  $propsObj->itemUUID = $this->itemUUID;
-		  $propsObj->projectUUID = $this->projectUUID;
-		  $propsObj->sourceID = $this->sourceID;
-		  $properties = $propsObj->itemPropsRetrieve($itemXML);
-		  $propsObj->saveData($properties);
-		  $notes = $propsObj->getNotes($itemXML, $this->originType);
-		  $propsObj->saveData($notes);
-		  $errors["props"] = $propsObj->errors; 
-		  
-		  $linksObj = new PublishedData_Links;
-		  $linksObj->db = $db;
-		  $linksObj->baseMediaURI = $this->baseMediaURI;
-		  $linksObj->originUUID = $this->itemUUID;
-		  $linksObj->projectUUID = $this->projectUUID;
-		  $linksObj->sourceID = $this->sourceID;
-		  $linksObj->getAddLinks($itemXML, $this->originType);
-		  
-		  $this->noteErrors($errors);
+		  if(!is_array($this->errors)){
+				$this->addChildren($itemXML);
+				
+				$obsObj = new PublishedData_Observe;
+				$obsObj->db = $db;
+				$obsObj->itemUUID = $this->itemUUID;
+				$obsObj->projectUUID = $this->projectUUID;
+				$obsObj->sourceID = $this->sourceID;
+				$obsObj->addObservations($itemXML, $this->originType);
+				$errors["obs"] = $obsObj->errors; 
+				unset($obsObj);
+				
+				$propsObj = new PublishedData_Properties;
+				$propsObj->db = $db;
+				$propsObj->itemUUID = $this->itemUUID;
+				$propsObj->projectUUID = $this->projectUUID;
+				$propsObj->sourceID = $this->sourceID;
+				$properties = $propsObj->itemPropsRetrieve($itemXML);
+				$propsObj->saveData($properties);
+				$notes = $propsObj->getNotes($itemXML, $this->originType);
+				$propsObj->saveData($notes);
+				$errors["props"] = $propsObj->errors; 
+				
+				$linksObj = new PublishedData_Links;
+				$linksObj->db = $db;
+				$linksObj->baseMediaURI = $this->baseMediaURI;
+				$linksObj->originUUID = $this->itemUUID;
+				$linksObj->projectUUID = $this->projectUUID;
+				$linksObj->sourceID = $this->sourceID;
+				$linksObj->getAddLinks($itemXML, $this->originType);
+				
+				$this->noteErrors($errors);
+		  }
 	 }
 	 
 	 

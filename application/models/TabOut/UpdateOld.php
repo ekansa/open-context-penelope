@@ -7,6 +7,7 @@ class TabOut_UpdateOld  {
 	 public $oldTableID;
 	 public $oldTableData;
 	 public $newMetadata;
+	 public $localOldTableID;
 	 
 	 public $tablePage = false; //current page for the table, default to 1
 	 public $totalTabs = 1; //the total number of table segments
@@ -116,6 +117,7 @@ class TabOut_UpdateOld  {
 				$this->tablePubObj = $tablePubObj;
 				$this->newMetadata = $tablePubObj->metadata;
 				
+				$this->saveOldTableFieldRecords();
 				$this->truncateOldRecords(); //show only a sample of the old records
 		  }
  
@@ -175,6 +177,8 @@ class TabOut_UpdateOld  {
 		  if(isset($oldTableData["table_segments"]["totalTabs"])){
 				$this->totalTabs = $oldTableData["meta"]["table_segments"]["totalTabs"] + 0;
 		  }
+		  
+		  $this->localOldTableID = "zold_".$this->oldTableID."_".$this->tablePage;
 		  $this->tablePubObj = $tablePubObj;
 	 }
 	 
@@ -197,6 +201,121 @@ class TabOut_UpdateOld  {
 				$this->oldTableData = $oldData;
 		  }
 	 }
+	 
+	 //save metadata records for a table
+	 function saveOldTableFieldRecords(){
+		  
+		  $db = $this->startDB();
+		  
+		  if($this->oldTableData){
+				$oldData = $this->oldTableData;
+				$sampleList = array();
+				$i = 0;
+				$createTable = true;
+				foreach($oldData["records"] as $uuidKey => $actRecord){
+					 if($createTable){
+						  $this->createLocalOldDatatable($uuidKey, $actRecord);
+						  $createTable = false;
+					 }
+					 $this->saveOldTableRecords($uuidKey, $actRecord);
+				}
+		  }
+		  
+	 }
+	 
+
+	 function createLocalOldDatatable($uuidKey, $actRecord){
+		  
+		  if($this->localOldTableID){
+				$db = $this->startDB();
+				
+				$tableExists = $this->checkExTableExists($this->localOldTableID);
+				
+				if(!$tableExists){
+					//make the table
+					 
+					 $where = "source_id = '".$this->localOldTableID."' ";
+					 $db->delete("export_tabs_fields", $where);
+					 
+					 $i = 1;
+					 $data = array("source_id" => $this->localOldTableID);
+					 $createFields = array();
+					 $fieldErrors = false;
+					 foreach($actRecord as $fieldKey => $value){
+						  $dataField = "field_".$i ;
+						  $createFields[] = $dataField ;
+						  
+						  //save the export field names
+						  $data = array("source_id" => $this->localOldTableID,
+											 "field_num" => $i,
+											 "field_name" => $dataField,
+											 "field_label" => $fieldKey
+											 );
+						  
+						  try{
+								$db->insert("export_tabs_fields", $data); //add the unit
+						  }
+						  catch (Exception $e) {
+								$fieldErrors = true;
+						  }
+						  
+						  unset($data);
+						  $i++;
+					 }
+					 
+					 if(!$fieldErrors){
+						  
+						  $fieldsToCreate = implode(" text,", $createFields) ." text CHARACTER SET utf8";
+						  $schemaSql = "CREATE TABLE ".$this->localOldTableID."  (
+										 id INT NOT NULL PRIMARY KEY AUTO_INCREMENT,
+										 uuid varchar(50) CHARACTER SET latin1 COLLATE latin1_general_ci NOT NULL,
+										 uri varchar(200) CHARACTER SET latin1 COLLATE latin1_general_ci NOT NULL,
+										 $fieldsToCreate,
+										 UNIQUE KEY uuid (uuid)
+										 )ENGINE=MyISAM DEFAULT CHARSET=utf8;
+										 ";
+						  
+						  $db->query($schemaSql);
+						  $alterSQL = "ALTER TABLE ".$this->localOldTableID." DEFAULT CHARACTER SET utf8 COLLATE  utf8_general_ci;";
+						  $db->query($alterSQL);
+						  
+						  $j = 1;
+						  while($j < $i){
+								if(isset($createFields[$j]) && $j <= 20){
+									 $indexSQL = "CREATE INDEX fInd_".$j." ON ".$this->localOldTableID."(".$createFields[$j]."(20));";
+									 $db->query($indexSQL);
+								}
+								$j++;
+						  }						  						  
+					 }
+				}
+				
+		  }
+		  
+	 }
+	 
+	 //save a record from an Old Table to the table in the database storing the record
+	 function saveOldTableRecords($uuidKey, $actRecord){
+		  $db = $this->startDB();
+		  $i = 1;
+		  $data = array("uuid" => $uuidKey,
+							 "uri" => self::subjectBaseURI.$uuidKey
+							 );
+		  foreach($actRecord as $fieldKey => $value){
+				$dataField = "field_".$i ;
+				$data[$dataField] = $value;
+				$i++;
+		  }
+		  
+		  try{
+				$db->insert($this->localOldTableID, $data); //add the unit
+				return true;
+		  }
+		  catch (Exception $e) {
+				return false;
+		  }
+	 }
+	 
 	 
 	 
 	 //add links to context and projects, modify field names
@@ -583,6 +702,24 @@ class TabOut_UpdateOld  {
 		  
 	 }
 	 
+	 
+	 
+	 
+	 
+	 function checkExTableExists($tab){
+		  $db = $this->startDB();
+		  $sql = "SELECT 1 FROM ".$tab." LIMIT 1;";
+		  $tableExists = false;
+		  try{
+				$result =  $db->fetchAll($sql);
+				$tableExists = true;
+		  }
+		  catch (Exception $e) {
+				$tableExists = false;
+		  }
+		  
+		  return $tableExists;
+	 }
 	 
 	 
 	 function startDB(){

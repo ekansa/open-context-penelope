@@ -58,6 +58,10 @@ $tablePubObj = $this->tablePubObj;
                         <input name="ark" type="text" id="tabARK" value="<?php echo $tablePubObj->tableARK; ?>" />
                         <br/>
                         
+                        <h2>Table Publication time</h2>
+                        <input name="pubCreated" type="text" id="tabPubDate" value="<?php echo $tablePubObj->pubCreated; ?>" />
+                        <br/>
+                        
                         <h2>Table Version Control</h2>
                         <input name="versionControl" type="text" id="versionControl" value="<?php echo $tablePubObj->versionControl; ?>" />
                         <br/>
@@ -97,6 +101,13 @@ $tablePubObj = $this->tablePubObj;
                                         <input type="submit" value="+" class="btn btn-primary btn-mini" />
                                     </form>
                                     </li>
+                                    <li>
+                                <form method="POST" action="../table/consolidate-persons">
+                                    <input type="hidden" name="role" value="creator"/>
+                                    <input type="hidden" name="table" value="<?php echo $tablePubObj->penelopeTabID; ?>" />
+                                    <input type="submit" value="Consolidate Creators" class="btn btn-primary btn-mini" />
+                                </form>
+                            </li>
                                 
                         </ul>
                         <h6>Creators (for Citation)</h6>
@@ -123,7 +134,16 @@ $tablePubObj = $this->tablePubObj;
                             foreach($tablePubObj->rawContributors as $uri => $persArray){
                                         
                                 ?>        
-                                    <li><a href="<?php echo $uri; ?>"><?php echo $persArray["name"]; ?></a> (<?php echo $persArray["count"]; ?>)</li>
+                                    <!--<li><a href="<?php echo $uri; ?>"><?php echo $persArray["name"]; ?></a> (<?php echo $persArray["count"]; ?>)</li> -->
+                                    <li>
+                                        <form method="POST" action="../table/remove-person">
+                                            <a href="<?php echo $uri; ?>"><?php echo $persArray["name"]; ?></a> (<?php echo $persArray["count"]; ?>)
+                                            <input type="hidden" name="uri" value="<?php echo $uri; ?>"/>
+                                            <input type="hidden" name="role" value="contributor"/>
+                                            <input type="hidden" name="table" value="<?php echo $tablePubObj->penelopeTabID; ?>" />
+                                            <input type="submit" value="-" class="btn btn-danger btn-mini" />
+                                        </form>
+                                    </li>
                                  <?php
                                  $contI ++;
                             }//end loop through the table array  
@@ -135,6 +155,13 @@ $tablePubObj = $this->tablePubObj;
                                     <input type="hidden" name="role" value="contributor"/>
                                     <input type="hidden" name="table" value="<?php echo $tablePubObj->penelopeTabID; ?>" />
                                     <input type="submit" value="+" class="btn btn-primary btn-mini" />
+                                </form>
+                            </li>
+                            <li>
+                                <form method="POST" action="../table/consolidate-persons">
+                                    <input type="hidden" name="role" value="contributor"/>
+                                    <input type="hidden" name="table" value="<?php echo $tablePubObj->penelopeTabID; ?>" />
+                                    <input type="submit" value="Consolidate Contributors" class="btn btn-primary btn-mini" />
                                 </form>
                             </li>
                         </ul>

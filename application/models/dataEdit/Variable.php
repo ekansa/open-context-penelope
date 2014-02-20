@@ -392,6 +392,7 @@ class dataEdit_Variable  {
 								$actVal = $row["val_num"];
 						  }
 						  $actOutput["val"] = $actVal;
+						  $actOutput["val_text"] = $row["val_text"];
 						  $actOutput["exampleUUID"] = $this->getPropertyExample($row["propUUID"]);
 						  $output[] = $actOutput;
 					 }
