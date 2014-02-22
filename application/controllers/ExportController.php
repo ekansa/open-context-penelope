@@ -23,7 +23,7 @@ class ExportController extends Zend_Controller_Action {
 		  $this->_helper->viewRenderer->setNoRender();
 		  Zend_Loader::loadClass('DBexport_PenToOC');
 		  
-		  $projects = array('0EE6A09E-62E5-45F0-1CB9-F5CDA44F4D9E');
+		  $projects = array('B4345F6A-F926-4062-144E-3FBC175CC7B6');
 		  //$projects = false;
 		  
 		  $exportObj = new DBexport_PenToOC;

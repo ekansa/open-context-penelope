@@ -17,6 +17,29 @@ class ZooController extends Zend_Controller_Action {
         require_once 'App/Util/GenericFunctions.php';
     }
 	 
+	 
+	 //link geo with items
+	 function badeUuidsAction(){
+		  
+		  $this->_helper->viewRenderer->setNoRender();
+		  Zend_Loader::loadClass('ProjEdits_Bade');
+		  Zend_Loader::loadClass('Images_ThumbPreviewSize');
+		  Zend_Loader::loadClass('dataEdit_Media');
+		  Zend_Loader::loadClass('dataEdit_Link');
+		  Zend_Loader::loadClass('dataEdit_Published');
+		  
+		  $directory = "C:\\Users\\Eric C. Kansa\\Documents\\OC Imports\\Bade Revisions\\Bade -new data\\thumbs\\";
+		  $pObj = new ProjEdits_Bade;
+		 
+		  $output = array();
+		  $output["uuids"] = $pObj->getImages($directory); 
+		  
+		  header('Content-Type: application/json; charset=utf8');
+		  
+		  echo Zend_Json::encode($output);
+	 }
+	 
+	 
 	  //link geo with items
 	 function iowaGeoAction(){
 		  
