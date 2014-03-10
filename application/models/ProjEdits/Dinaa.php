@@ -18,6 +18,63 @@ class ProjEdits_Dinaa  {
 	 const GeoNamesBaseAPI = "http://api.geonames.org/";
 	 
 	 
+	 
+	 function kyGeo(){
+		  
+		  $output = array();
+		  $output["count"] = 0;
+		  $db = $this->startDB();
+		  $sql = "SELECT * FROM z_8_e21861fce
+		  WHERE 1
+		  GROUP BY field_2
+		  ";
+		  
+		  $result = $db->fetchAll($sql, 2);
+        if($result){
+				foreach($result as $row){
+					 //$site = "Site ".trim($row["field_2"]);
+					 $site = trim($row["field_2"]);
+					 //$site = str_replace("_", "-", $site);
+					 $uuid = $this->getSiteUUID($site);
+					 if($uuid != false){
+						  
+						  $where = "uuid  = '$uuid' ";
+						  $db->delete("geo_space", $where);
+						  
+						  $lat = $row["field_12"];
+						  $lon = $row["field_13"];
+						  $data = array("uuid" => $uuid,
+											 "project_id" => $this->projectUUID,
+											 "source_id" => "geo-tile approx",
+											 "latitude" => $lat,
+											 "longitude" => $lon,
+											 "specificity" => -11,
+											 "note" => "Approximated by geotile to zoom level 11"
+											 );
+						  
+						  try{
+								$db->insert("geo_space", $data);
+								//$output[$site][] = "Geo $uuid added";
+								$output["count"]++; 
+						  }
+						  catch(Exception $e){
+								$output[$site][] = "Geo for $uuid already in"; 
+						  }
+						  
+					 }
+					 else{
+						  $output[$site] = "Error! No UUID";
+					 }
+					 
+					 
+				}
+		  
+		  
+		  }
+		  
+		  return $output;
+	 }
+	 
 	 function iowaGeo(){
 		  
 		  $output = array();
@@ -202,7 +259,67 @@ class ProjEdits_Dinaa  {
 		  return $output;
 	 }
 	 
-	 
+	 function indianaDates(){
+		  $output = array();
+		  $output["found"] = 0;
+		  $spaceTimeObj = new  dataEdit_SpaceTime;
+		  $spaceTimeObj->projectUUID = $this->projectUUID;
+		  
+		  $periodVarUUID ='38144DED-E43F-4F59-E2C0-8F785197F46D';
+		  
+		  $db = $this->startDB();
+		  
+		  $sql = "SELECT DISTINCT observe.subject_uuid
+		  FROM observe
+		  JOIN properties ON observe.property_uuid = properties.property_uuid
+		  WHERE properties.variable_uuid = '$periodVarUUID'
+		  ";
+		  
+		  $resultA = $db->fetchAll($sql, 2);
+		  if($resultA){
+				foreach($resultA as $rowA){
+					 $itemUUID = $rowA["subject_uuid"];
+					 //$where = "uuid = '$itemUUID' ";
+					 //$db->delete("initial_chrono_tag", $where);
+					 
+					 $sql = "SELECT MAX(grg.start_bp) as tStart, MIN(grg.end_bp) as tEnd, properties.property_uuid, grg.dinaa_uri
+					 FROM observe
+					 JOIN properties ON observe.property_uuid = properties.property_uuid
+					 JOIN val_tab ON val_tab.value_uuid = properties.value_uuid
+					 JOIN z_missouri_dates AS grg ON grg.label = val_tab.val_text
+					 WHERE properties.variable_uuid = '$periodVarUUID'
+					 AND observe.subject_uuid = '$itemUUID'
+					 ";
+					 
+					 $sql = "SELECT MAX(grg.startBP) as tStart, MIN(grg.endBP) as tEnd, properties.property_uuid
+					 FROM observe
+					 JOIN properties ON observe.property_uuid = properties.property_uuid
+					 JOIN z_indiana_dates AS grg ON grg.propertyUUID = properties.property_uuid
+					 WHERE properties.variable_uuid = '$periodVarUUID'
+					 AND observe.subject_uuid = '$itemUUID'
+					 ";
+					 
+					 
+					 $result = $db->fetchAll($sql, 2);
+					 if($result){
+						  $requestParams = array();
+						  $requestParams["uuid"] = $itemUUID;
+						  $requestParams["projUUID"] = $this->projectUUID;
+						  $requestParams["tStart"] = 1950 - $result[0]["tStart"];
+						  $requestParams["tEnd"] = 1950 - $result[0]["tEnd"];
+						  $spaceTimeObj->requestParams = $requestParams;
+						  $spaceTimeObj->chrontoTagItem();
+						  $output["found"]++;
+						  
+					 }
+					 else{
+						  $output["missing"][] = $itemUUID;
+					 }
+				}
+		  }
+		  
+		  return $output;
+	 }
 	 
 	 function indianageo(){
 		  

@@ -241,6 +241,13 @@ class TabOut_TablePublish  {
 		  $where = "source_id = '".$this->penelopeTabID."' ";
 		  $db->delete("export_tabs_meta", $where);
 		  
+		  if(!$this->tableGroupID){
+				$this->tableGroupID = false;
+		  }
+		  if(!$this->tablePage){
+				$this->tablePage = false;
+		  }
+		  
 		  if($this->tablePage < 1){
 				if(strstr($this->tableID, "/")){
 					 $tableEx = explode("/", $this->tableID);

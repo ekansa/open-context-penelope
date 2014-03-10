@@ -256,7 +256,7 @@ function actIDListSetUp(response){
    
     ActMaxCounter = itemList.items.length;
     actType = itemList.itemType;
-    
+    //alert("here max counter " + ActMaxCounter);
     if(ActMaxCounter >0){
         var i = 0;
         for (i=0; i< ActMaxCounter; i++){
@@ -264,6 +264,7 @@ function actIDListSetUp(response){
             ActingList[i] = actUUID;
         }
         ActItemCounter = 0;
+        
         IterateActItems();
     }
     else{

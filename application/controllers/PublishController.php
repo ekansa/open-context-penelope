@@ -745,6 +745,7 @@ class PublishController extends Zend_Controller_Action
                 LIMIT $startNum, $batchSize
                 ";
             
+            /*
              $sql = "SELECT space.uuid as itemUUID
                 FROM space
                 $limitListJoin
@@ -754,7 +755,8 @@ class PublishController extends Zend_Controller_Action
                 space.project_id = '".$projectUUID."'
                 AND space.uuid != '0'
                 LIMIT $startNum, $batchSize
-                ";    
+                ";
+            */
         }
         
         if($itemType == "prop"){
