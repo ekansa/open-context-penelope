@@ -41,21 +41,16 @@ class ZooController extends Zend_Controller_Action {
 	   }
     
     
-    function loadIllAction(){
+    function loadRefineAction(){
 	   $this->_helper->viewRenderer->setNoRender();
-		  Zend_Loader::loadClass('ProjEdits_Dinaa');
-		  Zend_Loader::loadClass('dataEdit_Link');
-		  Zend_Loader::loadClass('dataEdit_Published');
-		  Zend_Loader::loadClass('dataEdit_SpaceTime');
-		  Zend_Loader::loadClass('dataEdit_SpaceContain');
-		  Zend_Loader::loadClass('dataEdit_Subject');
-		  Zend_Loader::loadClass('dataEdit_Property');
-		  Zend_Loader::loadClass('dataEdit_LinkedData');
+		  Zend_Loader::loadClass('ProjEdits_Refine');
 		  
-		  $pObj = new ProjEdits_Dinaa;
-		  $pObj->projectUUID = 'B7F85EB6-4BF5-43FA-98E7-FF8FAF1AA452';
+		  $pObj = new ProjEdits_Refine;
+		  $pObj->projectUUID = '8492AEC3-E406-44C6-03CA-2BF280D8F5B0';
+		  $pObj->refineProjectID = '2363755815341';
+		  $pObj->localTableID = 'z_6_ae54e13de';
 		  $output = array();
-		  $output = $pObj->loadIllData(); 
+		  $output = $pObj->loadRefineData(); 
 		  
 		  header('Content-Type: application/json; charset=utf8');
 		  
