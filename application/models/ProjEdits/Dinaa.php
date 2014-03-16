@@ -18,6 +18,292 @@ class ProjEdits_Dinaa  {
 	 const GeoNamesBaseAPI = "http://api.geonames.org/";
 	 
 	 
+	 function illDates(){
+		  $output = array();
+		  $output["found"] = 0;
+		  $spaceTimeObj = new  dataEdit_SpaceTime;
+		  $spaceTimeObj->projectUUID = $this->projectUUID;
+		  
+		  $ldObj = new dataEdit_LinkedData;
+		  $ldObj->projectUUID = $this->projectUUID;
+		  
+		  $periodVarUUID ='D981C5F4-A978-434E-DA1A-20BA2A68178C';
+		  
+		  $db = $this->startDB();
+		  
+		  $sql = "SELECT DISTINCT observe.subject_uuid
+		  FROM observe
+		  JOIN properties ON observe.property_uuid = properties.property_uuid
+		  WHERE properties.variable_uuid = '$periodVarUUID'
+		  ";
+		  
+		  $resultA = $db->fetchAll($sql, 2);
+		  if($resultA){
+				foreach($resultA as $rowA){
+					 $itemUUID = $rowA["subject_uuid"];
+					 //$where = "uuid = '$itemUUID' ";
+					 //$db->delete("initial_chrono_tag", $where);
+					 
+					 $sql = "SELECT MAX(grg.start_bp) as tStart, MIN(grg.end_bp) as tEnd, properties.property_uuid, grg.dinaa_uri
+					 FROM observe
+					 JOIN properties ON observe.property_uuid = properties.property_uuid
+					 JOIN val_tab ON val_tab.value_uuid = properties.value_uuid
+					 JOIN z_missouri_dates AS grg ON grg.label = val_tab.val_text
+					 WHERE properties.variable_uuid = '$periodVarUUID'
+					 AND observe.subject_uuid = '$itemUUID'
+					 ";
+					 
+					 $sql = "SELECT MAX(grg.startBP) as tStart, MIN(grg.endBP) as tEnd, properties.property_uuid
+					 FROM observe
+					 JOIN properties ON observe.property_uuid = properties.property_uuid
+					 JOIN z_ill_dates AS grg ON grg.propertyUUID = properties.property_uuid
+					 WHERE properties.variable_uuid = '$periodVarUUID'
+					 AND observe.subject_uuid = '$itemUUID'
+					 ";
+					 
+					 
+					 $result = $db->fetchAll($sql, 2);
+					 if($result){
+						  $requestParams = array();
+						  $requestParams["uuid"] = $itemUUID;
+						  $requestParams["projUUID"] = $this->projectUUID;
+						  $requestParams["tStart"] = 1950 - $result[0]["tStart"];
+						  $requestParams["tEnd"] = 1950 - $result[0]["tEnd"];
+						  $spaceTimeObj->requestParams = $requestParams;
+						  $spaceTimeObj->chrontoTagItem();
+						  
+						  $output["found"]++;
+						  
+					 }
+					 else{
+						  $output["missing"][] = $itemUUID;
+					 }
+				}
+		  }
+		  
+		  return $output;
+	 }
+	 
+	 
+	 
+	 function loadIllData(){
+		  
+		  $output = array();
+		  $output["count"] = 0;
+		  $db = $this->startDB();
+		  
+		  $start = 0;
+		  $limit = 500;
+		  $modelURL = "http://127.0.0.1:3333/command/core/get-models?project=1790023317109";
+		  $jsonBase = "http://127.0.0.1:3333/command/core/get-rows?project=1790023317109";
+		  $done = false;
+		  
+		  $modelString = file_get_contents($modelURL);
+		  $model = Zend_Json::decode($modelString);
+		  $fieldIndexCellIndex = array();
+		  $fieldIndex = 1;
+		  foreach($model["columnModel"]["columns"] as $col){
+			   $fieldIndexCellIndex[$fieldIndex] = $col["cellIndex"];
+			   $fieldIndex++;
+		  }
+		  
+		  
+		  while(!$done){
+			   $url = $jsonBase."&start=".$start."&limit=".$limit;
+			   
+			   $jsonString = file_get_contents($url);
+			   $json = Zend_Json::decode($jsonString);
+			   if(isset($json["rows"])){
+				    unset($jsonString);
+				    $start = $start + $limit;
+				    $output["count"]++;
+				    foreach($json["rows"] as $row){
+						$data = array();
+						$cells = $row["cells"];
+						
+						foreach($fieldIndexCellIndex as $fieldIndex => $cellIndex){
+							 $fieldName = "field_".$fieldIndex;
+							 $cell = $cells[$cellIndex];
+							 if(is_array($cell)){
+								  $data[$fieldName] = $cell["v"];
+							 }
+							 else{
+								  $data[$fieldName] = "";
+							 }
+						}
+						$data["id"] = $row["i"];
+						
+						try{
+							 $db->insert("z_9_eca17bcd6", $data);
+						}catch (Exception $e) {
+							 //$done = true;
+						}
+				    } 
+			   }
+			   else{
+				    $done = true;
+			   }
+		  }
+	 }
+	 
+	 
+	 
+	 function illGeo(){
+		  
+		  $output = array();
+		  $output["count"] = 0;
+		  $db = $this->startDB();
+		  $sql = "SELECT * FROM z_9_459db9e4a_all
+		  WHERE 1
+		  GROUP BY field_2
+		  ";
+		  
+		  $result = $db->fetchAll($sql, 2);
+        if($result){
+				foreach($result as $row){
+					 //$site = "Site ".trim($row["field_2"]);
+					 $site = trim($row["field_2"]);
+					 //$site = str_replace("_", "-", $site);
+					 $uuid = $this->getSiteUUID($site);
+					 if($uuid != false){
+						  
+						  $where = "uuid  = '$uuid' ";
+						  $db->delete("geo_space", $where);
+						  
+						  $lat = $row["field_14"];
+						  $lon = $row["field_15"];
+						  $data = array("uuid" => $uuid,
+											 "project_id" => $this->projectUUID,
+											 "source_id" => "geo-tile approx",
+											 "latitude" => $lat,
+											 "longitude" => $lon,
+											 "specificity" => -11,
+											 "note" => "Approximated by geotile to zoom level 11"
+											 );
+						  
+						  try{
+								$db->insert("geo_space", $data);
+								//$output[$site][] = "Geo $uuid added";
+								$output["count"]++; 
+						  }
+						  catch(Exception $e){
+								$output[$site][] = "Geo for $uuid already in"; 
+						  }
+						  
+					 }
+					 else{
+						  $output[$site] = "Error! No UUID";
+					 }
+					 
+					 
+				}
+		  
+		  
+		  }
+		  
+		  return $output;
+	 }
+	 
+	 
+	 
+	 function kyDates(){
+		  $output = array();
+		  $output["found"] = 0;
+		  $spaceTimeObj = new  dataEdit_SpaceTime;
+		  $spaceTimeObj->projectUUID = $this->projectUUID;
+		  
+		  $ldObj = new dataEdit_LinkedData;
+		  $ldObj->projectUUID = $this->projectUUID;
+		  
+		  $periodVarUUID ='F249B33E-E496-43DD-E9A5-5BF79DE00A91';
+		  
+		  $db = $this->startDB();
+		  
+		  $sql = "SELECT DISTINCT observe.subject_uuid
+		  FROM observe
+		  JOIN properties ON observe.property_uuid = properties.property_uuid
+		  WHERE properties.variable_uuid = '$periodVarUUID'
+		  ";
+		  
+		  $resultA = $db->fetchAll($sql, 2);
+		  if($resultA){
+				foreach($resultA as $rowA){
+					 $itemUUID = $rowA["subject_uuid"];
+					 //$where = "uuid = '$itemUUID' ";
+					 //$db->delete("initial_chrono_tag", $where);
+					 
+					 $sql = "SELECT MAX(grg.start_bp) as tStart, MIN(grg.end_bp) as tEnd, properties.property_uuid, grg.dinaa_uri
+					 FROM observe
+					 JOIN properties ON observe.property_uuid = properties.property_uuid
+					 JOIN val_tab ON val_tab.value_uuid = properties.value_uuid
+					 JOIN z_missouri_dates AS grg ON grg.label = val_tab.val_text
+					 WHERE properties.variable_uuid = '$periodVarUUID'
+					 AND observe.subject_uuid = '$itemUUID'
+					 ";
+					 
+					 $sql = "SELECT MAX(grg.startBP) as tStart, MIN(grg.endBP) as tEnd, properties.property_uuid
+					 FROM observe
+					 JOIN properties ON observe.property_uuid = properties.property_uuid
+					 JOIN z_kentucky_dates AS grg ON grg.propertyUUID = properties.property_uuid
+					 WHERE properties.variable_uuid = '$periodVarUUID'
+					 AND observe.subject_uuid = '$itemUUID'
+					 ";
+					 
+					 
+					 $result = $db->fetchAll($sql, 2);
+					 if($result){
+						  $requestParams = array();
+						  $requestParams["uuid"] = $itemUUID;
+						  $requestParams["projUUID"] = $this->projectUUID;
+						  $requestParams["tStart"] = 1950 - $result[0]["tStart"];
+						  $requestParams["tEnd"] = 1950 - $result[0]["tEnd"];
+						  $spaceTimeObj->requestParams = $requestParams;
+						  $spaceTimeObj->chrontoTagItem();
+						  
+						  $output["found"]++;
+						  
+					 }
+					 else{
+						  $output["missing"][] = $itemUUID;
+					 }
+				}
+		  }
+		  
+		  return $output;
+	 }
+	 
+	 
+	 function kyPeriodLink(){
+		  
+		  $output = array();
+		  $ldObj = new dataEdit_LinkedData;
+		  $ldObj->projectUUID = $this->projectUUID;
+		  
+		  $db = $this->startDB();
+		  
+		  $sql = "SELECT * FROM z_kentucky_dates WHERE 1; ";
+		  
+		  $result = $db->fetchAll($sql, 2);
+		  foreach($result as $row){
+			   $requestParams = array();
+			   $requestParams["subjectUUID"] = $row["propertyUUID"];
+			   $requestParams["subjectType"] = "property";
+			   $requestParams["predicateURI"] = "type";
+			   $requestParams["objectURI"] = $row["uri"];
+			   $requestParams["objectLabel"] = $row["dinaa_label"];
+			   $requestParams["projectUUID"] = $this->projectUUID;
+			   
+			   $ldObj->requestParams = $requestParams;
+			   $resp = $ldObj->addUpdateLinkedData();
+			   
+			   $output[$row["propertyUUID"]] = $resp;
+			   
+		  }
+		  
+		  
+	 }
+	 
+	 
 	 
 	 function kyGeo(){
 		  

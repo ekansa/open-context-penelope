@@ -4,6 +4,8 @@ require_once 'App/Controller/PenelopeController.php';   //handles the functional
 
 class RelationshipsController extends App_Controller_PenelopeController
 {
+    public $counter = 0;
+    
     function indexAction()
     {
         //call to process query parameters:
@@ -295,7 +297,12 @@ class RelationshipsController extends App_Controller_PenelopeController
     
     function getItems($dataTableName, $fieldRow, $items, $level, $fieldList, $dataRow) //returns $datastore
     {
-        ++$this->counter;
+        if($this->counter){
+            ++$this->counter;
+        }
+        else{
+            $this->counter = 1;
+        }
         $parentFieldName    = $fieldRow['field_parent_name'];
         $parentAlias        = $fieldRow['parent_alias'];
         $childFieldName     = $fieldRow['field_child_name'];
