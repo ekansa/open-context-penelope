@@ -16,8 +16,51 @@ class ZooController extends Zend_Controller_Action {
     {  
         require_once 'App/Util/GenericFunctions.php';
     }
+	 
+	  function altIowaDatesAction(){
+		  
+		  $this->_helper->viewRenderer->setNoRender();
+		  Zend_Loader::loadClass('ProjEdits_Dinaa');
+		  Zend_Loader::loadClass('dataEdit_Link');
+		  Zend_Loader::loadClass('dataEdit_Published');
+		  Zend_Loader::loadClass('dataEdit_SpaceTime');
+		  Zend_Loader::loadClass('dataEdit_SpaceContain');
+		  Zend_Loader::loadClass('dataEdit_Subject');
+		  Zend_Loader::loadClass('dataEdit_Property');
+		  Zend_Loader::loadClass('dataEdit_LinkedData');
+		  
+		  $pObj = new ProjEdits_Dinaa;
+		  $pObj->projectUUID = '8492AEC3-E406-44C6-03CA-2BF280D8F5B0';
+		  $output = array();
+		  $output["dates"] = $pObj->altIowaDates(); 
+		  header('Content-Type: application/json; charset=utf8');
+		  
+		  echo Zend_Json::encode($output);
+	   }
     
-    
+    function iowaObsDatesAction(){
+		  
+		  $this->_helper->viewRenderer->setNoRender();
+		  Zend_Loader::loadClass('ProjEdits_Dinaa');
+		  Zend_Loader::loadClass('dataEdit_Link');
+		  Zend_Loader::loadClass('dataEdit_Published');
+		  Zend_Loader::loadClass('dataEdit_SpaceTime');
+		  Zend_Loader::loadClass('dataEdit_SpaceContain');
+		  Zend_Loader::loadClass('dataEdit_Subject');
+		  Zend_Loader::loadClass('dataEdit_Property');
+		  Zend_Loader::loadClass('dataEdit_LinkedData');
+		  
+		  $pObj = new ProjEdits_Dinaa;
+		  $pObj->projectUUID = '8492AEC3-E406-44C6-03CA-2BF280D8F5B0';
+		  $output = array();
+		  $output["dates"] = $pObj->iowaObsDates(); 
+		  //$output["links"] = $pObj->iowaPeriodLink();
+		  header('Content-Type: application/json; charset=utf8');
+		  
+		  echo Zend_Json::encode($output);
+	   }
+	 
+	 
     function illDatesAction(){
 		  
 		  $this->_helper->viewRenderer->setNoRender();
@@ -47,8 +90,8 @@ class ZooController extends Zend_Controller_Action {
 		  
 		  $pObj = new ProjEdits_Refine;
 		  $pObj->projectUUID = '8492AEC3-E406-44C6-03CA-2BF280D8F5B0';
-		  $pObj->refineProjectID = '2363755815341';
-		  $pObj->localTableID = 'z_6_ae54e13de';
+		  $pObj->refineProjectID = '1576467418410';
+		  $pObj->localTableID = 'z_6_399512215';
 		  $output = array();
 		  $output = $pObj->loadRefineData(); 
 		  
@@ -1088,12 +1131,20 @@ the fields used to describe post-cranial element measurements at Çatalhöyük.
 		  $solrQuery = "http://localhost:8983/solr/select?facet=true&facet.mincount=1&fq=%7B%21cache%3Dfalse%7DNOT+project_id%3A0+%26%26+%28+%28item_type%3Aspatial%29+%29&facet.field=def_context_1&facet.field=project_name&facet.field=item_class&facet.field=time_span&facet.field=geo_point&facet.field=geo_path&facet.query=image_media_count%3A%5B1+TO+%2A%5D&facet.query=other_binary_media_count%3A%5B1+TO+%2A%5D&facet.query=diary_count%3A%5B1+TO+%2A%5D&sort=interest_score+desc&wt=json&json.nl=map&q=%28+%28default_context_path%3AItaly%2F%2A+%29+%7C%7C+%28default_context_path%3AItaly+%29%29+%26%26+%28geo_path%3A12023202222130310%2A%29&start=0&rows=400";
 		  */
 		  
-		  $solrQuery = "http://localhost:8983/solr/select?facet=true&facet.mincount=1&fq=%7B%21cache%3Dfalse%7Dproject_name%3ASouth%5C+Carolina%5C+SHPO++%26%26+NOT+project_id%3A0+%26%26+%28+%28item_type%3Aspatial%29+%29+%26%26+%28+%28%28+170a28a9db6d27d7212fc6dc249434a57517e7bc_taxon%3AMississippian+%29%29+%29++%26%26+top_lrel_taxon%3Ahttp%5C%3A%2F%2Fopencontext.org%2Fvocabularies%2Fdinaa%2F00001++%26%26+top_lrel_taxon%3Ahttp%5C%3A%2F%2Fopencontext.org%2Fvocabularies%2Fdinaa%2F00001+&facet.field=9afdb760867cd7af5a6ff993acf4ca612ac370ce_taxon&facet.field=cfceec204bf3bd3238368b4e54d40bbfb713d3f1_lent_taxon&facet.field=cfceec204bf3bd3238368b4e54d40bbfb713d3f1_lent_taxon&facet.field=def_context_1&facet.field=project_name&facet.field=item_class&facet.field=time_path&facet.field=geo_point&facet.field=top_taxon&facet.field=geo_path&facet.query=image_media_count%3A%5B1+TO+%2A%5D&facet.query=other_binary_media_count%3A%5B1+TO+%2A%5D&facet.query=diary_count%3A%5B1+TO+%2A%5D&sort=interest_score+desc&wt=json&json.nl=map&q=%28+%28default_context_path%3AUnited%5C+States%2F%2A+%29+%7C%7C+%28default_context_path%3AUnited%5C+States+%29%29+%26%26+%28geo_path%3A03%2A%29&start=0&rows=1500";
+		  //context missng
+		  $solrQuery = "http://localhost:8983/solr/select?facet=true&facet.mincount=1&fq=%7B%21cache%3Dfalse%7Ditem_class%3A*++%26%26+NOT+project_id%3A0+%26%26+%28+%28item_type%3Aspatial%29+%29&facet.field=def_context_0&facet.field=project_name&facet.field=item_class&facet.field=time_path&facet.field=geo_point&facet.field=top_taxon&facet.field=geo_path&facet.query=image_media_count%3A%5B1+TO+%2A%5D&facet.query=other_binary_media_count%3A%5B1+TO+%2A%5D&facet.query=diary_count%3A%5B1+TO+%2A%5D&sort=interest_score+desc&wt=json&json.nl=map&q=%28%2A%3A%2A%29+%26%26+%28geo_path%3A0%2A%29-def_context_0%3A%5B%22%22+TO+*%5D&start=0&rows=1500";
 		  
+		  //geo tile wrong
+		  
+		  $solrQuery = "http://localhost:8983/solr/select?facet=true&facet.mincount=1&fq=%7B%21cache%3Dfalse%7DNOT+project_id%3A0+%26%26+%28+%28item_type%3Aspatial%29+%29&facet.field=def_context_0&facet.field=project_name&facet.field=item_class&facet.field=time_path&facet.field=geo_point&facet.field=geo_path&facet.query=image_media_count%3A%5B1+TO+%2A%5D&facet.query=other_binary_media_count%3A%5B1+TO+%2A%5D&facet.query=diary_count%3A%5B1+TO+%2A%5D&sort=interest_score+desc&wt=json&json.nl=map&q=%28%2A%3A%2A%29+%26%26+%28geo_path%3A0%29&start=0&rows=10";
+		  
+		
+		  
+		  //$solrQuery = "http://opencontext.org/all/solr";
 		  
 		  $respJSONstring = file_get_contents($solrQuery);
 		  $solrJSON = Zend_Json::decode($respJSONstring);
-		 $projectUUID = '0EE6A09E-62E5-45F0-1CB9-F5CDA44F4D9E';
+		  $projectUUID = false;
 		  $output = array();
 		  $localPubBaseURI = "http://penelope.oc/publish/publishdoc?projectUUID=".$projectUUID."&itemType=space&doUpdate=true&itemUUID=";
 		  $ocPubBaseURI = "http://penelope.oc/publish/publishdoc?projectUUID=".$projectUUID."&itemType=space&doUpdate=true&pubURI=http://opencontext.org/publish/item-publish&itemUUID=";
@@ -1101,10 +1152,11 @@ the fields used to describe post-cranial element measurements at Çatalhöyük.
 		  foreach($solrJSON["response"]["docs"] as $doc){
 				
 				$uuid = $doc["uuid"];
+				$projectName = $doc["project_name"];
 				$pubResp = array();
 				$resp = file_get_contents($localPubBaseURI.$uuid);
 				$pubResp["local"] = Zend_Json::decode($resp);
-				sleep(1);
+				//sleep(1);
 				
 				//$resp = file_get_contents($ocPubBaseURI.$uuid);
 				//$pubResp["oc"] = Zend_Json::decode($resp);

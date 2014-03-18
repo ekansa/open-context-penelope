@@ -17,6 +17,214 @@ class ProjEdits_Dinaa  {
     const GeoNamesBaseURI = "http://www.geonames.org/";
 	 const GeoNamesBaseAPI = "http://api.geonames.org/";
 	 
+	 function altIowaDates(){
+		  
+		  $output = array();
+		  $output["found"] = 0;
+		  $spaceTimeObj = new  dataEdit_SpaceTime;
+		  $spaceTimeObj->projectUUID = $this->projectUUID;
+		  
+		  $ldObj = new dataEdit_LinkedData;
+		  $ldObj->projectUUID = $this->projectUUID;
+		  
+		  $periodVarUUID ='852FD445-E7F9-48C4-1C0F-6539399AB57A';
+		  
+		  $db = $this->startDB();
+		  
+		  $sql = "SELECT DISTINCT observe.subject_uuid
+		  FROM observe
+		  JOIN properties ON observe.property_uuid = properties.property_uuid
+		  LEFT JOIN initial_chrono_tag ON observe.subject_uuid = initial_chrono_tag.uuid
+		  WHERE properties.variable_uuid = '$periodVarUUID'
+		  AND initial_chrono_tag.uuid IS NULL
+		  ";
+		  
+		   $resultA = $db->fetchAll($sql, 2);
+		  if($resultA){
+				foreach($resultA as $rowA){
+					 $itemUUID = $rowA["subject_uuid"];
+					 
+					 $sql = "SELECT MAX(grg.startBP) as tStart, MIN(grg.endBP) as tEnd
+					 FROM observe
+					 JOIN properties ON observe.property_uuid = properties.property_uuid
+					 JOIN linked_data ON properties.property_uuid = linked_data.itemUUID
+					 JOIN z_iowa_dates AS grg ON grg.dinaa_uri = linked_data.linkedURI
+					 WHERE properties.variable_uuid = '$periodVarUUID'
+					 AND observe.subject_uuid = '$itemUUID'
+					 ";
+					 
+					 
+					 $result = $db->fetchAll($sql, 2);
+					 if($result){
+						  $requestParams = array();
+						  $requestParams["uuid"] = $itemUUID;
+						  $requestParams["projUUID"] = $this->projectUUID;
+						  $requestParams["tStart"] = 1950 - $result[0]["tStart"];
+						  $requestParams["tEnd"] = 1950 - $result[0]["tEnd"];
+						  $spaceTimeObj->requestParams = $requestParams;
+						  $spaceTimeObj->chrontoTagItem();
+						  
+						  $output["found"]++;
+						  
+					 }
+					 else{
+						  $output["missing"][] = $itemUUID;
+					 }
+				}
+		  }
+		  
+		  return $output;
+	 }
+	 
+	 
+	 function iowaObsDates(){
+		  
+		  $spaceTimeObj = new  dataEdit_SpaceTime;
+		  $spaceTimeObj->projectUUID = $this->projectUUID;
+		  
+		  $ldObj = new dataEdit_LinkedData;
+		  $ldObj->projectUUID = $this->projectUUID;
+		  
+		  $periodVarUUID ='BCE3FC06-6BBA-4AC9-8239-0E73E6A94726';
+		  
+		  $db = $this->startDB();
+		  $doneLabels = array();
+		  
+		  $sql = "SELECT id, field_5 AS label
+		  FROM z_6_ae54e13de
+		  WHERE 1
+		  ORDER BY label, id
+		  ";
+		  
+		  $resultA = $db->fetchAll($sql, 2);
+		  if($resultA){
+				foreach($resultA as $rowA){
+					 $label = $rowA["label"];
+					 if(!in_array($label, $doneLabels)){
+						  
+						  $sql = "SELECT id
+						  FROM z_6_ae54e13de
+						  WHERE field_5 = '$label'
+						  ORDER BY id
+						  ";
+						  
+						  $result = $db->fetchAll($sql, 2);
+						  $lCount = count($result);
+						  if($lCount > 1){
+								$i = 1;
+								foreach($result as $row){
+									 $data = array("obs" => $i);
+									 $where = "id = ".$row["id"];
+									 $db->update("z_6_ae54e13de", $data, $where);
+									 $i++;
+								}
+						  }
+					 
+						  $doneLabels[] = $label;
+					 }
+				}
+		  }
+		  
+		  return $doneLabels;
+	 }
+	 
+	 
+	 
+	 function iowaDates(){
+		  $output = array();
+		  $output["found"] = 0;
+		  $spaceTimeObj = new  dataEdit_SpaceTime;
+		  $spaceTimeObj->projectUUID = $this->projectUUID;
+		  
+		  $ldObj = new dataEdit_LinkedData;
+		  $ldObj->projectUUID = $this->projectUUID;
+		  
+		  $periodVarUUID ='BCE3FC06-6BBA-4AC9-8239-0E73E6A94726';
+		  
+		  $db = $this->startDB();
+		  
+		  $sql = "SELECT DISTINCT observe.subject_uuid
+		  FROM observe
+		  JOIN properties ON observe.property_uuid = properties.property_uuid
+		  WHERE properties.variable_uuid = '$periodVarUUID'
+		  ";
+		  
+		  $resultA = $db->fetchAll($sql, 2);
+		  if($resultA){
+				foreach($resultA as $rowA){
+					 $itemUUID = $rowA["subject_uuid"];
+					 //$where = "uuid = '$itemUUID' ";
+					 //$db->delete("initial_chrono_tag", $where);
+					 
+					 $sql = "SELECT MAX(grg.start_bp) as tStart, MIN(grg.end_bp) as tEnd, properties.property_uuid, grg.dinaa_uri
+					 FROM observe
+					 JOIN properties ON observe.property_uuid = properties.property_uuid
+					 JOIN val_tab ON val_tab.value_uuid = properties.value_uuid
+					 JOIN z_missouri_dates AS grg ON grg.label = val_tab.val_text
+					 WHERE properties.variable_uuid = '$periodVarUUID'
+					 AND observe.subject_uuid = '$itemUUID'
+					 ";
+					 
+					 $sql = "SELECT MAX(grg.startBP) as tStart, MIN(grg.endBP) as tEnd, properties.property_uuid
+					 FROM observe
+					 JOIN properties ON observe.property_uuid = properties.property_uuid
+					 JOIN z_iowa_dates AS grg ON grg.culture_propUUID = properties.property_uuid
+					 WHERE properties.variable_uuid = '$periodVarUUID'
+					 AND observe.subject_uuid = '$itemUUID'
+					 ";
+					 
+					 
+					 $result = $db->fetchAll($sql, 2);
+					 if($result){
+						  $requestParams = array();
+						  $requestParams["uuid"] = $itemUUID;
+						  $requestParams["projUUID"] = $this->projectUUID;
+						  $requestParams["tStart"] = 1950 - $result[0]["tStart"];
+						  $requestParams["tEnd"] = 1950 - $result[0]["tEnd"];
+						  $spaceTimeObj->requestParams = $requestParams;
+						  $spaceTimeObj->chrontoTagItem();
+						  
+						  $output["found"]++;
+						  
+					 }
+					 else{
+						  $output["missing"][] = $itemUUID;
+					 }
+				}
+		  }
+		  
+		  return $output;
+	 }
+	 
+	 function iowaPeriodLink(){
+		  
+		  $output = array();
+		  $ldObj = new dataEdit_LinkedData;
+		  $ldObj->projectUUID = $this->projectUUID;
+		  
+		  $db = $this->startDB();
+		  
+		  $sql = "SELECT * FROM z_iowa_dates WHERE 1; ";
+		  
+		  $result = $db->fetchAll($sql, 2);
+		  foreach($result as $row){
+			   $requestParams = array();
+			   $requestParams["subjectUUID"] = $row["culture_propUUID"];
+			   $requestParams["subjectType"] = "property";
+			   $requestParams["predicateURI"] = "type";
+			   $requestParams["objectURI"] = $row["dinaa_uri"];
+			   $requestParams["objectLabel"] = $row["dinaa_label"];
+			   $requestParams["projectUUID"] = $this->projectUUID;
+			   
+			   $ldObj->requestParams = $requestParams;
+			   $resp = $ldObj->addUpdateLinkedData();
+			   
+			   $output[$row["culture_propUUID"]] = $resp;
+			   
+		  }
+		  
+		  return $output;
+	 }
 	 
 	 function illDates(){
 		  $output = array();
@@ -84,67 +292,6 @@ class ProjEdits_Dinaa  {
 		  return $output;
 	 }
 	 
-	 
-	 
-	 function loadIllData(){
-		  
-		  $output = array();
-		  $output["count"] = 0;
-		  $db = $this->startDB();
-		  
-		  $start = 0;
-		  $limit = 500;
-		  $modelURL = "http://127.0.0.1:3333/command/core/get-models?project=1790023317109";
-		  $jsonBase = "http://127.0.0.1:3333/command/core/get-rows?project=1790023317109";
-		  $done = false;
-		  
-		  $modelString = file_get_contents($modelURL);
-		  $model = Zend_Json::decode($modelString);
-		  $fieldIndexCellIndex = array();
-		  $fieldIndex = 1;
-		  foreach($model["columnModel"]["columns"] as $col){
-			   $fieldIndexCellIndex[$fieldIndex] = $col["cellIndex"];
-			   $fieldIndex++;
-		  }
-		  
-		  
-		  while(!$done){
-			   $url = $jsonBase."&start=".$start."&limit=".$limit;
-			   
-			   $jsonString = file_get_contents($url);
-			   $json = Zend_Json::decode($jsonString);
-			   if(isset($json["rows"])){
-				    unset($jsonString);
-				    $start = $start + $limit;
-				    $output["count"]++;
-				    foreach($json["rows"] as $row){
-						$data = array();
-						$cells = $row["cells"];
-						
-						foreach($fieldIndexCellIndex as $fieldIndex => $cellIndex){
-							 $fieldName = "field_".$fieldIndex;
-							 $cell = $cells[$cellIndex];
-							 if(is_array($cell)){
-								  $data[$fieldName] = $cell["v"];
-							 }
-							 else{
-								  $data[$fieldName] = "";
-							 }
-						}
-						$data["id"] = $row["i"];
-						
-						try{
-							 $db->insert("z_9_eca17bcd6", $data);
-						}catch (Exception $e) {
-							 //$done = true;
-						}
-				    } 
-			   }
-			   else{
-				    $done = true;
-			   }
-		  }
-	 }
 	 
 	 
 	 

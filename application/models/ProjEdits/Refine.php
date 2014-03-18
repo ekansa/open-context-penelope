@@ -39,7 +39,7 @@ class ProjEdits_Refine  {
 			   $fieldIndex++;
 		  }
 		  
-		  
+		  $recordCount = 0;
 		  while(!$done){
 			   $url = $jsonBase."&start=".$start."&limit=".$limit;
 			   
@@ -57,15 +57,16 @@ class ProjEdits_Refine  {
 						
 						foreach($fieldIndexCellIndex as $fieldIndex => $cellIndex){
 							 $fieldName = "field_".$fieldIndex;
+							 
 							 $cell = $cells[$cellIndex];
-							 if(is_array($cell)){
-								  $data[$fieldName] = $cell["v"];
-							 }
-							 else{
-								  $data[$fieldName] = "";
+							 $data[$fieldName] = "";
+							 if(isset($cells[$cellIndex])){
+								if(is_array($cell)){
+									 $data[$fieldName] = $cell["v"];
+								}
 							 }
 						}
-						$data["id"] = $row["i"];
+						$data["id"] = $row["i"]+1;
 						
 						try{
 							 $db->insert($this->localTableID, $data);
@@ -78,6 +79,11 @@ class ProjEdits_Refine  {
 						  break;
 						}
 						
+						$recordCount++;
+						if($recordCount>= $json["filtered"]){
+						  $done = true;
+						  break;
+						}
 				    } 
 			   }
 			   else{
