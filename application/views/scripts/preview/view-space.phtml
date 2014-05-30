@@ -9,8 +9,15 @@ $XML = $this->XML;
 if ($XML) {
 
     $doc = new DOMDocument();
-
-    $doc->load("xsl-rev/rev2-subject.xsl");
+	if(isset($_GET["multi"])){
+		Zend_Loader::loadClass('dbXML_xmlSpace');
+		$xmlObj = new dbXML_xmlSpace;
+		$XML = $xmlObj->consolidateMultiValueVars($XML);
+		$doc->load("xsl-rev/rev2-subject-multi.xsl");
+	}
+	else{
+		$doc->load("xsl-rev/rev2-subject.xsl");
+	}
     
     $proc = new XSLTProcessor();
     $xslt = $proc->importStylesheet($doc);

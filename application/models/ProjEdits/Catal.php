@@ -69,6 +69,68 @@ class ProjEdits_Catal  {
 	 
 	 public $commentMeasureSuffixes = array(" ", ".", ", ", ":");
 	 
+	 
+	 
+	function tp_area_chrono(){
+		$db = $this->startDB();
+		$output = array();
+		$tpProj = "02594C48-7497-40D7-11AE-AB942DC513B8";
+		$spaceTimeObj = new  dataEdit_SpaceTime;
+		$spaceTimeObj->projectUUID = $tpProj;
+		
+		$tabs = array("z_ex_catal_tp_age",
+					  "z_ex_catal_tp_age_gc",
+					  "z_ex_catal_tp_main",
+					  "z_ex_catal_tp_main_gc",
+					  "z_ex_catal_tp_measurements",
+					  "z_ex_catal_tp_measurements_gc"
+					  );
+		
+		
+		$sql = "SELECT DISTINCT unit, uuid,
+		(field_3 * -1) as bc_early,
+		(field_4 * -1) AS bc_late,
+		bp_early, bp_late
+		FROM z_20_68d76efa0
+		WHERE uuid != '';
+		";
+	
+		$result = $db->fetchAll($sql, 2);
+		foreach($result as $row){
+			
+			$unit = $row["unit"];
+			$uuid = $row["uuid"];
+			$start = $row["bc_early"];
+			$end = $row["bc_late"];
+			$startBP = $row["bp_early"];
+			$endBP = $row["bp_late"];
+			
+			$requestParams = array();
+			$requestParams["uuid"] = $uuid;
+			$requestParams["projUUID"] = $tpProj;
+			$requestParams["tStart"] = $start;
+			$requestParams["tEnd"] = $end;
+			$spaceTimeObj->requestParams = $requestParams;
+			$spaceTimeObj->chrontoTagItem();
+			$output[] = $requestParams;
+			
+			foreach($tabs as $tab){
+				$where = "field_9 = '$unit' ";
+				$data = array("field_13" => $startBP,
+							  "field_14" => $endBP);
+				$db->update($tab, $data, $where);
+			}
+			
+			
+		}
+	
+		return $output;
+	}
+	 
+	 
+	 
+	 
+	 
 	 function loadParseSaveXML(){
 		  
 		  $xmlString = file_get_contents($this->workbookFile);

@@ -38,7 +38,7 @@ class TabOut_TableFiles  {
 	 const previewSize = 500;
 	 const CSVdirectory = "csv-export";
 	 
-	 const maxGitHubSize = 50000000;
+	 const maxGitHubSize = 40000000;
 	 
 	 function makeSaveFiles(){
 		  

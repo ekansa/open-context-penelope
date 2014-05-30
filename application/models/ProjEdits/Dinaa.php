@@ -17,6 +17,143 @@ class ProjEdits_Dinaa  {
     const GeoNamesBaseURI = "http://www.geonames.org/";
 	 const GeoNamesBaseAPI = "http://api.geonames.org/";
 	 
+	 function all_date_gather(){
+		 $output = array();
+		 $db = $this->startDB();
+		 
+		 $setup = array(
+		  "4B5721E9-2BB3-423F-5D04-1B948FA65FAB" => array("tab" => "z_missouri_dates",
+					  "id" => "id",
+					  "label" => "label",
+					  "start_bp" => "start_bp",
+					  "end_bp" => "end_bp"
+					  ),
+		  
+		  "0EE6A09E-62E5-45F0-1CB9-F5CDA44F4D9E" => array("tab" => "z_sc_dates",
+					  "id" => "id",
+					  "label" => "label",
+					  "start_bp" => "beginBP",
+					  "end_bp" => "endBP"
+					  ),			
+		  
+		  "F05ACE4F-9B55-48A0-D640-5276B8B899C7" => array("tab" => "z_kentucky_dates",
+					  "id" => "propertyUUID",
+					  "label" => "fixed_label",
+					  "start_bp" => "startBP",
+					  "end_bp" => "endBP"
+					  ),
+		  
+		  "8492AEC3-E406-44C6-03CA-2BF280D8F5B0" => array("tab" => "z_iowa_dates",
+					  "id" => "culture_propUUID",
+					  "label" => "iowa_culture",
+					  "start_bp" => "startBP",
+					  "end_bp" => "endBP"
+					  ),
+		  
+		  "D42FC0EB-61B0-4937-700E-4EFEAB008677" => array("tab" => "z_indiana_dates",
+					  "id" => "propertyUUID",
+					  "label" => "value",
+					  "start_bp" => "startBP",
+					  "end_bp" => "endBP"
+					  ),
+		  
+		  "B7F85EB6-4BF5-43FA-98E7-FF8FAF1AA452" => array("tab" => "z_ill_dates",
+					  "id" => "propertyUUID",
+					  "label" => "period",
+					  "start_bp" => "startBP",
+					  "end_bp" => "endBP"
+					  ),
+		  
+		  "64013C33-4039-46C9-609A-A758CE51CA49" => array("tab" => "z_georgia_dates",
+					  "id" => "id",
+					  "label" => "label",
+					  "start_bp" => "beginBP",
+					  "end_bp" => "endBP"
+					  ),
+		  
+		  "81204AF8-127C-4686-E9B0-1202C3A47959" => array("tab" => "z_florida_dates",
+					  "id" => "id",
+					  "label" => "label",
+					  "start_bp" => "beginBP",
+					  "end_bp" => "endBP"
+					  )
+						);
+		 
+		 
+		 $sql = "SELECT fk_project_uuid AS project_uuid,
+		 itemUUID as predicate_uuid
+		 FROM linked_data
+		 WHERE linkedURI = 'http://opencontext.org/vocabularies/dinaa/00001' 
+		 ";
+		  
+		  $result = $db->fetchAll($sql, 2);
+		  foreach($result as $row){
+			   $project_uuid = $row['project_uuid'];
+			   $predicate_uuid = $row['predicate_uuid'];
+			   
+			   $sql = "SELECT properties.property_uuid AS type_uuid,
+			   properties.value_uuid AS string_uuid,
+			   val_tab.val_text AS type_value
+			   FROM properties
+			   JOIN val_tab ON properties.value_uuid = val_tab.value_uuid
+			   WHERE properties.variable_uuid = '$predicate_uuid'
+			   ";
+			   
+			   $resultB = $db->fetchAll($sql, 2);
+			   foreach($resultB as $rowB){
+					$type_uuid = $rowB["type_uuid"];
+					$string_uuid = $rowB["string_uuid"];
+					$type_value = $rowB["type_value"];
+					$tab = $setup[$project_uuid]['tab'];
+					$id_field = $setup[$project_uuid]['id'];
+					$lab_field = $setup[$project_uuid]['label'];
+					$start_field = $setup[$project_uuid]['start_bp'];
+					$end_field = $setup[$project_uuid]['end_bp'];
+					
+					$sql = "SELECT $id_field AS id,
+					$lab_field AS label,
+					$start_field AS start_bp,
+					$end_field AS end_bp
+					FROM $tab
+					WHERE $lab_field = '$type_value'
+					LIMIT 1;
+					";
+					
+					//echo $sql;
+					//die;
+					
+					$resultC = $db->fetchAll($sql, 2);
+					if($resultC){
+						 $data = array("project_uuid" => $project_uuid,
+									   "predicate_uuid" => $predicate_uuid,
+									   "type_uuid" => $type_uuid,
+									   "string_uuid" => $string_uuid,
+									   "label" => $type_value,
+									   "source_id" => $tab,
+									   "id" => $resultC[0]["id"],
+									   "start_bp" => $resultC[0]["start_bp"],
+									   "end_bp" => $resultC[0]["end_bp"]
+									   );
+						 try{
+							  $db->insert("z_all_dates", $data);
+							  $output[] = $data;
+						 }
+						 catch(Exception $e){
+							  
+						 }
+					}
+					else{
+						$output["missing"][] = $rowB; 
+					}
+					
+			   }
+			   
+		  }
+		  
+		  return $output;
+	 }
+	 
+	 
 	 function altIowaDates(){
 		  
 		  $output = array();

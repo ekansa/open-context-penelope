@@ -345,7 +345,7 @@ class dbXML_xmlSpace  {
 	 
 	 
 	 
-	 function nameSpaces(){
+	function nameSpaces(){
 		  $nameSpaceArray = array("oc" => self::NSocSpace,
 					  "dc" =>	self::NSdc,
 					  "arch" => self::NSarchaeoML,
@@ -357,4 +357,124 @@ class dbXML_xmlSpace  {
     }
     
     
+	 //format multiple valued variables
+    function consolidateMultiValueVars($xml_string){
+		  	
+		  $dom = new DOMDocument("1.0", "utf-8");
+		  $dom->loadXML($xml_string);
+		  $dom->formatOutput = true;
+		  $xpath = new DOMXpath($dom);
+		  $NSarray = $this->nameSpaces();
+		  foreach($NSarray as $prefix => $uri){
+				$xpath->registerNamespace($prefix, $uri);
+		  }
+		  
+		  $query = "//arch:observation";
+		  $obsList = $xpath->query($query, $dom);
+		  if(!is_null($obsList)){
+				foreach($obsList as $obsNode){
+					 $varArray = array();
+					 $query = "arch:properties/arch:property/arch:variableID";
+					 $varList = $xpath->query($query, $obsNode);
+					 if(!is_null($varList)){
+						  foreach($varList as $varNode){
+								$varID =  $varNode->nodeValue;
+								if(array_key_exists($varID , $varArray)){
+									 $varArray[$varID]++;
+								}
+								else{
+									 $varArray[$varID] = 1;
+								}
+						  }
+					 }
+					 if(count($varArray)>0){
+						  foreach($varArray as $varID => $varCount){
+								if($varCount > 1){
+									   $showLink = false;
+									 $query = "arch:properties/arch:property[arch:variableID = '$varID']";
+									 $propList = $xpath->query($query, $obsNode);
+									 if(!is_null($propList)){
+										  $i = 0;
+										  $propVals = array();
+										  foreach($propList as $propNode){
+												$propID = false;
+												$query = "oc:propid";
+												$propIdNode = $xpath->query($query, $propNode);
+												if(!is_null($propIdNode)){
+													 $propID = $propIdNode->item(0)->nodeValue;
+												}
+												$value = null;
+												$query = "oc:show_val";
+												$valNodes = $xpath->query($query, $propNode);
+												if(!is_null($valNodes)){
+													 $value = $valNodes->item(0)->nodeValue;
+													 //$valNodes->item(0)->nodeValue = null;
+													 if($i > 0){
+														  $propNode->removeChild($valNodes->item(0));
+													 }
+												}
+												if($propID != false && $value != null){
+													 $propVals[$propID] = $value;
+												}
+												if($i == 0){
+													 $query = "oc:var_label";
+													 $varNodes = $xpath->query($query, $propNode);
+													 $queryType = "oc:var_label/@type";
+													 $varTypeNodes = $xpath->query($queryType, $propNode);
+													 if(!is_null($valNodes)){
+														  $varType = $varTypeNodes->item(0)->nodeValue;
+														  if(!stristr( $varType, "alpha")){
+															   $showLink = true;
+														  }
+													 }
+													 
+													 //$varNodes->item(0)->setAttribute("type", "alphanumeric");
+													 $varNodes->item(0)->setAttribute("type", "multivalue");
+												}
+												$i++;
+										  }
+										  $i = 0;
+										  if(count($propVals) > 0){
+												/*
+												$multiValueNode = $dom->createElement("oc:show_val");
+												$multiValueNode->setAttribute("type", "xhtml");
+												$divNode = $dom->createElement("div");
+												$divNode->setAttribute("xmlns", "http://www.w3.org/1999/xhtml");
+												$multiValueNode->appendChild($divNode);
+												$divNodeA = $dom->createElement("div");
+												$divNode->appendChild($divNodeA);
+												$listNode = $dom->createElement("ul");
+												$divNodeA->appendChild($listNode);
+												foreach($propVals as $propUUID => $value){
+													 $itemNode = $dom->createElement("li");
+													 $itemNode->setAttribute("id", $propUUID);
+													 $itemText = $dom->createTextNode($value);
+													 $itemNode->appendChild($itemText);
+													 $listNode->appendChild($itemNode);
+												}
+												$propList->item(0)->appendChild($multiValueNode);
+												*/
+												
+												$multiValueNode = $dom->createElement("oc:show_values");
+												$multiValueNode->setAttribute("showLink", $showLink);
+												foreach($propVals as $propUUID => $value){
+													 $itemNode = $dom->createElement("oc:show_val");
+													 $itemNode->setAttribute("propUUID", $propUUID);
+													 $itemText = $dom->createTextNode($value);
+													 $itemNode->appendChild($itemText);
+													 $multiValueNode->appendChild($itemNode);
+												}
+												$propList->item(0)->appendChild($multiValueNode);
+										  }
+									 }
+								}
+						  }
+					 }
+				}
+		  }
+		  
+		  return $dom->saveXML();
+	 }
+	
+	
 }  

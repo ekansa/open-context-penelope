@@ -187,6 +187,9 @@ class PublishController extends Zend_Controller_Action
             );
         }
         
+        if(isset($_REQUEST["test"])){
+            $clientParams["test"] = 1;
+        }
         
         if($doUpdate){
             $clientParams['doUpdate'] = $doUpdate; 
@@ -204,6 +207,8 @@ class PublishController extends Zend_Controller_Action
             if(!$response->isError()){
                 $responseJSON = $response->getBody();
                 @$responseObj = Zend_Json::decode($responseJSON);
+                //echo $responseJSON;
+                //die;
                 $output["serverResp"] = $responseObj;
                 if(!$responseObj){
                     $output["OKserverJSON"] = false;

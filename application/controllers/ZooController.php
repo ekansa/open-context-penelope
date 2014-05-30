@@ -16,7 +16,29 @@ class ZooController extends Zend_Controller_Action {
     {  
         require_once 'App/Util/GenericFunctions.php';
     }
-	 
+	
+	
+	function allDinaaDatesAction(){
+		  
+		  $this->_helper->viewRenderer->setNoRender();
+		  Zend_Loader::loadClass('ProjEdits_Dinaa');
+		  Zend_Loader::loadClass('dataEdit_Link');
+		  Zend_Loader::loadClass('dataEdit_Published');
+		  Zend_Loader::loadClass('dataEdit_SpaceTime');
+		  Zend_Loader::loadClass('dataEdit_SpaceContain');
+		  Zend_Loader::loadClass('dataEdit_Subject');
+		  Zend_Loader::loadClass('dataEdit_Property');
+		  Zend_Loader::loadClass('dataEdit_LinkedData');
+		  
+		  $pObj = new ProjEdits_Dinaa;
+		  $output = array();
+		  $output["dates"] = $pObj->all_date_gather(); 
+		  header('Content-Type: application/json; charset=utf8');
+		  
+		  echo Zend_Json::encode($output);
+	   }
+	
+	
 	  function altIowaDatesAction(){
 		  
 		  $this->_helper->viewRenderer->setNoRender();
@@ -38,6 +60,28 @@ class ZooController extends Zend_Controller_Action {
 		  echo Zend_Json::encode($output);
 	   }
     
+	
+	function catalTpDatesAction(){
+		  
+		  $this->_helper->viewRenderer->setNoRender();
+		  Zend_Loader::loadClass('ProjEdits_Catal');
+		  Zend_Loader::loadClass('dataEdit_Link');
+		  Zend_Loader::loadClass('dataEdit_Published');
+		  Zend_Loader::loadClass('dataEdit_SpaceTime');
+		  Zend_Loader::loadClass('dataEdit_SpaceContain');
+		  Zend_Loader::loadClass('dataEdit_Subject');
+		  Zend_Loader::loadClass('dataEdit_Property');
+		  Zend_Loader::loadClass('dataEdit_LinkedData');
+		  
+		  $pObj = new ProjEdits_Catal;
+		  $output = $pObj->tp_area_chrono();
+		  header('Content-Type: application/json; charset=utf8');
+		  
+		  echo Zend_Json::encode($output);
+	   }
+    
+	
+	
     function iowaObsDatesAction(){
 		  
 		  $this->_helper->viewRenderer->setNoRender();
@@ -1223,7 +1267,7 @@ the fields used to describe post-cranial element measurements at Çatalhöyük.
 		  
 		  $this->_helper->viewRenderer->setNoRender();
 		  Zend_Loader::loadClass('ProjEdits_Murlo');
-		  $jsonURL = "http://opencontext/publish/index-update";
+		  $jsonURL = "http://opencontext.org/publish/index-update";
 		  //$jsonURL = "http://opencontext.org/publish/index-update";
 		  //$jsonURL = "http://penelope.oc/csv-export/murlo-trenches-b.txt";
 		  $itemCount = 1;

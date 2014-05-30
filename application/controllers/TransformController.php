@@ -295,11 +295,6 @@ class TransformController extends App_Controller_PenelopeController
                     {
                         //update current record with a new $propType:
                         $data = array(
-                            'project_id'=> $projectUUID,
-                            'source_id'       => $dataTableName,
-                            'var_hash'       => $varhash,
-                            'variable_uuid'  => '',
-                            'var_label'      => $fieldLabel,
                             'var_type'       => $propType
                          );
                         $variable->update($data, $whereClause);
