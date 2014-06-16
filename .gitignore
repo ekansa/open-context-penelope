@@ -1,4 +1,5 @@
 *.ini
+*.crt
 cache/
 csv-export/
 db-export/

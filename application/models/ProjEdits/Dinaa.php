@@ -17,6 +17,179 @@ class ProjEdits_Dinaa  {
     const GeoNamesBaseURI = "http://www.geonames.org/";
 	 const GeoNamesBaseAPI = "http://api.geonames.org/";
 	 
+	 function ohioGeo(){
+		  
+		  $output = array();
+		  $output["count"] = 0;
+		  $db = $this->startDB();
+		  $sql = "SELECT * FROM z_12_d23b6cd17
+		  WHERE 1
+		  GROUP BY field_1
+		  ";
+		  
+		  $result = $db->fetchAll($sql, 2);
+        if($result){
+				foreach($result as $row){
+					 //$site = "Site ".trim($row["field_2"]);
+					 $site = trim($row["field_1"]);
+					 //$site = str_replace("_", "-", $site);
+					 $uuid = $this->getSiteUUID($site);
+					 if($uuid != false){
+						  
+						  $where = "uuid  = '$uuid' ";
+						  $db->delete("geo_space", $where);
+						  
+						  $lat = $row["field_10"];
+						  $lon = $row["field_11"];
+						  $data = array("uuid" => $uuid,
+											 "project_id" => $this->projectUUID,
+											 "source_id" => "geo-tile approx",
+											 "latitude" => $lat,
+											 "longitude" => $lon,
+											 "specificity" => -11,
+											 "note" => "Approximated by geotile to zoom level 11"
+											 );
+						  
+						  try{
+								$db->insert("geo_space", $data);
+								//$output[$site][] = "Geo $uuid added";
+								$output["count"]++; 
+						  }
+						  catch(Exception $e){
+								$output[$site][] = "Geo for $uuid already in"; 
+						  }
+						  
+					 }
+					 else{
+						  $output[$site] = "Error! No UUID";
+					 }
+					 
+					 
+				}
+		  
+		  
+		  }
+		  
+		  return $output;
+	 }
+	 
+	 
+	 function laGeo(){
+		  
+		  $output = array();
+		  $output["count"] = 0;
+		  $db = $this->startDB();
+		  $sql = "SELECT * FROM z_11_25fda0bd2
+		  WHERE 1
+		  GROUP BY field_3
+		  ";
+		  
+		  $result = $db->fetchAll($sql, 2);
+        if($result){
+				foreach($result as $row){
+					 //$site = "Site ".trim($row["field_2"]);
+					 $site = trim($row["field_3"]);
+					 //$site = str_replace("_", "-", $site);
+					 $uuid = $this->getSiteUUID($site);
+					 if($uuid != false){
+						  
+						  $where = "uuid  = '$uuid' ";
+						  $db->delete("geo_space", $where);
+						  
+						  $lat = $row["field_52"];
+						  $lon = $row["field_53"];
+						  $data = array("uuid" => $uuid,
+											 "project_id" => $this->projectUUID,
+											 "source_id" => "geo-tile approx",
+											 "latitude" => $lat,
+											 "longitude" => $lon,
+											 "specificity" => -11,
+											 "note" => "Approximated by geotile to zoom level 11"
+											 );
+						  
+						  try{
+								$db->insert("geo_space", $data);
+								//$output[$site][] = "Geo $uuid added";
+								$output["count"]++; 
+						  }
+						  catch(Exception $e){
+								$output[$site][] = "Geo for $uuid already in"; 
+						  }
+						  
+					 }
+					 else{
+						  $output[$site] = "Error! No UUID";
+					 }
+					 
+					 
+				}
+		  
+		  
+		  }
+		  
+		  return $output;
+	 }
+	 
+	 
+	 
+	 function vaGeo(){
+		  
+		  $output = array();
+		  $output["count"] = 0;
+		  $db = $this->startDB();
+		  $sql = "SELECT * FROM z_10_6d483465f
+		  WHERE 1
+		  GROUP BY field_3
+		  ";
+		  
+		  $result = $db->fetchAll($sql, 2);
+        if($result){
+				foreach($result as $row){
+					 //$site = "Site ".trim($row["field_2"]);
+					 $site = trim($row["field_3"]);
+					 //$site = str_replace("_", "-", $site);
+					 $uuid = $this->getSiteUUID($site);
+					 if($uuid != false){
+						  
+						  $where = "uuid  = '$uuid' ";
+						  $db->delete("geo_space", $where);
+						  
+						  $lat = $row["field_5"];
+						  $lon = $row["field_6"];
+						  $data = array("uuid" => $uuid,
+											 "project_id" => $this->projectUUID,
+											 "source_id" => "geo-tile approx",
+											 "latitude" => $lat,
+											 "longitude" => $lon,
+											 "specificity" => -11,
+											 "note" => "Approximated by geotile to zoom level 11"
+											 );
+						  
+						  try{
+								$db->insert("geo_space", $data);
+								//$output[$site][] = "Geo $uuid added";
+								$output["count"]++; 
+						  }
+						  catch(Exception $e){
+								$output[$site][] = "Geo for $uuid already in"; 
+						  }
+						  
+					 }
+					 else{
+						  $output[$site] = "Error! No UUID";
+					 }
+					 
+					 
+				}
+		  
+		  
+		  }
+		  
+		  return $output;
+	 }
+	 
+	 
+	 
 	 function all_date_gather(){
 		 $output = array();
 		 $db = $this->startDB();
