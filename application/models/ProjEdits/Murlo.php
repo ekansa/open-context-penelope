@@ -2770,6 +2770,9 @@ class ProjEdits_Murlo  {
 		}
 		$div = $xpath->query('/html/body/div');
 		$useText = ($dom->saveXml($div->item(0))); //get rid of the html and body
+		if(stristr($useText, "<?xml") && stristr($useText, "<html>")){
+			$useText = "<div>No content</div>";
+		}	
 		return $useText;
 	} 
 	
@@ -2965,6 +2968,7 @@ class ProjEdits_Murlo  {
 		$rawText = preg_replace('/[^(\x20-\x7F)]*/','', $rawText);
 		$rawText = $this->HTMLify($rawText); //make the text parsable
 		$rawText = str_replace("&#13;", " ", $rawText);
+		
 		@$xml = simplexml_load_string('<?xml version="1.0" encoding="utf-8"?> '.$rawText);
 		if($xml){
 			$xml = $this->uniqueIDs($xml); //make sure the IDs are unique
