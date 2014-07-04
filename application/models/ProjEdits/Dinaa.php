@@ -17,6 +17,179 @@ class ProjEdits_Dinaa  {
     const GeoNamesBaseURI = "http://www.geonames.org/";
 	 const GeoNamesBaseAPI = "http://api.geonames.org/";
 	 
+	 function mdGeo(){
+		  
+		  $output = array();
+		  $output["count"] = 0;
+		  $db = $this->startDB();
+		  $sql = "SELECT * FROM z_15_5db6cf102
+		  WHERE 1
+		  GROUP BY field_4
+		  ";
+		  
+		  $result = $db->fetchAll($sql, 2);
+        if($result){
+				foreach($result as $row){
+					 //$site = "Site ".trim($row["field_2"]);
+					 $site = trim($row["field_4"]);
+					 //$site = str_replace("_", "-", $site);
+					 $uuid = $this->getSiteUUID($site);
+					 if($uuid != false){
+						  
+						  $where = "uuid  = '$uuid' ";
+						  $db->delete("geo_space", $where);
+						  
+						  $lat = $row["field_62"];
+						  $lon = $row["field_63"];
+						  $data = array("uuid" => $uuid,
+											 "project_id" => $this->projectUUID,
+											 "source_id" => "geo-tile approx",
+											 "latitude" => $lat,
+											 "longitude" => $lon,
+											 "specificity" => -11,
+											 "note" => "Approximated by geotile to zoom level 11"
+											 );
+						  
+						  try{
+								$db->insert("geo_space", $data);
+								//$output[$site][] = "Geo $uuid added";
+								$output["count"]++; 
+						  }
+						  catch(Exception $e){
+								$output[$site][] = "Geo for $uuid already in"; 
+						  }
+						  
+					 }
+					 else{
+						  $output[$site] = "Error! No UUID";
+					 }
+					 
+					 
+				}
+		  
+		  
+		  }
+		  
+		  return $output;
+	 }
+	 
+	 
+	 function ncGeo(){
+		  
+		  $output = array();
+		  $output["count"] = 0;
+		  $db = $this->startDB();
+		  $sql = "SELECT * FROM z_14_697d93bfa
+		  WHERE 1
+		  GROUP BY field_3
+		  ";
+		  
+		  $result = $db->fetchAll($sql, 2);
+        if($result){
+				foreach($result as $row){
+					 //$site = "Site ".trim($row["field_2"]);
+					 $site = trim($row["field_3"]);
+					 //$site = str_replace("_", "-", $site);
+					 $uuid = $this->getSiteUUID($site);
+					 if($uuid != false){
+						  
+						  $where = "uuid  = '$uuid' ";
+						  $db->delete("geo_space", $where);
+						  
+						  $lat = $row["field_13"];
+						  $lon = $row["field_14"];
+						  $data = array("uuid" => $uuid,
+											 "project_id" => $this->projectUUID,
+											 "source_id" => "geo-tile approx",
+											 "latitude" => $lat,
+											 "longitude" => $lon,
+											 "specificity" => -11,
+											 "note" => "Approximated by geotile to zoom level 11"
+											 );
+						  
+						  try{
+								$db->insert("geo_space", $data);
+								//$output[$site][] = "Geo $uuid added";
+								$output["count"]++; 
+						  }
+						  catch(Exception $e){
+								$output[$site][] = "Geo for $uuid already in"; 
+						  }
+						  
+					 }
+					 else{
+						  $output[$site] = "Error! No UUID";
+					 }
+					 
+					 
+				}
+		  
+		  
+		  }
+		  
+		  return $output;
+	 }
+	 
+	 
+	 
+	 
+	 function pennGeo(){
+		  
+		  $output = array();
+		  $output["count"] = 0;
+		  $db = $this->startDB();
+		  $sql = "SELECT * FROM z_13_41b22b176
+		  WHERE 1
+		  GROUP BY field_3
+		  ";
+		  
+		  $result = $db->fetchAll($sql, 2);
+        if($result){
+				foreach($result as $row){
+					 //$site = "Site ".trim($row["field_2"]);
+					 $site = trim($row["field_3"]);
+					 //$site = str_replace("_", "-", $site);
+					 $uuid = $this->getSiteUUID($site);
+					 if($uuid != false){
+						  
+						  $where = "uuid  = '$uuid' ";
+						  $db->delete("geo_space", $where);
+						  
+						  $lat = $row["field_6"];
+						  $lon = $row["field_7"];
+						  $data = array("uuid" => $uuid,
+											 "project_id" => $this->projectUUID,
+											 "source_id" => "geo-tile approx",
+											 "latitude" => $lat,
+											 "longitude" => $lon,
+											 "specificity" => -11,
+											 "note" => "Approximated by geotile to zoom level 11"
+											 );
+						  
+						  try{
+								$db->insert("geo_space", $data);
+								//$output[$site][] = "Geo $uuid added";
+								$output["count"]++; 
+						  }
+						  catch(Exception $e){
+								$output[$site][] = "Geo for $uuid already in"; 
+						  }
+						  
+					 }
+					 else{
+						  $output[$site] = "Error! No UUID";
+					 }
+					 
+					 
+				}
+		  
+		  
+		  }
+		  
+		  return $output;
+	 }
+	 
+	 
 	 function ohioGeo(){
 		  
 		  $output = array();
@@ -1476,7 +1649,7 @@ class ProjEdits_Dinaa  {
 	 }
 	 
 	 
-	 function countyGeo($state){
+	 function countyGeo($state, $countyQuery = "County"){
 		  $db = $this->startDB();
 		  
 		  $vars = array("County name" => "87556028-677C-4C59-BA35-AE509BC825AD",
@@ -1506,7 +1679,7 @@ class ProjEdits_Dinaa  {
 					 $uuid = $row["uuid"];
 					 $name = $row["space_label"];
 					 $projectUUID = $row["project_id"];
-					 $url = $urlBase."&q=".urlencode($name." County")."+".$state;
+					 $url = $urlBase."&q=".urlencode($name." ".$countyQuery)."+".$state;
 					 $actout["oc-name"] = $name;
 					 $actout["url"] = $url;
 					 @$jsonString = file_get_contents($url);
@@ -1518,19 +1691,19 @@ class ProjEdits_Dinaa  {
 								$i = 0;
 								$goodGeo = false;
 								foreach($geoAll["geonames"] as $checkGeo){
-									 if((strtolower($checkGeo["name"]) == strtolower($name." county") || strtolower($checkGeo["toponymName"]) == strtolower($name." county")) && isset($checkGeo["bbox"]) && $checkGeo["fcodeName"] != "airport" && !stristr($checkGeo["toponymName"], "airport")){
+									 if((strtolower($checkGeo["name"]) == strtolower($name." ".$countyQuery) || strtolower($checkGeo["toponymName"]) == strtolower($name." ".$countyQuery)) && isset($checkGeo["bbox"]) && $checkGeo["fcodeName"] != "airport" && !stristr($checkGeo["toponymName"], "airport")){
 										  if(!$goodGeo){
 												$goodGeo = $checkGeo;
 												break;
 										  }
 									 }
-									 elseif(strtolower($checkGeo["name"]) == strtolower(str_replace("St.", "Saint",$name)." county") && isset($checkGeo["bbox"]) && $checkGeo["fcodeName"] != "airport" && !stristr($checkGeo["toponymName"], "airport")){
+									 elseif(strtolower($checkGeo["name"]) == strtolower(str_replace("St.", "Saint",$name)." ".$countyQuery) && isset($checkGeo["bbox"]) && $checkGeo["fcodeName"] != "airport" && !stristr($checkGeo["toponymName"], "airport")){
 										  if(!$goodGeo){
 												$goodGeo = $checkGeo;
 												break;
 										  }
 									 }
-									 elseif(strtolower($checkGeo["name"]) == strtolower(str_replace(" ", "", $name)." county") && isset($checkGeo["bbox"]) && $checkGeo["fcodeName"] != "airport" && !stristr($checkGeo["toponymName"], "airport")){
+									 elseif(strtolower($checkGeo["name"]) == strtolower(str_replace(" ", "", $name)." ".$countyQuery) && isset($checkGeo["bbox"]) && $checkGeo["fcodeName"] != "airport" && !stristr($checkGeo["toponymName"], "airport")){
 										  if(!$goodGeo){
 												$goodGeo = $checkGeo;
 												break;
@@ -1540,7 +1713,7 @@ class ProjEdits_Dinaa  {
 								
 								if(!is_array($goodGeo)){
 									 $spName = str_replace(" ", "", $name);
-									 $url = $urlBase."&q=".urlencode($spName." County")."+".$state;
+									 $url = $urlBase."&q=".urlencode($spName." ".$countyQuery)."+".$state;
 									 @$jsonString = file_get_contents($url);
 									 if($jsonString != false){
 										  $geoAll = Zend_Json::decode($jsonString);
@@ -1549,19 +1722,19 @@ class ProjEdits_Dinaa  {
 												$geo = $geoAll["geonames"];
 												$actout["geo"] = $geo;
 												foreach($geoAll["geonames"] as $checkGeo){
-													 if((strtolower($checkGeo["name"]) == strtolower($name." county") || strtolower($checkGeo["toponymName"]) == strtolower($name." county")) && isset($checkGeo["bbox"]) && $checkGeo["fcodeName"] != "airport" && !stristr($checkGeo["toponymName"], "airport")){
+													 if((strtolower($checkGeo["name"]) == strtolower($name." ".$countyQuery) || strtolower($checkGeo["toponymName"]) == strtolower($name." ".$countyQuery)) && isset($checkGeo["bbox"]) && $checkGeo["fcodeName"] != "airport" && !stristr($checkGeo["toponymName"], "airport")){
 														  if(!$goodGeo){
 																$goodGeo = $checkGeo;
 																break;
 														  }
 													 }
-													 elseif(strtolower($checkGeo["name"]) == strtolower(str_replace("St.", "Saint",$name)." county") && isset($checkGeo["bbox"]) && $checkGeo["fcodeName"] != "airport" && !stristr($checkGeo["toponymName"], "airport")){
+													 elseif(strtolower($checkGeo["name"]) == strtolower(str_replace("St.", "Saint",$name)." ".$countyQuery) && isset($checkGeo["bbox"]) && $checkGeo["fcodeName"] != "airport" && !stristr($checkGeo["toponymName"], "airport")){
 														  if(!$goodGeo){
 																$goodGeo = $checkGeo;
 																break;
 														  }
 													 }
-													 elseif(strtolower($checkGeo["name"]) == strtolower(str_replace(" ", "", $name)." county") && isset($checkGeo["bbox"]) && $checkGeo["fcodeName"] != "airport" && !stristr($checkGeo["toponymName"], "airport")){
+													 elseif(strtolower($checkGeo["name"]) == strtolower(str_replace(" ", "", $name)." ".$countyQuery) && isset($checkGeo["bbox"]) && $checkGeo["fcodeName"] != "airport" && !stristr($checkGeo["toponymName"], "airport")){
 														  if(!$goodGeo){
 																$goodGeo = $checkGeo;
 																break;

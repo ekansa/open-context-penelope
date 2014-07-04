@@ -17,6 +17,159 @@ class ZooController extends Zend_Controller_Action {
         require_once 'App/Util/GenericFunctions.php';
     }
 	
+	function pcTbMissingLinksAction(){
+	   //adds missing location link relations for diary entries
+	   //at PC
+	   $this->_helper->viewRenderer->setNoRender();
+	   Zend_Loader::loadClass('ProjEdits_Murlo');
+	   Zend_Loader::loadClass('dataEdit_Link');
+	   Zend_Loader::loadClass('dataEdit_Published');
+	   Zend_Loader::loadClass('dataEdit_SpaceTime');
+	   Zend_Loader::loadClass('dataEdit_SpaceContain');
+	   Zend_Loader::loadClass('dataEdit_Subject');
+	   Zend_Loader::loadClass('dataEdit_Property');
+	   Zend_Loader::loadClass('dataEdit_LinkedData');
+	   $pObj = new ProjEdits_Murlo;
+	   $output = array();
+	   $output["data"] = $pObj->TBMissingLinkMatch();
+	   header('Content-Type: application/json; charset=utf8');
+	   echo Zend_Json::encode($output);
+    }
+    
+    function pcTbContentsAction(){
+	   //adds media linking relations for diary entries
+	   //at PC
+	   $this->_helper->viewRenderer->setNoRender();
+	   Zend_Loader::loadClass('ProjEdits_Murlo');
+	   Zend_Loader::loadClass('dataEdit_Link');
+	   Zend_Loader::loadClass('dataEdit_Published');
+	   Zend_Loader::loadClass('dataEdit_SpaceTime');
+	   Zend_Loader::loadClass('dataEdit_SpaceContain');
+	   Zend_Loader::loadClass('dataEdit_Subject');
+	   Zend_Loader::loadClass('dataEdit_Property');
+	   Zend_Loader::loadClass('dataEdit_LinkedData');
+	   $pObj = new ProjEdits_Murlo;
+	   $output = array();
+	   $output["data"] = $pObj->TBFindsMatch();
+	   //$output["data"] = $pObj->TBContentsExtract();
+	   header('Content-Type: application/json; charset=utf8');
+	   echo Zend_Json::encode($output);
+	   
+    }
+    
+    function pcMediaPagesAction(){
+	   //adds media linking relations for diary entries
+	   //at PC
+	   $this->_helper->viewRenderer->setNoRender();
+	   Zend_Loader::loadClass('ProjEdits_Murlo');
+	   Zend_Loader::loadClass('dataEdit_Link');
+	   Zend_Loader::loadClass('dataEdit_Published');
+	   Zend_Loader::loadClass('dataEdit_SpaceTime');
+	   Zend_Loader::loadClass('dataEdit_SpaceContain');
+	   Zend_Loader::loadClass('dataEdit_Subject');
+	   Zend_Loader::loadClass('dataEdit_Property');
+	   Zend_Loader::loadClass('dataEdit_LinkedData');
+	   $pObj = new ProjEdits_Murlo;
+	   $output = array();
+	   $output["data"] = $pObj->TBscanPageRangeExtract();
+	   header('Content-Type: application/json; charset=utf8');
+	   echo Zend_Json::encode($output);
+	   
+    }
+    
+    function pcDiaryMediaLinksAction(){
+	   //adds media linking relations for diary entries
+	   //at PC
+	   $this->_helper->viewRenderer->setNoRender();
+	   Zend_Loader::loadClass('ProjEdits_Murlo');
+	   Zend_Loader::loadClass('dataEdit_Link');
+	   Zend_Loader::loadClass('dataEdit_Published');
+	   Zend_Loader::loadClass('dataEdit_SpaceTime');
+	   Zend_Loader::loadClass('dataEdit_SpaceContain');
+	   Zend_Loader::loadClass('dataEdit_Subject');
+	   Zend_Loader::loadClass('dataEdit_Property');
+	   Zend_Loader::loadClass('dataEdit_LinkedData');
+	   $pObj = new ProjEdits_Murlo;
+	   $output = array();
+	   $output["data"] = $pObj->TBmediaLinks();
+	   header('Content-Type: application/json; charset=utf8');
+	   echo Zend_Json::encode($output);
+	   
+    }
+    
+    function mdGeoAction(){
+		  
+		  $this->_helper->viewRenderer->setNoRender();
+		  Zend_Loader::loadClass('ProjEdits_Dinaa');
+		  Zend_Loader::loadClass('dataEdit_Link');
+		  Zend_Loader::loadClass('dataEdit_Published');
+		  Zend_Loader::loadClass('dataEdit_SpaceTime');
+		  Zend_Loader::loadClass('dataEdit_SpaceContain');
+		  Zend_Loader::loadClass('dataEdit_Subject');
+		  Zend_Loader::loadClass('dataEdit_Property');
+		  Zend_Loader::loadClass('dataEdit_LinkedData');
+		  
+		  $pObj = new ProjEdits_Dinaa;
+		  $pObj->projectUUID = 'F9970276-8636-478D-A3F0-08CC7EFEAD4F';
+		  $output = array();
+		  $output["geo"] = $pObj->mdGeo(); 
+		  $output["county"] = $pObj->countyGeo('Maryland'); 
+		  
+		  header('Content-Type: application/json; charset=utf8');
+		  
+		  echo Zend_Json::encode($output);
+	}
+    
+    
+    
+    function ncGeoAction(){
+		  
+		  $this->_helper->viewRenderer->setNoRender();
+		  Zend_Loader::loadClass('ProjEdits_Dinaa');
+		  Zend_Loader::loadClass('dataEdit_Link');
+		  Zend_Loader::loadClass('dataEdit_Published');
+		  Zend_Loader::loadClass('dataEdit_SpaceTime');
+		  Zend_Loader::loadClass('dataEdit_SpaceContain');
+		  Zend_Loader::loadClass('dataEdit_Subject');
+		  Zend_Loader::loadClass('dataEdit_Property');
+		  Zend_Loader::loadClass('dataEdit_LinkedData');
+		  
+		  $pObj = new ProjEdits_Dinaa;
+		  $pObj->projectUUID = '5F2D4172-D823-4F7F-D3A8-4BD68ED1369D';
+		  $output = array();
+		  $output["geo"] = $pObj->ncGeo(); 
+		  $output["county"] = $pObj->countyGeo('North Carolina'); 
+		  
+		  header('Content-Type: application/json; charset=utf8');
+		  
+		  echo Zend_Json::encode($output);
+	}
+    
+    
+    function pennGeoAction(){
+		  
+		  $this->_helper->viewRenderer->setNoRender();
+		  Zend_Loader::loadClass('ProjEdits_Dinaa');
+		  Zend_Loader::loadClass('dataEdit_Link');
+		  Zend_Loader::loadClass('dataEdit_Published');
+		  Zend_Loader::loadClass('dataEdit_SpaceTime');
+		  Zend_Loader::loadClass('dataEdit_SpaceContain');
+		  Zend_Loader::loadClass('dataEdit_Subject');
+		  Zend_Loader::loadClass('dataEdit_Property');
+		  Zend_Loader::loadClass('dataEdit_LinkedData');
+		  
+		  $pObj = new ProjEdits_Dinaa;
+		  $pObj->projectUUID = '766698E3-2E79-4A78-B0BC-245FF435BBBD';
+		  $output = array();
+		  $output["geo"] = $pObj->pennGeo(); 
+		  $output["county"] = $pObj->countyGeo('Pennsylvania'); 
+		  
+		  header('Content-Type: application/json; charset=utf8');
+		  
+		  echo Zend_Json::encode($output);
+	}
+	
+	
 	function ohioGeoAction(){
 		  
 		  $this->_helper->viewRenderer->setNoRender();
@@ -56,7 +209,7 @@ class ZooController extends Zend_Controller_Action {
 		  $pObj->projectUUID = '56110B30-3C18-49F9-BDA9-550FE8E28450';
 		  $output = array();
 		  $output["geo"] = $pObj->laGeo(); 
-		  $output["county"] = $pObj->countyGeo('Louisiana'); 
+		  $output["county"] = $pObj->countyGeo('Louisiana', 'Parish'); 
 		  
 		  header('Content-Type: application/json; charset=utf8');
 		  
