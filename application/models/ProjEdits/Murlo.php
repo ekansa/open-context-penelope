@@ -2794,7 +2794,10 @@ class ProjEdits_Murlo  {
 					$node->nodeValue = '#broken-link';
 					$pnode = $node->parentNode;
 					$pnode->setAttribute("style", "color:#666666;");
-					$pnode->setAttribute("title", $href);
+					if(stristr($href, "javascript")){
+						//use the title element to store the bad href
+						$pnode->setAttribute("title", $href);
+					}
 				}
 			}
 			$query = "//img/@src";
