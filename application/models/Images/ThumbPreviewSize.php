@@ -50,6 +50,29 @@ class Images_ThumbPreviewSize {
 		  return $fileArray;
 	 }
 	 
+	 function fullfileSaveImage($filename, $destinationFile){
+		  $output = false;
+		  @$source = imagecreatefromjpeg($filename);
+		  if($source){
+			   $output = true;
+			   imagejpeg($source, $destinationFile, 100 );		
+			   //memory clean up.
+			   imagedestroy($source);
+		  }
+		  return $output;
+	 }
+	 
+	 
+	 //save a preview size file
+	 function savePreviewImage($filename, $destinationFile){
+		  $this->resizeSaveImage($filename, $destinationFile, self::previewWidth);
+	 }
+	 
+	 //save a thumbnail size file
+	 function saveThumbnailImage($filename, $destinationFile){
+		  $this->resizeSaveImage($filename, $destinationFile, self::thumbWidth);
+	 }
+	 
 	 
 	 //assuming the file really exists, this copies the file resized based on width
 	 function resizeSaveImage($filename, $destinationFile, $newWidth){

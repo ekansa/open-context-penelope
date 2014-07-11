@@ -7,9 +7,530 @@ I'm including it, since it may be useful to adapt to other projects, also it add
 */
 class ProjEdits_Murlo  {
     
+	public $localImageDir = "pc-scrape/full";
+	public $localPreviewDir = "pc-scrape/preview";
+	public $localThumbsDir = "pc-scrape/thumbs";
+	public $magServer = "http://gigante";
     public $projectUUID = "DF043419-F23B-41DA-7E4D-EE52AF22F92F";
+	public $entityFound;
     public $db;
     
+	function convertGeoJSON($url){
+		$text = file_get_contents($url);
+		$json = json_decode($text, 1);
+		if($json["type"] == "FeatureCollection"){
+			foreach($json["features"] as $newJSON){
+				$text = json_encode($newJSON, JSON_PRETTY_PRINT|JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE);
+				if($newJSON['geometry']['type'] == "Polygon" || $newJSON['geometry']['type'] == "MultiPolygon"){
+					break;
+				}
+			}
+		}
+		$decoder = new gisconverter\GeoJSON();
+		return $decoder->geomFromText($text)->toKML();
+	}
+	
+	
+	function linkMissing($content){
+		$this->entityFound = false;
+		$dom = new DOMDocument('1.0', 'UTF-8');
+		$dom->preserveWhiteSpace = false;
+		$dom->formatOutput = true;
+		if(!@$dom->loadXML($content)){
+			echo "<h1>BAD DOM XML! Hidding Missing</h1>";
+			echo $content;
+			die;
+		}
+		else{
+			$xpath = new DOMXPath($dom);
+			$dom = $this->html_styleTweek($xpath, $dom); //get rid of unwanted style information
+			//make sure links are not empty
+			$query = "//a/@href";
+			foreach($xpath->query($query) as $node) {
+				$href = $node->nodeValue;
+				$pnode = $node->parentNode;
+				$newHref = false;
+				$newTitle = false;
+				if(stristr($href, "javascript") || stristr($href, '#broken-link')) {
+					$check = false;
+					if(stristr($href, "javascript")){
+						$check = $href;
+					}
+					elseif(stristr($href, "#broken-link")){
+						if(stristr($pnode->getAttribute('title'), "javascript")){
+							$check = $pnode->getAttribute('title');
+						}
+					}
+					if($check != false){
+						if(stristr($check, '.jpg') && stristr($check, 'javascript:viewPhoto')){
+							if(stristr($check, "'")){
+								$chex = explode("'", $check);
+								if(isset($chex[1])){
+									$ref = html_entity_decode($chex[1]);
+									$res = $this->mediaSecondResolve($ref); //check to see if the scan has a media uuid
+									if($res != false){
+										$newHref = $res['uuid'];
+										$newTitle = "Link to image resource ".$res['label'];
+									}
+								}
+							}
+						}
+						elseif(stristr($check, 'trenchbookviewer.asp')){
+							if(stristr($check, "'")){
+								$chex = explode("'", $check);
+								if(isset($chex[1])){
+									$ref = html_entity_decode($chex[1]);
+									$res = $this->scanSecondResolve($ref); //check to see if the scan has a media uuid
+									if($res != false){
+										$newHref = $res['uuid'];
+										$newTitle = "Link to scan of ".$res['label'];
+									}
+								}
+							}
+						}
+					}
+					
+					if($newHref != false && strlen($newHref) > 2){
+						$newHref = "http://opencontext.org/media/".$newHref;
+						$node->nodeValue = $newHref;
+						$pnode->setAttribute("title", $newTitle);
+						$pnode->setAttribute("target", "_blank");
+						$pnode->setAttribute("style", "");
+						$this->entityFound = true;
+					}
+					else{
+						$pnode->setAttribute("style", "color:#666666;");
+					}
+					
+				}
+			}
+			$query = "//img/@src";
+			foreach($xpath->query($query) as $node) {
+				$src = $node->nodeValue;
+				$pnode = $node->parentNode;
+				$newSrc = false;
+				if(!stristr($src, "http://")) {
+					//no image link
+					if(stristr($src, "/")){
+						$srcex = explode("/", $src);
+						$ref = html_entity_decode($srcex[count($srcex)-1]);
+					}
+					else{
+						$ref = html_entity_decode($src);
+					}
+					$res = $this->mediaSecondResolve($ref); //check to see if the scan has a media uuid
+					if($res != false){
+						$newSrc = $res['thumb'];
+					}
+					if($newSrc != false && strlen($newSrc) > 2){
+						$this->entityFound = true;
+						$node->nodeValue = $newSrc;
+						$pnode->setAttribute("style", "");
+					}
+					else{
+						$pnode->setAttribute("style", "display:none;");
+					}
+				}
+			}
+			$content = $dom->saveXML($dom->documentElement);
+			
+		}
+		return $content;
+	}
+	
+	
+	function mediaSecondResolve($ref){
+		//look up media by a reference to a picture
+		$db = $this->startDB();
+		
+		$sql = "SELECT z_magimages.uuid, resource.res_label AS label, resource.ia_thumb AS thumb
+		FROM z_magimages
+		JOIN resource ON z_magimages.uuid = resource.uuid
+		WHERE z_magimages.fexists = 1
+		AND (z_magimages.magURL = '$ref' OR z_magimages.oldFile = '$ref')
+		AND z_magimages.uuid != ''
+		LIMIT 1;
+		";
+		
+		$result =  $db->fetchAll($sql);
+		if($result){
+			return $result[0];
+		}
+		else{
+			return false;
+		}
+	}
+	
+	function scanSecondResolve($ref){
+		//look up media by a reference to a picture
+		$db = $this->startDB();
+		
+		$sql = "SELECT resource.uuid, resource.res_label AS label, resource.ia_thumb AS thumb
+		FROM z_magscrape
+		JOIN resource ON z_magscrape.firstMediaUUID = resource.uuid
+		WHERE z_magscrape.refID = '$ref' AND z_magscrape.firstMediaUUID != ''
+		LIMIT 1;
+		";
+		
+		$result =  $db->fetchAll($sql);
+		if($result){
+			return $result[0];
+		}
+		else{
+			return false;
+		}
+	}
+	
+	
+	function imagesMintNew(){
+		$imgObj = new Images_ThumbPreviewSize;
+		$linkObj = new dataEdit_Link;
+		$linkObj->projectUUID = $this->projectUUID;
+		$output = array();
+		$sourceID = "images-mint-new";
+		$db = $this->startDB();
+		
+		$sql = "SELECT DISTINCT magURL, oldFile, localfile, spaceUUID
+		FROM z_magimages
+		WHERE fexists = 1 AND uuid = '' AND spaceUUID != '' ";
+		
+		$result =  $db->fetchAll($sql);
+		foreach($result as $row){
+			$url = $row["magURL"];
+			$localfile = $row['localfile'];
+			$oldFile = $row['oldFile'];
+			$spaceUUID = $row['spaceUUID'];
+			$where = "magURL = '$url' ";
+			$data = array();
+			$newUUID = GenericFunctions::generateUUID();
+			/*
+			$oldFile = $localfile;
+			$oldPreview = str_replace($this->localImageDir, $this->localPreviewDir, $localfile);
+			$oldThumb = str_replace($this->localImageDir, $this->localThumbsDir, $localfile);
+			$newFile = str_replace('pc-scrape/full', 'pc-scrape/new/full', $oldFile);
+			$newPreview = str_replace('pc-scrape/preview', 'pc-scrape/new/preview', $oldPreview);
+			$newThumb = str_replace('pc-scrape/thumbs', 'pc-scrape/new/thumbs', $oldThumb);
+			
+			//echo $oldFile." ".$newFile."<br/>";
+			//echo $oldPreview." ".$newPreview."<br/>";
+			//echo $oldThumb." ".$newThumb."<br/>";
+			//die;
+			
+			$imgObj->fullfileSaveImage($oldFile, $newFile);
+			$imgObj->fullfileSaveImage($oldPreview, $newPreview);
+			$imgObj->fullfileSaveImage($oldThumb, $newThumb);
+			*/
+			$fex = explode("/", $localfile);
+			$filename = $fex[count($fex)-1]; 
+			
+			$resData = array("uuid" => $newUUID,
+							 "project_id" => $this->projectUUID,
+							 "source_id" => $sourceID,
+							 "res_label" => $oldFile,
+							 "res_path_source" => $url,
+							 "res_filename" => $filename,
+							 "res_archml_type" => "image",
+							 "ia_thumb" => "http://artiraq.org/static/opencontext/poggio-civitate/thumbs/photos/".$filename,
+							 "ia_preview" => "http://artiraq.org/static/opencontext/poggio-civitate/preview/photos/".$filename,
+							 "ia_fullfile" => "http://artiraq.org/static/opencontext/poggio-civitate/full/photos/".$filename
+							 );
+			$sql = "SELECT uuid FROM resource WHERE ia_fullfile = '".$resData['ia_fullfile']."' LIMIT 1; ";
+			$resultB =  $db->fetchAll($sql);
+			if(!$resultB){
+				
+				$db->insert("resource", $resData);
+				$newLinkUUID = $linkObj->addLinkingRel($spaceUUID, "Locations or Objects", $newUUID, "Media (various)", "link", $sourceID);
+				$data = array('uuid' => $newUUID);
+				$db->update("z_magimages", $data, $where);
+				
+			}
+			
+			$output[$url] = $resData;
+			
+		}
+		return $output;
+	}
+	
+	
+	
+	
+	function imagesSpaceLink(){
+		$output = array();
+		$db = $this->startDB();
+		$sql = "SELECT DISTINCT magURL, localfile FROM z_magimages WHERE fexists = 1 ";
+		$result =  $db->fetchAll($sql);
+		foreach($result as $row){
+			$url = $row["magURL"];
+			$localfile = $row['localfile'];
+			$where = "magURL = '$url' ";
+			$data = array();
+			$id = false;
+			preg_match_all('/(\d{8})/', $url, $matches);
+			foreach($matches[0] as $k=>$objectID) { 
+				$id = $objectID;
+			}
+			if($id != false){
+				$spLabel = "PC ".$id;
+				$sql = "SELECT uuid FROM space WHERE space_label = '$spLabel' LIMIT 1; ";
+				$resultA =  $db->fetchAll($sql);
+				if($resultA){
+					$spaceUUID = $resultA[0]["uuid"];
+					$data = array("spaceUUID" => $spaceUUID);
+					$db->update("z_magimages", $data, $where);
+					$output[$url] = $data;
+				}
+			}
+			//$db->update("z_magimages", $data, $where);
+			//$output[$url] = $data;
+		}
+		return $output;
+	}
+	
+	
+	function imagesFexists(){
+		$imgObj = new Images_ThumbPreviewSize;
+		$output = array();
+		$db = $this->startDB();
+		$sql = "SELECT DISTINCT magURL, localfile FROM z_magimages WHERE fexists = 0 ";
+		$result =  $db->fetchAll($sql);
+		foreach($result as $row){
+			$url = $row["magURL"];
+			$localfile = $row['localfile'];
+			$where = "magURL = '$url' ";
+			$data = array();
+			if(file_exists($localfile)){
+				$data['fexists'] = true;
+				$preview = str_replace($this->localImageDir, $this->localPreviewDir, $localfile);
+				$thumb = str_replace($this->localImageDir, $this->localThumbsDir, $localfile);
+				$imgObj->savePreviewImage($localfile, $preview);
+				$imgObj->saveThumbnailImage($localfile, $thumb);
+			}
+			else{
+				$data['fexists'] = false;
+			}
+			$db->update("z_magimages", $data, $where);
+			$output[$url] = $data;
+		}
+		return $output;
+	}
+	
+	
+	function imagesFname(){
+		
+		$output = array();
+		$db = $this->startDB();
+		$sql = "SELECT DISTINCT magURL, localfile FROM z_magimages WHERE oldFile = '' ";
+		$result =  $db->fetchAll($sql);
+		foreach($result as $row){
+			$url = $row["magURL"];
+			$where = "magURL = '$url' ";
+			if(stristr($url, '/')){
+				$fex = explode("/", $url);
+				$photo = $fex[count($fex) - 1 ];
+				
+				$photoCap = str_replace(".jpg", ".JPG", $photo);
+				$photoLow = str_replace(".JPG", ".jpg", $photo);
+				
+				$sql = "SELECT uuid, ia_thumb AS thumb
+				FROM resource
+				WHERE res_path_source LIKE '%$photoCap'
+				OR res_path_source LIKE '%$photoLow'
+				LIMIT 1;
+				";
+				
+				$result =  $db->fetchAll($sql);
+				if($result){
+					$uuid = $result[0]["uuid"];
+				}
+				else{
+					$uuid = false;
+				}
+				
+				
+				$data = array("uuid" => $uuid, "oldFile" => $photo);
+				$db->update("z_magimages", $data, $where);
+				$output[$url] = $data;
+			}
+	
+		}
+		
+		return $output;
+	}
+	
+	function imagesCopy(){
+		$imgObj = new Images_ThumbPreviewSize;
+		$output = array();
+		$db = $this->startDB();
+		$sql = "SELECT DISTINCT magURL, localfile FROM z_magimages WHERE copied = 0";
+		$result =  $db->fetchAll($sql);
+		foreach($result as $row){
+			$url = $row["magURL"];
+			$filename = $row["localfile"];
+			if(strlen($filename)< 1){
+				if(stristr($url, 'enlargements')){
+					$filename = $this->localFilename($url, $this->localImageDir."/photos/");
+				}
+			}
+			$where = "magURL = '$url' ";
+			if(!stristr($url, $this->magServer)){
+				$url = $this->magServer.$url;
+			}
+			$url = str_replace('http://gigante/', 'http://poggiocivitate.classics.umass.edu/', $url);
+			
+			$ok = $imgObj->fullfileSaveImage($url, $filename);
+			$data = array("copied" => 1, "localfile" => $filename);
+			$db->update("z_magimages", $data, $where);
+			$output[$url] = array("localfile" => $filename, "ok" => $ok);
+			sleep(.15);
+		}
+		return $output;
+	}
+	
+	
+	
+	function imageFirstImage(){
+		$output = array();
+		$db = $this->startDB();
+		$sql = "SELECT refID FROM z_magscrape
+		WHERE (html LIKE '%.jpg%' OR html LIKE '%.tif%') AND html LIKE '%src=%'
+		AND refID LIKE '%trenchbookviewer.asp%'
+		";
+		$result =  $db->fetchAll($sql);
+		foreach($result as $row){
+			$refID = $row['refID'];
+			$sql = "SELECT html FROM z_magscrape WHERE refID = '$refID' LIMIT 1;";
+			$resB =  $db->fetchAll($sql);
+			$html = $resB[0]['html'];
+			if(stristr($html, "src=")){
+				$htmlEx = explode(' ', $html);
+				foreach($htmlEx as $part){
+					if(stristr($part, "src=")){
+						$partEx = explode("=", $part);
+						if(isset($partEx[1])){
+							$imgSrc = $partEx[1];
+							if(stristr($imgSrc, ".jpg") || stristr($imgSrc, ".tif")){
+								$imgSrc = str_replace("'", '', $imgSrc);
+								$imgSrc = str_replace('"', '', $imgSrc);
+								$imgSrc = str_replace('/thumbs/', '/enlargements/', $imgSrc);
+								$res = $this->mediaSecondResolve($imgSrc);
+								if($res != false){
+									$firstMediaUUID = $res['uuid'];
+									$where = "refID = '$refID' ";
+									$data = array("firstMediaUUID" => $firstMediaUUID);
+									$db->update("z_magscrape", $data, $where);
+									$output[$refID] = array("firstMediaUUID" => $firstMediaUUID, "src" => $imgSrc);
+								}
+								
+							}
+						}
+					}
+				}
+			}
+		}
+		return $output;
+	}
+	
+	function imageScrape(){
+		$output = array();
+		$db = $this->startDB();
+		$sql = "SELECT refID FROM z_magscrape WHERE html LIKE '%.jpg%' OR html LIKE '%.tif%' ";
+		$result =  $db->fetchAll($sql);
+		foreach($result as $row){
+			$refID = $row['refID'];
+			$sql = "SELECT html FROM z_magscrape WHERE refID = '$refID' LIMIT 1;";
+			$resB =  $db->fetchAll($sql);
+			$html = $resB[0]['html'];
+			$htmlEx = explode('"', $html);
+			foreach($htmlEx as $part){
+				if(stristr($part, ".jpg") || stristr($part, ".tif")){
+					if(strtolower(substr($part, -4, 4)) == ".jpg" || strtolower(substr($part, -4, 4)) == ".tif"){
+						$data = array("refID" => $refID,
+									  "magURL" => $part,
+									  "localfile" => $this->localFilename($part, $this->localImageDir."/trenchbooks/")
+									  );
+						try{
+							$db->insert("z_magimages", $data);
+							$output[$refID]['main'][] = $this->magServer.$part;
+						}
+						catch(Exception $e){
+							
+						}
+					}
+				}
+			}
+			if(stristr($html, "src=")){
+				$htmlEx = explode(' ', $html);
+				foreach($htmlEx as $part){
+					if(stristr($part, "src=")){
+						$partEx = explode("=", $part);
+						if(isset($partEx[1])){
+							$imgSrc = $partEx[1];
+							if(stristr($imgSrc, ".jpg") || stristr($imgSrc, ".tif")){
+								$imgSrc = str_replace("'", '', $imgSrc);
+								$imgSrc = str_replace('"', '', $imgSrc);
+								$imgSrc = str_replace('/thumbs/', '/enlargements/', $imgSrc);
+								$data = array("refID" => $refID,
+											  "magURL" => $imgSrc,
+											  "localfile" => $this->localFilename($imgSrc, $this->localImageDir."/photos/")
+											  );
+								try{
+									$db->insert("z_magimages", $data);
+									$output[$refID]['src'][] = $this->magServer.$imgSrc;
+								}
+								catch(Exception $e){
+									
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+		return $output;
+	}
+		
+	function localFilename($oldFileName, $newDir = ""){
+		if(stristr($oldFileName, '/')){
+			$fex = explode("/", $oldFileName);
+			$oldFileName = $fex[count($fex) - 1 ];
+		}
+		$filename = str_replace(".JPG", ".jpg", $oldFileName);
+		$filename = str_replace(",", "-", $filename);
+		$filename = str_replace(" ", "-", $filename);
+		$filename = $newDir.$filename;
+		return $filename;
+	}
+	
+	
+	function magScrape(){
+		$output = array();
+		$magServer = "http://gigante";
+		$db = $this->startDB();  
+		$sql = "SELECT refID FROM z_magscrape WHERE http = '' ";
+		$result =  $db->fetchAll($sql);
+		foreach($result as $row){
+			$refID = $row['refID'];
+			$url = $magServer.$refID;
+			@$html = file_get_contents($url);
+			$where = "refID = '$refID' ";
+			if($html){
+				$html = str_replace("‘", "'", $html);
+				$html = str_replace("’", "'", $html);
+				$data = array("http" => "ok", "html" => $html);
+				$output[$refID] = "ok";
+			}
+			else{
+				$data = array("http" => "404");
+				$output[$refID] = "404";
+			}
+			$db->update('z_magscrape', $data, $where);
+			sleep(.25);
+		}
+		return $output;
+	}
+	
+	
+	
 	function TBMissingLinkMatch(){
 		$output = array();
 		$source = "Missing-link-gen";
@@ -151,7 +672,7 @@ class ProjEdits_Murlo  {
 			if($resF){
 				$change = false;
 				$text = $resF[0]["diary_text_original"];
-				$newText = $this->aspFindsLinkUpdate($text);
+				$newText = $this->html_aspFindsLinkUpdate($text);
 				if($text != $newText){
 					$data = array("diary_text_original" => $newText);
 					$where = "uuid = '$uuid'";
@@ -189,7 +710,7 @@ class ProjEdits_Murlo  {
 			$sql = "SELECT diary_text_original FROM diary WHERE uuid = '$uuid' LIMIT 1; ";
 			$resA =  $db->fetchAll($sql);
 			$rawText = $resA[0]['diary_text_original'];
-			$revisedText = $this->ObjectIDLinking($rawText);
+			$revisedText = $this->html_ObjectIDLinking($rawText);
 			if($rawText != $revisedText){
 			   $data = array("diary_text_original" => $revisedText);
 			   $where = "uuid = '$uuid'";
@@ -215,10 +736,10 @@ class ProjEdits_Murlo  {
 			$sql = "SELECT diary_text_original FROM diary WHERE uuid = '$uuid' LIMIT 1; ";
 			$resA =  $db->fetchAll($sql);
 			$rawText = $resA[0]['diary_text_original'];
-			$useText = $this->introLinks($rawText);
-			$useText = $this->textXMLify($useText);
-			$useText = $this->removeBadPtags($useText);
-			$useText = $this->textXMLify($useText);
+			$useText = $this->html_introLinks($rawText);
+			$useText = $this->html_textXMLify($useText);
+			$useText = $this->html_removeBadPtags($useText);
+			$useText = $this->html_textXMLify($useText);
 			if($useText != $rawText){
 				$data = array("diary_text_original" => $useText);
 				$where = "uuid = '$uuid'";
@@ -1509,7 +2030,7 @@ class ProjEdits_Murlo  {
 		  foreach($result as $row){
 				$label = $row["label"];
 				$rawText = $row["EntryText"];
-				$rawText = $this->tagLowerCase($rawText);
+				$rawText = $this->html_tagLowerCase($rawText);
 				$rawText = "<div>".$rawText."</div>";
 				$useText = tidy_repair_string($rawText,
 									 array( 
@@ -2089,7 +2610,7 @@ class ProjEdits_Murlo  {
 	 
 	
 	
-	function TBtagFix($rawText){
+	function html_TBtagFix($rawText){
 		  $fixedText = $rawText;
 		  $textLen = strlen($rawText);
 		  if(strstr($rawText, "<TB")){
@@ -2129,7 +2650,7 @@ class ProjEdits_Murlo  {
 	
 	//gets rid of nasty Microsoft namespace xml declarations randomly
 	//added to the HTML
-	function BadXMLfix($rawText){
+	function html_BadXMLfix($rawText){
 		$fixedText = $rawText;
 		$textLen = strlen($rawText);
 		if(strstr($rawText, "<?")){
@@ -2240,7 +2761,7 @@ class ProjEdits_Murlo  {
 	 
 	 
 	 
-	 function tagLowerCase($text){
+	 function html_tagLowerCase($text){
 		  
 		  $remNumTags = array("p", "P", "F");
 		  $maxNum = 10;
@@ -2319,7 +2840,7 @@ class ProjEdits_Murlo  {
 	 }
 	
 	
-	function introLinks($rawText){
+	function html_introLinks($rawText){
 		//make a list of introductory links
 		$links = array();
 		$replaceText = $rawText;
@@ -2415,7 +2936,7 @@ class ProjEdits_Murlo  {
 	
 	
 	//make certain that ID attributes are unique
-	 function uniqueIDs($xml){
+	 function html_uniqueIDs($xml){
 			$idArray = array();
 			foreach($xml->xpath("//@id") as $xres){
 				$actID = (string)$xres;
@@ -2435,7 +2956,7 @@ class ProjEdits_Murlo  {
 	}
 	
 	
-	function aspFindsLinkUpdate($text, $uuid){
+	function html_aspFindsLinkUpdate($text, $uuid){
 		@$xml = simplexml_load_string($text);
 		if($xml){
 			foreach($xml->xpath("//a/@href") as $xres){
@@ -2459,7 +2980,7 @@ class ProjEdits_Murlo  {
 		return $text;
 	}
 	
-	function removeBadPtags($replaceText){
+	function html_removeBadPtags($replaceText){
 	   // array of OK last characters for a closing paragraph tag
 	   $goodclose = array(".", ">", ":", ";", "?", "!", "-", "'", "\"", ")", "]");
 	   $pos = 0;
@@ -2484,7 +3005,7 @@ class ProjEdits_Murlo  {
 	   return $replaceText;
     }
 	
-	function ObjectIDLinking($rawText){
+	function html_ObjectIDLinking($rawText){
 		$objects = array();
 		preg_match_all('/(\d{8})/', $rawText, $matches);
 		foreach($matches[0] as $k=>$v) { 
@@ -2525,7 +3046,7 @@ class ProjEdits_Murlo  {
 		return $revisedText;
 	}
 	
-	function styleTweek($xpath, $dom){
+	function html_styleTweek($xpath, $dom){
 		  $okStyles = array("text-decoration:underline;",
 		  "color:#FF0000;",
 		  "color:#009900;",
@@ -2571,7 +3092,7 @@ class ProjEdits_Murlo  {
 	 
 	 
 	//update links in the XML
-	function simpleXMLlinksSrc($xml, $uuid){
+	function html_simpleXMLlinksSrc($xml, $uuid){
 		  //$xml is a simple xml object
 		  $db = $this->startDB();
 		  $iterator = 0;
@@ -2604,7 +3125,12 @@ class ProjEdits_Murlo  {
 									$photo = $this->stripQuotes($match[1]);
 									$uuidThumb = $this->getImageUUIDandThumb($photo, $uuid);
 									if($uuidThumb != false){
-										  $xres[0] = "http://opencontext.org/media/".$uuidThumb["uuid"];
+										if(!stristr($uuidThumb['uuid'], "bad-")){
+											$xres[0] = "http://opencontext.org/media/".$uuidThumb["uuid"];
+										}
+										else{
+											$photo = false;	
+										}
 									}
 								}
 						 }
@@ -2631,16 +3157,19 @@ class ProjEdits_Murlo  {
 							  if(is_array($scanIDs)){
 									$scanFound = $this->getUUIDfromScanIDs($scanIDs); //get the UUID from the artifact's PC number
 									if($scanFound != false){
-										 $newLink = "http://opencontext.org/media/".$scanFound['uuid'];
-										 $xres[0] = $newLink;
-										 
-										 foreach($xml->xpath("//a[@href='$newLink']") as $xresB){
-											  $linkVal = (string)$xresB;
-											  if(is_numeric(trim($linkVal))){
-													$xresB[0] = "Page $linkVal scan";
-											  }
-										 }
-										 
+										if(!stristr($scanFound['uuid'], "bad-")){
+											$newLink = "http://opencontext.org/media/".$scanFound['uuid'];
+											$xres[0] = $newLink;
+											foreach($xml->xpath("//a[@href='$newLink']") as $xresB){
+												 $linkVal = (string)$xresB;
+												 if(is_numeric(trim($linkVal))){
+													   $xresB[0] = "Page $linkVal scan";
+												 }
+											}
+										}
+										else{
+											$scanFound = false;
+										}
 									}
 									else{
 										 $this->recordMissingRef($uuid, $scanLink, "scan");
@@ -2703,7 +3232,12 @@ class ProjEdits_Murlo  {
 						if(stristr($src, ".jpg")){
 							$uuidThumb = $this->getImageUUIDandThumb($src, $uuid);
 							if($uuidThumb != false){
-								$xres[0] = $uuidThumb["thumb"];
+								if(stristr($uuidThumb["thumb"], ".org/")){
+									$xres[0] = $uuidThumb["thumb"];
+								}
+								else{
+									$photo = false;
+								}
 							}
 						}
 					}
@@ -2715,13 +3249,13 @@ class ProjEdits_Murlo  {
 		return $xml;
 	}
 		
-	function textXMLify($useText, $step = 'Not provided', $fixTry = true){
+	function html_textXMLify($useText, $step = 'Not provided', $fixTry = true){
 		//$useText = str_replace('Â', '', $useText);
 		$useText = str_replace("&#13;", " ", $useText);
 		libxml_use_internal_errors(true);
 		@$xml = simplexml_load_string($useText);
 		if($xml === false && $fixTry){
-			$useText = $this->HTMLify($useText);
+			$useText = $this->html_HTMLify($useText);
 			@$xml = simplexml_load_string($useText);
 		}
 		if($xml === false) {
@@ -2751,12 +3285,12 @@ class ProjEdits_Murlo  {
 		return $useText;
 	}
 	
-	function HTMLify($useText){ 
+	function html_HTMLify($useText){ 
 		$useText = tidy_repair_string($useText); //make the text parsable
 		$dom= new DOMDocument('1.0', 'UTF-8');
 		@$dom->loadHTML($useText);      //load it into a dom as html
 		$xpath = new DOMXPath($dom);
-		$dom = $this->styleTweek($xpath, $dom); //get rid of unwanted style information
+		$dom = $this->html_styleTweek($xpath, $dom); //get rid of unwanted style information
 		//make sure links are not empty
 		$query = "//a";
 		foreach($xpath->query($query) as $node) {
@@ -2787,12 +3321,12 @@ class ProjEdits_Murlo  {
 		}
 		else{
 			$xpath = new DOMXPath($dom);
-			$dom = $this->styleTweek($xpath, $dom); //get rid of unwanted style information
+			$dom = $this->html_styleTweek($xpath, $dom); //get rid of unwanted style information
 			//make sure links are not empty
 			$query = "//a/@href";
 			foreach($xpath->query($query) as $node) {
 				$href = $node->nodeValue;
-				if(stristr($href, "javascript") || stristr($href, '#broken-link')) {
+				if(stristr($href, "javascript") || stristr($href, '#broken-link') || stristr($href, '/bad-')) {
 					//link not resolable now
 					$node->nodeValue = '#broken-link';
 					$pnode = $node->parentNode;
@@ -2820,7 +3354,8 @@ class ProjEdits_Murlo  {
 	}
 	
 	
-	function TBprocessHideMissing(){
+	
+	function TBprocessMissing($hide = false){
 		$db = $this->startDB();
 		$output = array();
 		
@@ -2834,7 +3369,7 @@ class ProjEdits_Murlo  {
 		$result =  $db->fetchAll($sql);
 		$resLen = count($result);
 		$output["resCount"] = $resLen;
-		$output["changCount"] = 0;
+		$output["changeCount"] = 0;
 		foreach($result as $row){
 			$uuid = $row['uuid'];
 			$url = $row['pcURI'];
@@ -2844,14 +3379,17 @@ class ProjEdits_Murlo  {
 			$sql = "SELECT content FROM z_tb_scrape WHERE pcURI = '$url' AND uuid = '$uuid' LIMIT 1;";
 			$resB =  $db->fetchAll($sql);
 			$oldContent = $resB[0]['content'];
-			$content = $this->hideMissing($oldContent);
-			if($content != $oldContent){
+			if($hide){
+				$content = $this->hideMissing($oldContent);
+			}
+			else{
+				$content = $this->linkMissing($oldContent);
+			}
+			
+			if($content != $oldContent && ($this->entityFound || $hide)){
+				
 				$output[$uuid] = strlen($content);
-				if($resLen <2){
-					echo $content;
-					die;
-				}
-				$output["changCount"]++;
+				$output["changeCount"]++;
 				$data = array("content" => $content,
 							  "contHash" => sha1($content),
 							  "lprocess" => 1);
@@ -2932,7 +3470,7 @@ class ProjEdits_Murlo  {
 			
 			$content = $parts["content"];
 			$output[$uuid] = array('content' => substr($content, 0, 120));
-			$content = $this->cleanContent($content, $uuid, $url);
+			$content = $this->html_cleanContent($content, $uuid, $url);
 			if($resLen <2){
 				echo $content;
 				die;
@@ -2948,7 +3486,7 @@ class ProjEdits_Murlo  {
 		return $output;
 	}
 	 
-	function cleanContent($rawText, $uuid, $url){
+	function html_cleanContent($rawText, $uuid, $url){
 		//cleans content, removing ugly tags, looks up links
 		$db = $this->startDB();
 		/*
@@ -2958,50 +3496,50 @@ class ProjEdits_Murlo  {
 		$rawText = str_replace("<?xml:namespace prefix = st1 ns = \"urn:schemas-microsoft-com:office:smarttags\" /??>", '', $rawText);
 		$rawText = str_replace("<?XML:NAMESPACE PREFIX = O /??>", '', $rawText);
 		*/
-		$rawText = $this->BadXMLfix($rawText);
-		$rawText = $this->TBtagFix($rawText);
-		$rawText = $this->tagLowerCase($rawText);
-		$rawText = $this->introLinks($rawText);
-		$rawText = $this->wordFix($rawText);
+		$rawText = $this->html_BadXMLfix($rawText);
+		$rawText = $this->html_TBtagFix($rawText);
+		$rawText = $this->html_tagLowerCase($rawText);
+		$rawText = $this->html_introLinks($rawText);
+		$rawText = $this->html_wordFix($rawText);
 		
 		$rawText = mb_convert_encoding($rawText, "UTF-8");
 		$rawText = preg_replace('/[^(\x20-\x7F)]*/','', $rawText);
-		$rawText = $this->HTMLify($rawText); //make the text parsable
+		$rawText = $this->html_HTMLify($rawText); //make the text parsable
 		$rawText = str_replace("&#13;", " ", $rawText);
 		
 		@$xml = simplexml_load_string('<?xml version="1.0" encoding="utf-8"?> '.$rawText);
 		if($xml){
-			$xml = $this->uniqueIDs($xml); //make sure the IDs are unique
-			$xml = $this->simpleXMLlinksSrc($xml, $uuid); //update the links, references to image srcs
+			$xml = $this->html_uniqueIDs($xml); //make sure the IDs are unique
+			$xml = $this->html_simpleXMLlinksSrc($xml, $uuid); //update the links, references to image srcs
 			$useText = $xml->asXML();
 			//$useText = preg_replace('/[^(\x20-\x7F)]*/','', $useText);
 		}
 		else{
-			$rawText = $this->HTMLify($rawText); //make the text parsable
-			$xml = $this->uniqueIDs($xml); //make sure the IDs are unique
-			$xml = $this->simpleXMLlinksSrc($xml, $uuid); //update the links, references to image srcs
+			$rawText = $this->html_HTMLify($rawText); //make the text parsable
+			$xml = $this->html_uniqueIDs($xml); //make sure the IDs are unique
+			$xml = $this->html_simpleXMLlinksSrc($xml, $uuid); //update the links, references to image srcs
 			$useText = $xml->asXML();
 		}
 		
 		//$useText = mb_convert_encoding($useText, "UTF-8");
-		$useText = $this->textXMLify($useText, 'First link extraction');
+		$useText = $this->html_textXMLify($useText, 'First link extraction');
 		
 		//echo $useText;
 		//die;
 		
-		$useText = $this->aspFindsLinkUpdate($useText, $uuid);
+		$useText = $this->html_aspFindsLinkUpdate($useText, $uuid);
 		//$useText = mb_convert_encoding($useText, "UTF-8");
-		$useText = $this->ObjectIDLinking($useText);
+		$useText = $this->html_ObjectIDLinking($useText);
 		
 		//$useText = mb_convert_encoding($useText, "UTF-8");
-		$useText = $this->textXMLify($useText, 'Into links');
+		$useText = $this->html_textXMLify($useText, 'Into links');
 		//$useText = mb_convert_encoding($useText, "UTF-8");
-		$useText = $this->removeBadPtags($useText);
+		$useText = $this->html_removeBadPtags($useText);
 		
-		$useText = $this->HTMLify($useText); //make the text parsable
+		$useText = $this->html_HTMLify($useText); //make the text parsable
 		//$useText = mb_convert_encoding($useText, "UTF-8");
 		$useText = preg_replace('/[^(\x20-\x7F)]*/','', $useText);
-		$useText = $this->textXMLify($useText, 'Bad P tags');
+		$useText = $this->html_textXMLify($useText, 'Bad P tags');
 		
 		return $useText;
 	}
@@ -3028,7 +3566,7 @@ class ProjEdits_Murlo  {
 		  $db->query($sql, 2);
     }
 	
-	function wordFix($string){
+	function html_wordFix($string){
 		$search = [                 // www.fileformat.info/info/unicode/<NUM>/ <NUM> = 2018
                 "\xC2\xAB",     // « (U+00AB) in UTF-8
                 "\xC2\xBB",     // » (U+00BB) in UTF-8
