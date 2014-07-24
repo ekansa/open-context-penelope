@@ -19,9 +19,27 @@ class PyExport_PyData {
 	public $oc_events = 'oc_events';
 	public $oc_types = 'oc_types';
 	public $oc_strings = 'oc_strings';
+	public $oc_predicates = 'oc_predicates';
 	public $oc_assertions = 'oc_assertions';
 	public $oc_manifest = 'oc_manifest';
 	
+	public $type_mappings = array("location" => "subjects",
+								 "space" => "subjects",
+								 "media" => "media",
+								 "diary" => "documents",
+								 "person" => "persons",
+								 "project" => "projects"
+								 );
+	
+	public $pred_mappings = array("alpha" => "xsd:string",
+								  "nominal" => "types",
+								  "integer" => "xsd:integer",
+								  "decimal" => "xsd:double",
+								  "calend" => "xsd:date",
+								  "boolean" => "xsd:boolean"
+								  );
+	
+	public $linksToUUIDs = array();
 	
 	public $classArray = array("Coin" => "http://opencontext.org/vocabularies/oc-general/cat-0009",
                     "Pottery" => "http://opencontext.org/vocabularies/oc-general/cat-0010",
@@ -100,13 +118,41 @@ class PyExport_PyData {
 				$output = $this->Events();
 			}
 			elseif($requestParams['tab'] == $this->oc_types){
-				//do events
+				//do types
 				$output = $this->Types();
+			}
+			elseif($requestParams['tab'] == $this->oc_strings){
+				//do strings
+				$output = $this->Strings();
+			}
+			elseif($requestParams['tab'] == $this->oc_predicates){
+				//do assertions
+				if($requestParams['sub'] == "variable"){
+					$output = $this->Variables();
+				}
+				elseif($requestParams['sub'] == "link"){
+					$output = $this->LinkPreds();
+				}
 			}
 			elseif($requestParams['tab'] == $this->oc_assertions){
 				//do assertions
 				if($requestParams['sub'] == "contain"){
-					
+					$output = $this->Containment();
+				}
+				elseif($requestParams['sub'] == "property"){
+					$output = $this->PropDescriptions();
+				}
+				elseif($requestParams['sub'] == "links-subjects"){
+					$output = $this->Links('subjects');
+				}
+				elseif($requestParams['sub'] == "links-media"){
+					$output = $this->Links('media');
+				}
+				elseif($requestParams['sub'] == "links-documents"){
+					$output = $this->Links('documents');
+				}
+				elseif($requestParams['sub'] == "links-persons"){
+					$output = $this->Links('persons');
 				}
 			}
 		}
@@ -534,7 +580,469 @@ class PyExport_PyData {
 		return $output;
 	}
 	
+	function Strings(){
+		$requestParams = $this->requestParams;
+		$db = $this->startDB();
+		$output = array();
+		$output['requestParams'] = $requestParams;
+		$output['tabs'][] = $this->oc_strings;
+		$output[$this->oc_strings] = array();
+		$after = $requestParams["after"];
+		$start = $requestParams["start"];
+		$recs = $requestParams["recs"];
+		
+		$sql = "SELECT properties.property_uuid,
+		properties.project_id,
+		properties.source_id,
+		properties.variable_uuid,
+		properties.value_uuid,
+		val_tab.val_text
+		FROM properties
+		JOIN var_tab ON properties.variable_uuid = var_tab.variable_uuid
+		JOIN val_tab ON properties.value_uuid = val_tab.value_uuid
+		WHERE properties.last_modified_timestamp >= '$after'
+		AND properties.property_uuid NOT LIKE 'bad-%'
+		AND (var_tab.var_type LIKE '%alpha%')
+		ORDER BY properties.value_uuid
+		LIMIT $start, $recs
+		";
+		
+		$result =  $db->fetchAll($sql);
+		foreach($result as $row){
+			$s_rec = array();
+			$s_rec['uuid'] = $row['value_uuid'];
+			$s_rec['project_uuid'] = $row['project_id'];
+			$s_rec['source_id'] = $row['source_id'];
+			$s_rec['content'] = $row['val_text'];
+			$output[$this->oc_strings][] = $s_rec;
+		}
+		return $output;
+	}
 	
+	
+	function Variables(){
+		$requestParams = $this->requestParams;
+		$db = $this->startDB();
+		$output = array();
+		$output['requestParams'] = $requestParams;
+		$output['tabs'][] = $this->oc_predicates;
+		$output['tabs'][] = $this->oc_manifest;
+		$output[$this->oc_predicates] = array();
+		$output[$this->oc_manifest] = array();
+		$after = $requestParams["after"];
+		$start = $requestParams["start"];
+		$recs = $requestParams["recs"];
+		
+		$sql = "SELECT
+		var_tab.variable_uuid AS uuid,
+		var_tab.project_id,
+		var_tab.source_id,
+		var_tab.var_type,
+		var_tab.sort_order,
+		var_tab.var_label
+		FROM var_tab
+		WHERE var_tab.last_modified_timestamp >= '$after'
+		AND var_tab.variable_uuid NOT LIKE 'bad-%'
+		ORDER BY var_tab.source_id, var_tab.sort_order, var_tab.var_label
+		LIMIT $start, $recs
+		";
+		
+		$result =  $db->fetchAll($sql);
+		foreach($result as $row){
+			$p_rec = array();
+			$p_rec['uuid'] = $row['uuid'];
+			$p_rec['project_uuid'] = $row['project_id'];
+			$p_rec['source_id'] = $row['source_id'];
+			$p_rec['data_type'] = $this->predicateTypeMap($row['var_type'], 'id');
+			$p_rec['sort'] = $row['sort_order'] + 0;
+			
+			$man_rec = array();
+			$man_rec['uuid'] = $row['uuid'];
+			$man_rec['project_uuid'] = $row['project_id'];
+			$man_rec['source_id'] = $row['source_id'];
+			$man_rec['item_type'] = 'predicates';
+			$man_rec['label'] = $row['var_label'];
+			$man_rec['class_uri'] = 'variable';
+			$man_rec['des_predicate_uuid'] = '';
+			
+			$output[$this->oc_predicates][] = $p_rec;
+			$output[$this->oc_manifest][] = $man_rec;
+		}
+		return $output;
+	}
+	
+	
+	function LinkPreds(){
+		$requestParams = $this->requestParams;
+		$db = $this->startDB();
+		$output = array();
+		$output['requestParams'] = $requestParams;
+		$output['tabs'][] = $this->oc_predicates;
+		$output['tabs'][] = $this->oc_manifest;
+		$output[$this->oc_predicates] = array();
+		$output[$this->oc_manifest] = array();
+		$after = $requestParams["after"];
+		$start = $requestParams["start"];
+		$recs = $requestParams["recs"];
+		
+		$sql = "SELECT
+		links.project_id,
+		links.source_id,
+		links.link_type,
+		lr.uuid
+		FROM links
+		LEFT JOIN oc_linking_rels AS lr ON lr.label = links.link_type
+		WHERE links.last_modified_timestamp >= '$after'
+		AND (lr.project_id IS NULL OR lr.project_id = links.project_id)
+		GROUP BY links.link_type
+		ORDER BY links.link_type
+		LIMIT $start, $recs
+		";
+		
+		$result =  $db->fetchAll($sql);
+		$missingUUIDs = false;
+		foreach($result as $row){
+			$p_rec = array();
+			$uuid = $row['uuid'];
+			if(strlen($uuid)<1){
+				$missingUUIDs = true;
+				$newUUID = GenericFunctions::generateUUID();
+				$data = array('uuid' => $newUUID,
+							  'project_id' => $row['project_id'],
+							  'label' => $row['link_type']
+							  );
+				$db->insert('oc_linking_rels', $data);
+			}
+			
+			$p_rec['uuid'] = $row['uuid'];
+			$p_rec['project_uuid'] = $row['project_id'];
+			$p_rec['source_id'] = $row['source_id'];
+			$p_rec['data_type'] = 'id';
+			$p_rec['sort'] = 0;
+			
+			$man_rec = array();
+			$man_rec['uuid'] = $row['uuid'];
+			$man_rec['project_uuid'] = $row['project_id'];
+			$man_rec['source_id'] = $row['source_id'];
+			$man_rec['item_type'] = 'predicates';
+			$man_rec['label'] = $row['link_type'];
+			$man_rec['class_uri'] = 'link';
+			$man_rec['des_predicate_uuid'] = '';
+			
+			$output[$this->oc_predicates][] = $p_rec;
+			$output[$this->oc_manifest][] = $man_rec;
+		}
+		if($missingUUIDs){
+			//get the data again now that we've added a uuid for all linking relations
+			$output = $this->LinkPreds();
+		}
+		return $output;
+	}
+	
+	
+	function Containment(){
+		$requestParams = $this->requestParams;
+		$db = $this->startDB();
+		$output = array();
+		$output['requestParams'] = $requestParams;
+		$output['tabs'][] = $this->oc_assertions;
+		$output[$this->oc_assertions] = array();
+		$after = $requestParams["after"];
+		$start = $requestParams["start"];
+		$recs = $requestParams["recs"];
+		
+		$sql = "SELECT space_contain.project_id,
+		space_contain.source_id,
+		space_contain.parent_uuid,
+		space_contain.child_uuid,
+		cs.label_sort
+		FROM space_contain
+		JOIN space AS ps ON ps.uuid = space_contain.parent_uuid
+		JOIN space AS cs ON cs.uuid = space_contain.child_uuid
+		WHERE space_contain.parent_uuid NOT LIKE 'bad-%'
+		AND space_contain.child_uuid NOT LIKE 'bad-%'
+		AND space_contain.parent_uuid NOT LIKE '[ROOT]%'
+		AND space_contain.last_modified_timestamp >= '$after'
+		ORDER BY space_contain.parent_uuid, cs.label_sort, cs.space_label
+		LIMIT $start, $recs
+		";
+		
+		$result =  $db->fetchAll($sql);
+		foreach($result as $row){
+			$a_rec = array();
+			$a_rec['uuid'] = $row['parent_uuid'];
+			$a_rec['subject_type'] = 'subjects';
+			$a_rec['project_uuid'] = $row['project_id'];
+			$a_rec['source_id'] = $row['source_id'];
+			$a_rec['obs_node'] = '#contents-1';
+			$a_rec['obs_num'] = 1;
+			$a_rec['sort'] = 1 + $row['label_sort'];
+			$a_rec['visibility'] = 1;
+			$a_rec['predicate_uuid'] = 'oc-gen:contains';
+			$a_rec['object_uuid'] = $row['child_uuid'];
+			$a_rec['object_type'] = 'subjects';
+			
+			$output[$this->oc_assertions][] = $a_rec;
+		}
+		return $output;
+	}
+	
+	function PropDescriptions(){
+		$requestParams = $this->requestParams;
+		$db = $this->startDB();
+		$output = array();
+		$output['requestParams'] = $requestParams;
+		$output['tabs'][] = $this->oc_assertions;
+		$output[$this->oc_assertions] = array();
+		$after = $requestParams["after"];
+		$start = $requestParams["start"];
+		$recs = $requestParams["recs"];
+		
+		$sql = "SELECT observe.project_id,
+		observe.source_id,
+		observe.subject_uuid,
+		observe.subject_type,
+		observe.obs_num,
+		observe.property_uuid,
+		properties.variable_uuid,
+		properties.value_uuid,
+		properties.val_num,
+		properties.val_date,
+		val_tab.val_text,
+		var_tab.var_type,
+		var_tab.sort_order
+		FROM observe
+		JOIN properties ON observe.property_uuid = properties.property_uuid
+		JOIN var_tab ON properties.variable_uuid = var_tab.variable_uuid
+		JOIN val_tab ON properties.value_uuid = val_tab.value_uuid
+		WHERE observe.subject_uuid NOT LIKE 'bad-%'
+		AND observe.property_uuid NOT LIKE 'bad-%'
+		AND (observe.obs_num > 0 AND observe.obs_num != 100)
+		AND observe.updated >= '$after'
+		ORDER BY observe.subject_uuid, var_tab.sort_order
+		LIMIT $start, $recs
+		";
+		
+		$result =  $db->fetchAll($sql);
+		foreach($result as $row){
+			$a_rec = array();
+			$a_rec['uuid'] = $row['subject_uuid'];
+			$a_rec['subject_type'] = $this->itemTypeMap($row['subject_type']);
+			$a_rec['project_uuid'] = $row['project_id'];
+			$a_rec['source_id'] = $row['source_id'];
+			$a_rec['obs_node'] = '#obs-'.$row['obs_num'];
+			$a_rec['obs_num'] = $row['obs_num'] + 0;
+			$a_rec['sort'] = 100 + $row['sort_order'];
+			$a_rec['visibility'] = 1;
+			$a_rec['predicate_uuid'] = $row['variable_uuid'];
+			$objectType = $this->predicateTypeMap($row['var_type']);
+			if($objectType == 'types'){
+				$a_rec['object_uuid'] = $row['property_uuid'];
+			}
+			elseif($objectType == 'xsd:string'){
+				$a_rec['object_uuid'] = $row['value_uuid'];
+			}
+			else{
+				$a_rec['object_uuid'] = '';
+				if($objectType == 'xsd:date'){
+					if(!stristr($row['val_date'], '0000-00-00')){
+						$a_rec['data_date'] = $row['val_date'];
+					}
+					else{
+						$a_rec['data_date'] = date('Y-m-d h:i:s', strtotime($row['val_text']));
+					}
+				}
+				else{
+					if(is_numeric($row['val_text']) && $row['val_num'] == 0){
+						$a_rec['data_num'] = $row['val_text'] + 0;
+					}
+					elseif($objectType =='xsd:boolean'){
+						if(stristr($row['val_text'], 'y') || stristr($row['val_text'], 't') || stristr($row['val_text'], 'p')){
+							$a_rec['data_num'] = 1;
+						}
+						else{
+							$a_rec['data_num'] = 0;
+						}
+					}
+					else{
+						$a_rec['data_num'] = $row['val_num']+0;	
+					}
+				}
+			}
+			$a_rec['object_type'] = $objectType;
+			
+			$output[$this->oc_assertions][] = $a_rec;
+		}
+		return $output;
+	}
+	
+	function Links($targetType){
+		$requestParams = $this->requestParams;
+		$db = $this->startDB();
+		$output = array();
+		$output['requestParams'] = $requestParams;
+		$output['tabs'][] = $this->oc_assertions;
+		$output[$this->oc_assertions] = array();
+		$after = $requestParams["after"];
+		$start = $requestParams["start"];
+		$recs = $requestParams["recs"];
+		
+		$sql = "SELECT links.project_id,
+		links.source_id,
+		links.link_type,
+		links.origin_type,
+		links.origin_uuid,
+		links.origin_obs,
+		links.targ_type,
+		links.targ_uuid,
+		t.label_sort AS sort
+		FROM links
+		JOIN space AS t ON t.uuid = links.targ_uuid
+		WHERE links.origin_uuid NOT LIKE 'bad-%'
+		AND links.targ_uuid NOT LIKE 'bad-%'
+		AND links.last_modified_timestamp >= '$after'
+		ORDER BY links.origin_uuid, t.label_sort, t.space_label
+		LIMIT $start, $recs
+		";
+		
+		if($targetType == 'media'){
+			$sql = "SELECT links.project_id,
+			links.source_id,
+			links.link_type,
+			links.origin_type,
+			links.origin_uuid,
+			links.origin_obs,
+			links.targ_type,
+			links.targ_uuid,
+			t.res_number AS sort
+			FROM links
+			JOIN resource AS t ON t.uuid = links.targ_uuid
+			WHERE links.origin_uuid NOT LIKE 'bad-%'
+			AND links.targ_uuid NOT LIKE 'bad-%'
+			AND links.last_modified_timestamp >= '$after'
+			ORDER BY links.origin_uuid, t.res_number, t.res_label
+			LIMIT $start, $recs
+			";	
+		}
+		elseif($targetType == 'documents'){
+			
+			$sql = "SELECT links.project_id,
+			links.source_id,
+			links.link_type,
+			links.origin_type,
+			links.origin_uuid,
+			links.origin_obs,
+			links.targ_type,
+			links.targ_uuid,
+			t.sort AS sort
+			FROM links
+			JOIN diary AS t ON t.uuid = links.targ_uuid
+			WHERE links.origin_uuid NOT LIKE 'bad-%'
+			AND links.targ_uuid NOT LIKE 'bad-%'
+			AND links.last_modified_timestamp >= '$after'
+			ORDER BY links.origin_uuid, t.sort, t.diary_label
+			LIMIT $start, $recs
+			";
+			
+		}
+		elseif($targetType == 'persons'){
+			
+			$sql = "SELECT links.project_id,
+			links.source_id,
+			links.link_type,
+			links.origin_type,
+			links.origin_uuid,
+			links.origin_obs,
+			links.targ_type,
+			links.targ_uuid,
+			50 AS sort
+			FROM links
+			LEFT JOIN users AS t ON t.uuid = links.targ_uuid
+			LEFT JOIN persons AS p ON p.uuid = links.targ_uuid
+			WHERE links.origin_uuid NOT LIKE 'bad-%'
+			AND links.targ_uuid NOT LIKE 'bad-%'
+			AND links.targ_type LIKE '%person%'
+			AND (t.uuid IS NOT NULL OR p.uuid IS NOT NULL)
+			AND links.last_modified_timestamp >= '$after'
+			ORDER BY links.origin_uuid
+			LIMIT $start, $recs
+			";
+			
+		}
+		
+		$result =  $db->fetchAll($sql);
+		foreach($result as $row){
+			$a_rec = array();
+			$a_rec['uuid'] = $row['origin_uuid'];
+			$a_rec['subject_type'] = $this->itemTypeMap($row['origin_type']);
+			$a_rec['project_uuid'] = $row['project_id'];
+			$a_rec['source_id'] = $row['source_id'];
+			$a_rec['obs_node'] = '#obs-'.$row['origin_obs'];
+			$a_rec['obs_num'] = $row['origin_obs']+0;
+			$a_rec['sort'] = 100 + $row['sort'];
+			$a_rec['visibility'] = 1;
+			$a_rec['predicate_uuid'] = $this->get_linkrel_uuid($row['link_type']);
+			$a_rec['object_uuid'] = $row['targ_uuid'];
+			$a_rec['object_type'] = $this->itemTypeMap($row['targ_type']);
+			
+			$output[$this->oc_assertions][] = $a_rec;
+		}
+		return $output;
+	}
+	
+	
+	
+	
+	function itemTypeMap($penelopeType){
+		$output = false;
+		foreach($this->type_mappings as $penKey => $python_type){
+			if(stristr($penelopeType, $penKey)){
+				$output = $python_type;
+				break;
+			}
+		}
+		return $output;
+	}
+	
+	function predicateTypeMap($penelopeType, $alt_type = false){
+		$output = false;
+		foreach($this->pred_mappings as $penKey => $python_type){
+			if(stristr($penelopeType, $penKey)){
+				$output = $python_type;
+				if($python_type == 'types' && $alt_type != false){
+					$output = $alt_type;
+				}
+				break;
+			}
+		}
+		return $output;
+	}
+	
+	function get_linkrel_uuid($linkrel){
+		//get a uuid for a linking relation
+		$output = false;
+		$linksToUUIDs = $this->linksToUUIDs;
+		if(array_key_exists($linkrel, $linksToUUIDs)){
+			$output = $linksToUUIDs[$linkrel];
+		}
+		else{
+			$db = $this->startDB();
+			
+			$sql = "SELECT *
+			FROM oc_linking_rels
+			WHERE label LIKE '$linkrel'
+			LIMIT 1;
+			";
+			
+			$result =  $db->fetchAll($sql);
+			if($result){
+				$output = $result[0]['uuid'];
+				$linksToUUIDs[$linkrel] = $output;
+				$this->linksToUUIDs = $linksToUUIDs;
+			}
+		}
+		return $output;
+	}
 	
 	
 	
