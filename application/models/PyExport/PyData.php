@@ -22,13 +22,18 @@ class PyExport_PyData {
 	public $oc_predicates = 'oc_predicates';
 	public $oc_assertions = 'oc_assertions';
 	public $oc_manifest = 'oc_manifest';
+	public $link_entities = 'link_entities';
+	public $link_annotations = 'link_annotations';
 	
 	public $type_mappings = array("location" => "subjects",
 								 "space" => "subjects",
 								 "media" => "media",
 								 "diary" => "documents",
 								 "person" => "persons",
-								 "project" => "projects"
+								 "project" => "projects",
+								 "property" => "types",
+								 "prop" => "types",
+								 "variable" => "predicates"
 								 );
 	
 	public $pred_mappings = array("alpha" => "xsd:string",
@@ -38,6 +43,14 @@ class PyExport_PyData {
 								  "calend" => "xsd:date",
 								  "boolean" => "xsd:boolean"
 								  );
+	
+	public $linkAnnoType_mappings = array("type" => "skos:closeMatch",
+								 "unit" => "rdfs:range",
+								 "http://www.w3.org/2004/02/skos/core#closeMatch" => "skos:closeMatch",
+								 "Measurement type" => "skos:closeMatch",
+								 "technique" => "oc-gen:has-technique",
+								 "consists of" => "cidoc-crm:P45_consists_of"
+								 );
 	
 	public $linksToUUIDs = array();
 	
@@ -154,6 +167,12 @@ class PyExport_PyData {
 				elseif($requestParams['sub'] == "links-persons"){
 					$output = $this->Links('persons');
 				}
+			}
+			elseif($requestParams['tab'] == $this->link_entities){
+				$output = $this->LinkEntities();
+			}
+			elseif($requestParams['tab'] == $this->link_annotations){
+				$output = $this->LinkAnnotations();
 			}
 		}
 		return $output;
@@ -993,6 +1012,78 @@ class PyExport_PyData {
 	
 	
 	
+	
+	function LinkEntities(){
+		$requestParams = $this->requestParams;
+		$db = $this->startDB();
+		$output = array();
+		$output['requestParams'] = $requestParams;
+		$output['tabs'][] = $this->link_entities;
+		$output[$this->link_entities] = array();
+		$after = $requestParams["after"];
+		$start = $requestParams["start"];
+		$recs = $requestParams["recs"];
+		
+		$sql = "SELECT DISTINCT linkedURI, linkedLabel, linkedAbrv, vocabURI
+		FROM linked_data
+		WHERE created >= '$after'
+		ORDER BY vocabURI, linkedLabel
+		LIMIT $start, $recs
+		";
+		
+		$result =  $db->fetchAll($sql);
+		foreach($result as $row){
+			$l_rec = array();
+			$l_rec['uri'] = trim($row['linkedURI']);
+			$l_rec['label'] = $row['linkedLabel'];
+			$l_rec['alt_label'] = $row['linkedAbrv'];
+			$l_rec['vocab_uri'] = $row['vocabURI'];
+			
+			$output[$this->link_entities][] = $l_rec;
+		}
+		return $output;
+	}
+	
+	function LinkAnnotations(){
+		$requestParams = $this->requestParams;
+		$db = $this->startDB();
+		$output = array();
+		$output['requestParams'] = $requestParams;
+		$output['tabs'][] = $this->link_annotations;
+		$output[$this->link_annotations] = array();
+		$after = $requestParams["after"];
+		$start = $requestParams["start"];
+		$recs = $requestParams["recs"];
+		
+		$sql = "SELECT fk_project_uuid,
+		source_id,
+		itemUUID,
+		itemType,
+		linkedType,
+		linkedURI
+		FROM linked_data
+		WHERE created >= '$after'
+		ORDER BY itemUUID
+		LIMIT $start, $recs
+		";
+		
+		$result =  $db->fetchAll($sql);
+		foreach($result as $row){
+			$l_rec = array();
+			$l_rec['subject'] = $row['itemUUID'];
+			$l_rec['subject_type'] = $this->itemTypeMap($row['itemType']);
+			$l_rec['project_uuid'] = $row['fk_project_uuid'];
+			$l_rec['source_id'] = $row['source_id'];
+			$l_rec['predicate_uri'] = $this->linkAnnotationLinkTypeMap($row['linkedType']);
+			$l_rec['object_uri'] = trim($row['linkedURI']);
+			
+			
+			$output[$this->link_annotations][] = $l_rec;
+		}
+		return $output;
+	}
+	
+	
 	function itemTypeMap($penelopeType){
 		$output = false;
 		foreach($this->type_mappings as $penKey => $python_type){
@@ -1012,6 +1103,17 @@ class PyExport_PyData {
 				if($python_type == 'types' && $alt_type != false){
 					$output = $alt_type;
 				}
+				break;
+			}
+		}
+		return $output;
+	}
+	
+	function linkAnnotationLinkTypeMap($penelopeType){
+		$output = false;
+		foreach($this->linkAnnoType_mappings as $penKey => $python_type){
+			if(stristr($penelopeType, $penKey)){
+				$output = $python_type;
 				break;
 			}
 		}
