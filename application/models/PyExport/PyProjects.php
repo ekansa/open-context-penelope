@@ -63,7 +63,11 @@ class PyExport_PyProjects {
   array('project_id' => 'PGold1PRJ0000000005'),
   array('project_id' => 'TESTPRJ0000000004')
 );
-	
+	public $nameSpaceArray = array("oc" => "http://opencontext.org/schema/project_schema_v1.xsd",
+			   "dc" => "http://purl.org/dc/elements/1.1/",
+			   "arch" => "http://ochre.lib.uchicago.edu/schema/Project/Project.xsd",
+			   "gml" => "http://www.opengis.net/gml",
+				"xhtml" => "http://www.w3.org/1999/xhtml");
 	
 	
 	function get_metadata(){
@@ -117,6 +121,37 @@ class PyExport_PyProjects {
 					}
 				}
 				*/
+				
+				if(isset($pdata['descriptions']['short'])){
+					
+					$value = $pdata['descriptions']['short'];
+					$value = trim($value);
+					$data = array("uuid" => $uuid,
+								  "pred_temp" => "short",
+								  "description" => $value
+								  );
+					$where = array();
+					$where[] = "uuid = '$uuid'";
+					$where[] = "pred_temp = 'short'";
+					$db->delete("oc_proj_meta", $where);
+					$db->insert("oc_proj_meta", $data);
+					$output['recs'][] = $data;
+				}
+				if(isset($pdata['descriptions']['long'])){
+					
+					$value = $pdata['descriptions']['long'];
+					$value = trim($value);
+					$data = array("uuid" => $uuid,
+								  "pred_temp" => "long",
+								  "description" => $value
+								  );
+					$where = array();
+					$where[] = "uuid = '$uuid'";
+					$where[] = "pred_temp = 'long'";
+					$db->delete("oc_proj_meta", $where);
+					$db->insert("oc_proj_meta", $data);
+					$output['recs'][] = $data;
+				}
 			}
 			else{
 				$output['errors'][$uuid][] = "Bad JSON array";
@@ -125,13 +160,162 @@ class PyExport_PyProjects {
 		return $output;
 	}
 	
+	function get_descriptions(){
+		
+		$db = $this->startDB();
+		$output = array();
+		$output['errors'] = array();
+		$output['recs'] = array();
+		foreach($this->projects as $proj){
+			$uuid = $proj['project_id'];
+			$xstring = file_get_contents("http://opencontext.org/projects/".$uuid.".xml");
+			$doc = new DOMDocument();
+			$doc->formatOutput = true;
+			$doc->loadXML($xstring);
+			$xpath = new DOMXPath($doc);
+			foreach($this->nameSpaceArray as $prefix => $uri){
+				$xpath->registerNamespace($prefix, $uri);
+			}
+			$short = false;
+			$query = "//arch:notes/arch:note[@type='short_des']/arch:string[@type='xhtml']/*";
+			$res = $xpath->query($query);
+			if($res){
+				foreach($res as $divnode){
+				
+					$short = $divnode->textContent;
+				}
+			}
+			if(!$short){
+				$query = "//arch:notes/arch:note[@type='short_des']/arch:string";
+				$res = $xpath->query($query);
+				foreach($res as $node){
+					$short = $node->textContent;
+				}
+			}
+			
+			
+			$long = false;
+			$query = "//arch:notes/arch:note[@type='long_des']/arch:string[@type='xhtml']/xhtml:div/*";
+			$res = $xpath->query($query);
+			if($res){
+				foreach($res as $divnode){
+					$long  = $doc->saveXML($divnode);
+				}
+			}
+			if(!$long){
+				$query = "//arch:notes/arch:note[@type='long_des']/arch:string";
+				$res = $xpath->query($query);
+				foreach($res as $node){
+					$long = $node->textContent;
+					$long = html_entity_decode($long);
+				}
+			}
+			
+			if($short != false){
+				$value = $short;
+				$value = trim($value);
+				$data = array("uuid" => $uuid,
+							  "pred_temp" => "short",
+							  "description" => $value
+							  );
+				$where = array();
+				$where[] = "uuid = '$uuid'";
+				$where[] = "pred_temp = 'short'";
+				$db->delete("oc_proj_meta", $where);
+				$db->insert("oc_proj_meta", $data);
+				$output['recs'][] = $data;
+			}
+			if($long != false){
+				
+				$value = $long;
+				$value = trim($value);
+				$data = array("uuid" => $uuid,
+							  "pred_temp" => "long",
+							  "description" => $value
+							  );
+				$where = array();
+				$where[] = "uuid = '$uuid'";
+				$where[] = "pred_temp = 'long'";
+				$db->delete("oc_proj_meta", $where);
+				$db->insert("oc_proj_meta", $data);
+				$output['recs'][] = $data;
+			}
+		}
+		return $output;
+
+	}
+	
 	
 	function prep_annotations(){
 		$output = array();
 		$entities = array();
 		$output['tabs'] = array();
+		$output['tabs'][] = 'oc_projects';
+		$output['tabs'][] = 'oc_persons';
+		$output['tabs'][] = 'oc_manifest';
 		$output['tabs'][] = 'link_annotations';
 		$output['tabs'][] = 'link_entities';
+		
+		$db = $this->startDB();
+		$sql = "SELECT persons.uuid,
+		persons.combined_name,
+		persons.first_name AS given_name,
+		persons.last_name AS surname,
+		persons.mid_init,
+		persons.initials,
+		persons.project_id AS project_uuid,
+		persons.source_id AS source_id
+		FROM persons
+		JOIN project_list AS projs ON persons.project_id = projs.project_id
+		WHERE 1
+		ORDER BY persons.uuid
+		"; 
+		$result =  $db->fetchAll($sql);
+		foreach($result as $row){
+			if(substr_count($row['combined_name'], ' ') > 2 || stristr($row['combined_name'], '-') || stristr($row['combined_name'], 'SHPO')){
+				$foafType = "foaf:Organization";
+			}
+			else{
+				$foafType = "foaf:Person";
+			}
+			
+			$f_rec = $row;
+			$f_rec["foaf_type"] = $foafType;
+			$output['oc_persons'][] = $f_rec;
+			
+			$man_rec = array();
+			$man_rec['uuid'] = $row['uuid'];
+			$man_rec['project_uuid'] = $row['project_uuid'];
+			$man_rec['source_id'] = $row['source_id'];
+			$man_rec['item_type'] = 'persons';
+			$man_rec['repo'] = '';
+			$man_rec['label'] = $row['combined_name'];
+			$man_rec['class_uri'] = $foafType;
+			$man_rec['des_predicate_uuid'] = '';
+			$man_rec['views'] = 0;
+			$output['oc_manifest'][] = $man_rec;
+		}
+		
+		$output['oc_projects'][] = array('uuid' => '416A274C-CF88-4471-3E31-93DB825E9E4A',
+										 'project_uuid' => '416A274C-CF88-4471-3E31-93DB825E9E4A',
+										 'source_id' => 'edited-proj-meta',
+										 'short_id' => 52,
+										 'edit_status' => 0,
+										 'label' => 'Digital Index of North American Archaeology (DINAA)',
+										 'short_des' => 'Publication and integration of North American archaeological site file records',
+										 'content' => ''
+										 );
+		
+		$output['oc_manifest'][] = array('uuid' => '416A274C-CF88-4471-3E31-93DB825E9E4A',
+										 'project_uuid' => '416A274C-CF88-4471-3E31-93DB825E9E4A',
+										 'source_id' => 'edited-proj-meta',
+										 'item_type' => 'projects',
+										 'repo' => '',
+										 'class_uri' => '',
+										 'label' => 'Digital Index of North American Archaeology (DINAA)',
+										 'des_predicate_uuid' => '',
+										 'views' => 0
+										 );
 		
 		$db = $this->startDB();
 		$sql = "SELECT * FROM oc_proj_meta WHERE predicate_uri != '' ORDER BY uuid, predicate_uri";
@@ -157,6 +341,31 @@ class PyExport_PyProjects {
 				$output['link_entities'][] = $e_rec;
 			}
 			
+		}
+		
+		return $output;
+	}
+	
+	
+	function prep_descriptions(){
+		$output = array();
+		$entities = array();
+		$output['tabs'] = array();
+		$output['tabs'][] = 'oc_projects';
+		
+		$db = $this->startDB();
+		
+		$db = $this->startDB();
+		$sql = "SELECT * FROM oc_proj_meta WHERE pred_temp = 'short' ORDER BY uuid";
+		$result =  $db->fetchAll($sql);
+		foreach($result as $row){
+			$p_rec = array();
+			$p_rec['uuid'] = $row['uuid'];
+			$p_rec['short_des'] = $row['description'];
+			$sql = "SELECT description FROM oc_proj_meta WHERE pred_temp = 'long' AND uuid = '".$row['uuid']."' LIMIT 1;";
+			$resb = $db->fetchAll($sql);
+			$p_rec['content'] = $resb[0]['description'];
+			$output['oc_projects'][] = $p_rec;
 		}
 		
 		return $output;

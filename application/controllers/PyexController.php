@@ -37,7 +37,7 @@ class PyexController extends Zend_Controller_Action {
 		Zend_Loader::loadClass('PyExport_PyData');
 		$pyData = new PyExport_PyData;
 		$pyObj = new PyExport_PyProjects;
-		$output = $pyObj->get_metadata();
+		$output = $pyObj->get_descriptions();
 		header('Content-Type: application/json; charset=utf8');  
 		echo $pyData->JSONoutputString($output);
 	}
@@ -50,6 +50,18 @@ class PyexController extends Zend_Controller_Action {
 		$pyData = new PyExport_PyData;
 		$pyObj = new PyExport_PyProjects;
 		$output = $pyObj->prep_annotations();
+		header('Content-Type: application/json; charset=utf8');  
+		echo $pyData->JSONoutputString($output);
+	}
+	
+	function projectsDesAction(){
+		$this->_helper->viewRenderer->setNoRender();
+		$requestParams =  $this->_request->getParams();
+		Zend_Loader::loadClass('PyExport_PyProjects');
+		Zend_Loader::loadClass('PyExport_PyData');
+		$pyData = new PyExport_PyData;
+		$pyObj = new PyExport_PyProjects;
+		$output = $pyObj->prep_descriptions();
 		header('Content-Type: application/json; charset=utf8');  
 		echo $pyData->JSONoutputString($output);
 	}
