@@ -17,6 +17,136 @@ class ProjEdits_Dinaa  {
     const GeoNamesBaseURI = "http://www.geonames.org/";
 	 const GeoNamesBaseAPI = "http://api.geonames.org/";
 	 
+	 
+	 function alabamaDates(){
+		  $output = array();
+		  $output["found"] = 0;
+		  $spaceTimeObj = new  dataEdit_SpaceTime;
+		  $spaceTimeObj->projectUUID = $this->projectUUID;
+		  
+		  $ldObj = new dataEdit_LinkedData;
+		  $ldObj->projectUUID = $this->projectUUID;
+		  
+		  $periodVarUUID ='35E00478-96BD-47FB-CDE9-050C0733F33D';
+		  
+		  $db = $this->startDB();
+		  
+		  $sql = "SELECT DISTINCT observe.subject_uuid
+		  FROM observe
+		  JOIN properties ON observe.property_uuid = properties.property_uuid
+		  WHERE properties.variable_uuid = '$periodVarUUID'
+		  ";
+		  
+		  $resultA = $db->fetchAll($sql, 2);
+		  if($resultA){
+				foreach($resultA as $rowA){
+					 $itemUUID = $rowA["subject_uuid"];
+					 //$where = "uuid = '$itemUUID' ";
+					 //$db->delete("initial_chrono_tag", $where);
+					 
+					 $sql = "SELECT MAX(grg.field_10) as tStart, MIN(grg.field_11) as tEnd, properties.property_uuid, grg.field_9 AS dinaa_uri
+					 FROM observe
+					 JOIN properties ON observe.property_uuid = properties.property_uuid
+					 JOIN val_tab ON val_tab.value_uuid = properties.value_uuid
+					 JOIN z_7_c2bb515fa AS grg ON grg.field_7 = val_tab.val_text
+					 WHERE properties.variable_uuid = '$periodVarUUID'
+					 AND observe.subject_uuid = '$itemUUID'
+					 ";
+					 
+					 
+					 $result = $db->fetchAll($sql, 2);
+					 if($result){
+						  $requestParams = array();
+						  $requestParams["uuid"] = $itemUUID;
+						  $requestParams["projUUID"] = $this->projectUUID;
+						  $requestParams["tStart"] = 1950 - $result[0]["tStart"];
+						  $requestParams["tEnd"] = 1950 - $result[0]["tEnd"];
+						  $spaceTimeObj->requestParams = $requestParams;
+						  $spaceTimeObj->chrontoTagItem();
+						  
+						  $output["found"]++;
+						  
+					 }
+					 else{
+						  $output["missing"][] = $itemUUID;
+					 }
+				}
+		  }
+		  
+		  return $output;
+	 }
+	 
+	 
+	 function vaDates(){
+		  $output = array();
+		  $output["found"] = 0;
+		  $spaceTimeObj = new  dataEdit_SpaceTime;
+		  $spaceTimeObj->projectUUID = $this->projectUUID;
+		  
+		  $ldObj = new dataEdit_LinkedData;
+		  $ldObj->projectUUID = $this->projectUUID;
+		  
+		  $periodVarUUID ='70093626-429B-4B3F-7FA6-971A726E9A94';
+		  
+		  $db = $this->startDB();
+		  
+		  $sql = "SELECT DISTINCT observe.subject_uuid
+		  FROM observe
+		  JOIN properties ON observe.property_uuid = properties.property_uuid
+		  WHERE properties.variable_uuid = '$periodVarUUID'
+		  ";
+		  
+		  $resultA = $db->fetchAll($sql, 2);
+		  if($resultA){
+				foreach($resultA as $rowA){
+					 $itemUUID = $rowA["subject_uuid"];
+					 //$where = "uuid = '$itemUUID' ";
+					 //$db->delete("initial_chrono_tag", $where);
+					 
+					 $sql = "SELECT MAX(grg.start_bp) as tStart, MIN(grg.end_bp) as tEnd, properties.property_uuid, grg.dinaa_uri
+					 FROM observe
+					 JOIN properties ON observe.property_uuid = properties.property_uuid
+					 JOIN val_tab ON val_tab.value_uuid = properties.value_uuid
+					 JOIN z_va_dates AS grg ON grg.label = val_tab.val_text
+					 WHERE properties.variable_uuid = '$periodVarUUID'
+					 AND observe.subject_uuid = '$itemUUID'
+					 ";
+					 
+					 
+					 $result = $db->fetchAll($sql, 2);
+					 if($result){
+						  $requestParams = array();
+						  $requestParams["uuid"] = $itemUUID;
+						  $requestParams["projUUID"] = $this->projectUUID;
+						  $requestParams["tStart"] = 1950 - $result[0]["tStart"];
+						  $requestParams["tEnd"] = 1950 - $result[0]["tEnd"];
+						  $spaceTimeObj->requestParams = $requestParams;
+						  $spaceTimeObj->chrontoTagItem();
+						  
+						  $output["found"]++;
+						  
+					 }
+					 else{
+						  $output["missing"][] = $itemUUID;
+					 }
+				}
+		  }
+		  
+		  return $output;
+	 }
+	 
+	 
+	 
+	 
+	 
+	 
+	 
+	 
+	 
+	 
+	 
+	 
+	 
 	 function mdGeo(){
 		  
 		  $output = array();

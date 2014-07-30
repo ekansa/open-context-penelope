@@ -17,85 +17,49 @@ class ZooController extends Zend_Controller_Action {
         require_once 'App/Util/GenericFunctions.php';
     }
 	
-	function pcTbMissingLinksAction(){
-	   //adds missing location link relations for diary entries
-	   //at PC
-	   $this->_helper->viewRenderer->setNoRender();
-	   Zend_Loader::loadClass('ProjEdits_Murlo');
-	   Zend_Loader::loadClass('dataEdit_Link');
-	   Zend_Loader::loadClass('dataEdit_Published');
-	   Zend_Loader::loadClass('dataEdit_SpaceTime');
-	   Zend_Loader::loadClass('dataEdit_SpaceContain');
-	   Zend_Loader::loadClass('dataEdit_Subject');
-	   Zend_Loader::loadClass('dataEdit_Property');
-	   Zend_Loader::loadClass('dataEdit_LinkedData');
-	   $pObj = new ProjEdits_Murlo;
-	   $output = array();
-	   $output["data"] = $pObj->TBMissingLinkMatch();
-	   header('Content-Type: application/json; charset=utf8');
-	   echo Zend_Json::encode($output);
-    }
-    
-    function pcTbContentsAction(){
-	   //adds media linking relations for diary entries
-	   //at PC
-	   $this->_helper->viewRenderer->setNoRender();
-	   Zend_Loader::loadClass('ProjEdits_Murlo');
-	   Zend_Loader::loadClass('dataEdit_Link');
-	   Zend_Loader::loadClass('dataEdit_Published');
-	   Zend_Loader::loadClass('dataEdit_SpaceTime');
-	   Zend_Loader::loadClass('dataEdit_SpaceContain');
-	   Zend_Loader::loadClass('dataEdit_Subject');
-	   Zend_Loader::loadClass('dataEdit_Property');
-	   Zend_Loader::loadClass('dataEdit_LinkedData');
-	   $pObj = new ProjEdits_Murlo;
-	   $output = array();
-	   $output["data"] = $pObj->TBFindsMatch();
-	   //$output["data"] = $pObj->TBContentsExtract();
-	   header('Content-Type: application/json; charset=utf8');
-	   echo Zend_Json::encode($output);
-	   
-    }
-    
-    function pcMediaPagesAction(){
-	   //adds media linking relations for diary entries
-	   //at PC
-	   $this->_helper->viewRenderer->setNoRender();
-	   Zend_Loader::loadClass('ProjEdits_Murlo');
-	   Zend_Loader::loadClass('dataEdit_Link');
-	   Zend_Loader::loadClass('dataEdit_Published');
-	   Zend_Loader::loadClass('dataEdit_SpaceTime');
-	   Zend_Loader::loadClass('dataEdit_SpaceContain');
-	   Zend_Loader::loadClass('dataEdit_Subject');
-	   Zend_Loader::loadClass('dataEdit_Property');
-	   Zend_Loader::loadClass('dataEdit_LinkedData');
-	   $pObj = new ProjEdits_Murlo;
-	   $output = array();
-	   $output["data"] = $pObj->TBscanPageRangeExtract();
-	   header('Content-Type: application/json; charset=utf8');
-	   echo Zend_Json::encode($output);
-	   
-    }
-    
-    function pcDiaryMediaLinksAction(){
-	   //adds media linking relations for diary entries
-	   //at PC
-	   $this->_helper->viewRenderer->setNoRender();
-	   Zend_Loader::loadClass('ProjEdits_Murlo');
-	   Zend_Loader::loadClass('dataEdit_Link');
-	   Zend_Loader::loadClass('dataEdit_Published');
-	   Zend_Loader::loadClass('dataEdit_SpaceTime');
-	   Zend_Loader::loadClass('dataEdit_SpaceContain');
-	   Zend_Loader::loadClass('dataEdit_Subject');
-	   Zend_Loader::loadClass('dataEdit_Property');
-	   Zend_Loader::loadClass('dataEdit_LinkedData');
-	   $pObj = new ProjEdits_Murlo;
-	   $output = array();
-	   $output["data"] = $pObj->TBmediaLinks();
-	   header('Content-Type: application/json; charset=utf8');
-	   echo Zend_Json::encode($output);
-	   
-    }
+	function alabDatesAction(){
+		  
+		  $this->_helper->viewRenderer->setNoRender();
+		  Zend_Loader::loadClass('ProjEdits_Dinaa');
+		  Zend_Loader::loadClass('dataEdit_Link');
+		  Zend_Loader::loadClass('dataEdit_Published');
+		  Zend_Loader::loadClass('dataEdit_SpaceTime');
+		  Zend_Loader::loadClass('dataEdit_SpaceContain');
+		  Zend_Loader::loadClass('dataEdit_Subject');
+		  Zend_Loader::loadClass('dataEdit_Property');
+		  Zend_Loader::loadClass('dataEdit_LinkedData');
+		  
+		  $pObj = new ProjEdits_Dinaa;
+		  $pObj->projectUUID = 'F905BD53-C843-4349-0A46-48FF32B5F1BE';
+		  $output = array();
+		  $output["dates"] = $pObj->alabamaDates(); 
+		  
+		  header('Content-Type: application/json; charset=utf8');
+		  
+		  echo Zend_Json::encode($output);
+	   }
+	
+	function vaDatesAction(){
+		  
+		  $this->_helper->viewRenderer->setNoRender();
+		  Zend_Loader::loadClass('ProjEdits_Dinaa');
+		  Zend_Loader::loadClass('dataEdit_Link');
+		  Zend_Loader::loadClass('dataEdit_Published');
+		  Zend_Loader::loadClass('dataEdit_SpaceTime');
+		  Zend_Loader::loadClass('dataEdit_SpaceContain');
+		  Zend_Loader::loadClass('dataEdit_Subject');
+		  Zend_Loader::loadClass('dataEdit_Property');
+		  Zend_Loader::loadClass('dataEdit_LinkedData');
+		  
+		  $pObj = new ProjEdits_Dinaa;
+		  $pObj->projectUUID = 'AF0D2F67-2EAB-4C28-9C61-0F019CBF628E';
+		  $output = array();
+		  $output["dates"] = $pObj->vaDates(); 
+		  
+		  header('Content-Type: application/json; charset=utf8');
+		  
+		  echo Zend_Json::encode($output);
+	   }
     
     function mdGeoAction(){
 		  
