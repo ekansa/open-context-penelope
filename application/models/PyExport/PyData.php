@@ -292,6 +292,10 @@ class PyExport_PyData {
 			
 			$sort = $row['res_number'];
 			
+			if(strlen($row['res_archml_type'])<1){
+				$row['res_archml_type'] = "image";
+			}
+			
 			$man_rec = array();
 			$man_rec['uuid'] = $row['uuid'];
 			$man_rec['project_uuid'] = $row['project_id'];
