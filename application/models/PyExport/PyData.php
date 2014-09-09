@@ -191,11 +191,25 @@ class PyExport_PyData {
 		$after = $requestParams["after"];
 		$start = $requestParams["start"];
 		$recs = $requestParams["recs"];
+		$projsTerm = "";
+		if(isset($requestParams["project_uuids"])){
+			$projs = explode(",", $requestParams["project_uuids"]);
+			$projsTerm = false;
+			foreach($projs as $project_uuid){
+				if(!$projsTerm){
+					$projsTerm = " AND ( project_id = '".$project_uuid."'";
+				}
+				else{
+					$projsTerm .= " OR project_id = '".$project_uuid."'";
+				}
+			}
+			$projsTerm .= ")";
+		}
 		
 		$sql = "SELECT * FROM
 		diary
 		WHERE last_modified_timestamp >= '$after'
-		AND uuid NOT LIKE 'bad-%'
+		AND uuid NOT LIKE 'bad-%' $projsTerm
 		ORDER BY uuid
 		LIMIT $start, $recs
 		";
@@ -236,11 +250,25 @@ class PyExport_PyData {
 		$after = $requestParams["after"];
 		$start = $requestParams["start"];
 		$recs = $requestParams["recs"];
+		$projsTerm = "";
+		if(isset($requestParams["project_uuids"])){
+			$projs = explode(",", $requestParams["project_uuids"]);
+			$projsTerm = false;
+			foreach($projs as $project_uuid){
+				if(!$projsTerm){
+					$projsTerm = " AND ( project_id = '".$project_uuid."'";
+				}
+				else{
+					$projsTerm .= " OR project_id = '".$project_uuid."'";
+				}
+			}
+			$projsTerm .= ")";
+		}
 		
 		$sql = "SELECT * FROM
 		resource
 		WHERE last_modified_timestamp >= '$after'
-		AND uuid NOT LIKE 'bad-%'
+		AND uuid NOT LIKE 'bad-%' $projsTerm
 		ORDER BY uuid
 		LIMIT $start, $recs
 		";
@@ -293,6 +321,20 @@ class PyExport_PyData {
 		$after = $requestParams["after"];
 		$start = $requestParams["start"];
 		$recs = $requestParams["recs"];
+		$projsTerm = "";
+		if(isset($requestParams["project_uuids"])){
+			$projs = explode(",", $requestParams["project_uuids"]);
+			$projsTerm = false;
+			foreach($projs as $project_uuid){
+				if(!$projsTerm){
+					$projsTerm = " AND ( lt.project_id = '".$project_uuid."'";
+				}
+				else{
+					$projsTerm .= " OR lt.project_id = '".$project_uuid."'";
+				}
+			}
+			$projsTerm .= ")";
+		}
 		
 		//a crazy complicated query to get users linked in the data
 		$sql = "SELECT users.uuid,
@@ -307,7 +349,7 @@ class PyExport_PyData {
 		LEFT JOIN links AS lt ON users.uuid = lt.targ_uuid
 		LEFT JOIN links AS lo ON users.uuid = lo.origin_uuid
 		WHERE (lt.targ_uuid IS NOT NULL OR lo.origin_uuid IS NOT NULL)
-		AND users.uuid NOT LIKE 'bad-%'
+		AND users.uuid NOT LIKE 'bad-%' $projsTerm
 		GROUP BY users.uuid
 		ORDER BY users.uuid
 		LIMIT $start, $recs
@@ -330,6 +372,21 @@ class PyExport_PyData {
 			$output[$this->oc_manifest][] = $man_rec;
 		}
 		
+		$projsTerm = "";
+		if(isset($requestParams["project_uuids"])){
+			$projs = explode(",", $requestParams["project_uuids"]);
+			$projsTerm = false;
+			foreach($projs as $project_uuid){
+				if(!$projsTerm){
+					$projsTerm = " AND ( persons.project_id = '".$project_uuid."'";
+				}
+				else{
+					$projsTerm .= " OR persons.project_id = '".$project_uuid."'";
+				}
+			}
+			$projsTerm .= ")";
+		}
+		
 		//now add the persons not in the users table
 		$sql = "SELECT persons.uuid,
 		persons.combined_name,
@@ -342,7 +399,7 @@ class PyExport_PyData {
 		FROM persons
 		LEFT JOIN users ON users.uuid = persons.uuid
 		WHERE (users.uuid IS NULL)
-		AND persons.uuid NOT LIKE 'bad-%'
+		AND persons.uuid NOT LIKE 'bad-%' $projsTerm
 		ORDER BY persons.uuid
 		LIMIT $start, $recs
 		"; 
@@ -380,6 +437,21 @@ class PyExport_PyData {
 		$start = $requestParams["start"];
 		$recs = $requestParams["recs"];
 		
+		$projsTerm = "";
+		if(isset($requestParams["project_uuids"])){
+			$projs = explode(",", $requestParams["project_uuids"]);
+			$projsTerm = false;
+			foreach($projs as $project_uuid){
+				if(!$projsTerm){
+					$projsTerm = " AND ( space.project_id = '".$project_uuid."'";
+				}
+				else{
+					$projsTerm .= " OR space.project_id = '".$project_uuid."'";
+				}
+			}
+			$projsTerm .= ")";
+		}
+		
 		$sql = "SELECT space.uuid,
 		space.project_id,
 		space.source_id,
@@ -390,7 +462,7 @@ class PyExport_PyData {
 		FROM space
 		JOIN sp_classes ON space.class_uuid = sp_classes.class_uuid
 		WHERE space.last_modified_timestamp >= '$after'
-		AND space.uuid NOT LIKE 'bad-%'
+		AND space.uuid NOT LIKE 'bad-%' $projsTerm
 		ORDER BY space.uuid
 		LIMIT $start, $recs
 		";
@@ -432,6 +504,22 @@ class PyExport_PyData {
 		$start = $requestParams["start"];
 		$recs = $requestParams["recs"];
 		
+		$projsTerm = "";
+		if(isset($requestParams["project_uuids"])){
+			$projs = explode(",", $requestParams["project_uuids"]);
+			$projsTerm = false;
+			foreach($projs as $project_uuid){
+				if(!$projsTerm){
+					$projsTerm = " AND ( project_id = '".$project_uuid."'";
+				}
+				else{
+					$projsTerm .= " OR project_id = '".$project_uuid."'";
+				}
+			}
+			$projsTerm .= ")";
+		}
+		
+		
 		$sql = "SELECT uuid,
 		project_id,
 		source_id,
@@ -442,7 +530,7 @@ class PyExport_PyData {
 		geojson_data
 		FROM geo_space
 		WHERE updated >= '$after'
-		AND uuid NOT LIKE 'bad-%'
+		AND uuid NOT LIKE 'bad-%' $projsTerm
 		
 		ORDER BY uuid
 		LIMIT $start, $recs
@@ -500,6 +588,21 @@ class PyExport_PyData {
 		$start = $requestParams["start"];
 		$recs = $requestParams["recs"];
 		
+		$projsTerm = "";
+		if(isset($requestParams["project_uuids"])){
+			$projs = explode(",", $requestParams["project_uuids"]);
+			$projsTerm = false;
+			foreach($projs as $project_uuid){
+				if(!$projsTerm){
+					$projsTerm = " AND ( project_id = '".$project_uuid."'";
+				}
+				else{
+					$projsTerm .= " OR project_id = '".$project_uuid."'";
+				}
+			}
+			$projsTerm .= ")";
+		}
+		
 		$sql = "SELECT uuid,
 		project_id,
 		creator_uuid AS source_id,
@@ -507,7 +610,7 @@ class PyExport_PyData {
 		end_time
 		FROM initial_chrono_tag
 		WHERE created >= '$after'
-		AND uuid NOT LIKE 'bad-%'
+		AND uuid NOT LIKE 'bad-%' $projsTerm
 		ORDER BY uuid
 		LIMIT $start, $recs
 		";
@@ -550,6 +653,21 @@ class PyExport_PyData {
 		$start = $requestParams["start"];
 		$recs = $requestParams["recs"];
 		
+		$projsTerm = "";
+		if(isset($requestParams["project_uuids"])){
+			$projs = explode(",", $requestParams["project_uuids"]);
+			$projsTerm = false;
+			foreach($projs as $project_uuid){
+				if(!$projsTerm){
+					$projsTerm = " AND ( properties.project_id = '".$project_uuid."'";
+				}
+				else{
+					$projsTerm .= " OR properties.project_id = '".$project_uuid."'";
+				}
+			}
+			$projsTerm .= ")";
+		}
+		
 		$sql = "SELECT properties.property_uuid AS uuid,
 		properties.project_id,
 		properties.source_id,
@@ -564,7 +682,7 @@ class PyExport_PyData {
 		AND (var_tab.var_type LIKE 'Nominal'
 		OR
 		var_tab.var_type LIKE 'Ordinal'
-		)
+		) $projsTerm
 		ORDER BY properties.property_uuid
 		LIMIT $start, $recs
 		";
@@ -610,6 +728,21 @@ class PyExport_PyData {
 		$start = $requestParams["start"];
 		$recs = $requestParams["recs"];
 		
+		$projsTerm = "";
+		if(isset($requestParams["project_uuids"])){
+			$projs = explode(",", $requestParams["project_uuids"]);
+			$projsTerm = false;
+			foreach($projs as $project_uuid){
+				if(!$projsTerm){
+					$projsTerm = " AND ( properties.project_id = '".$project_uuid."'";
+				}
+				else{
+					$projsTerm .= " OR properties.project_id = '".$project_uuid."'";
+				}
+			}
+			$projsTerm .= ")";
+		}
+		
 		$sql = "SELECT properties.property_uuid,
 		properties.project_id,
 		properties.source_id,
@@ -621,7 +754,7 @@ class PyExport_PyData {
 		JOIN val_tab ON properties.value_uuid = val_tab.value_uuid
 		WHERE properties.last_modified_timestamp >= '$after'
 		AND properties.property_uuid NOT LIKE 'bad-%'
-		AND (var_tab.var_type LIKE '%alpha%')
+		AND (var_tab.var_type LIKE '%alpha%') $projsTerm
 		ORDER BY properties.value_uuid
 		LIMIT $start, $recs
 		";
@@ -652,6 +785,22 @@ class PyExport_PyData {
 		$start = $requestParams["start"];
 		$recs = $requestParams["recs"];
 		
+		$projsTerm = "";
+		if(isset($requestParams["project_uuids"])){
+			$projs = explode(",", $requestParams["project_uuids"]);
+			$projsTerm = false;
+			foreach($projs as $project_uuid){
+				if(!$projsTerm){
+					$projsTerm = " AND ( var_tab.project_id = '".$project_uuid."'";
+				}
+				else{
+					$projsTerm .= " OR var_tab.project_id = '".$project_uuid."'";
+				}
+			}
+			$projsTerm .= ")";
+		}
+		
+		
 		$sql = "SELECT
 		var_tab.variable_uuid AS uuid,
 		var_tab.project_id,
@@ -661,7 +810,7 @@ class PyExport_PyData {
 		var_tab.var_label
 		FROM var_tab
 		WHERE var_tab.last_modified_timestamp >= '$after'
-		AND var_tab.variable_uuid NOT LIKE 'bad-%'
+		AND var_tab.variable_uuid NOT LIKE 'bad-%' $projsTerm
 		ORDER BY var_tab.source_id, var_tab.sort_order, var_tab.var_label
 		LIMIT $start, $recs
 		";
@@ -704,6 +853,21 @@ class PyExport_PyData {
 		$start = $requestParams["start"];
 		$recs = $requestParams["recs"];
 		
+		$projsTerm = "";
+		if(isset($requestParams["project_uuids"])){
+			$projs = explode(",", $requestParams["project_uuids"]);
+			$projsTerm = false;
+			foreach($projs as $project_uuid){
+				if(!$projsTerm){
+					$projsTerm = " AND ( links.project_id = '".$project_uuid."'";
+				}
+				else{
+					$projsTerm .= " OR links.project_id = '".$project_uuid."'";
+				}
+			}
+			$projsTerm .= ")";
+		}
+		
 		$sql = "SELECT
 		links.project_id,
 		links.source_id,
@@ -712,7 +876,7 @@ class PyExport_PyData {
 		FROM links
 		LEFT JOIN oc_linking_rels AS lr ON lr.label = links.link_type
 		WHERE links.last_modified_timestamp >= '$after'
-		AND (lr.project_id IS NULL OR lr.project_id = links.project_id)
+		AND (lr.project_id IS NULL OR lr.project_id = links.project_id) $projsTerm
 		GROUP BY links.link_type
 		ORDER BY links.link_type
 		LIMIT $start, $recs
@@ -770,6 +934,21 @@ class PyExport_PyData {
 		$start = $requestParams["start"];
 		$recs = $requestParams["recs"];
 		
+		$projsTerm = "";
+		if(isset($requestParams["project_uuids"])){
+			$projs = explode(",", $requestParams["project_uuids"]);
+			$projsTerm = false;
+			foreach($projs as $project_uuid){
+				if(!$projsTerm){
+					$projsTerm = " AND ( cs.project_id = '".$project_uuid."'";
+				}
+				else{
+					$projsTerm .= " OR cs.project_id = '".$project_uuid."'";
+				}
+			}
+			$projsTerm .= ")";
+		}
+		
 		$sql = "SELECT space_contain.project_id,
 		space_contain.source_id,
 		space_contain.parent_uuid,
@@ -781,7 +960,7 @@ class PyExport_PyData {
 		WHERE space_contain.parent_uuid NOT LIKE 'bad-%'
 		AND space_contain.child_uuid NOT LIKE 'bad-%'
 		AND space_contain.parent_uuid NOT LIKE '[ROOT]%'
-		AND space_contain.last_modified_timestamp >= '$after'
+		AND space_contain.last_modified_timestamp >= '$after' $projsTerm
 		ORDER BY space_contain.parent_uuid, cs.label_sort, cs.space_label
 		LIMIT $start, $recs
 		";
@@ -817,6 +996,21 @@ class PyExport_PyData {
 		$start = $requestParams["start"];
 		$recs = $requestParams["recs"];
 		
+		$projsTerm = "";
+		if(isset($requestParams["project_uuids"])){
+			$projs = explode(",", $requestParams["project_uuids"]);
+			$projsTerm = false;
+			foreach($projs as $project_uuid){
+				if(!$projsTerm){
+					$projsTerm = " AND ( observe.project_id = '".$project_uuid."'";
+				}
+				else{
+					$projsTerm .= " OR observe.project_id = '".$project_uuid."'";
+				}
+			}
+			$projsTerm .= ")";
+		}
+		
 		$sql = "SELECT observe.project_id,
 		observe.source_id,
 		observe.subject_uuid,
@@ -837,7 +1031,7 @@ class PyExport_PyData {
 		WHERE observe.subject_uuid NOT LIKE 'bad-%'
 		AND observe.property_uuid NOT LIKE 'bad-%'
 		AND (observe.obs_num > 0 AND observe.obs_num != 100)
-		AND observe.updated >= '$after'
+		AND observe.updated >= '$after' $projsTerm
 		ORDER BY observe.subject_uuid, var_tab.sort_order
 		LIMIT $start, $recs
 		";
@@ -906,6 +1100,21 @@ class PyExport_PyData {
 		$start = $requestParams["start"];
 		$recs = $requestParams["recs"];
 		
+		$projsTerm = "";
+		if(isset($requestParams["project_uuids"])){
+			$projs = explode(",", $requestParams["project_uuids"]);
+			$projsTerm = false;
+			foreach($projs as $project_uuid){
+				if(!$projsTerm){
+					$projsTerm = " AND ( links.project_id = '".$project_uuid."'";
+				}
+				else{
+					$projsTerm .= " OR links.project_id = '".$project_uuid."'";
+				}
+			}
+			$projsTerm .= ")";
+		}
+		
 		$sql = "SELECT links.project_id,
 		links.source_id,
 		links.link_type,
@@ -938,7 +1147,7 @@ class PyExport_PyData {
 			JOIN resource AS t ON t.uuid = links.targ_uuid
 			WHERE links.origin_uuid NOT LIKE 'bad-%'
 			AND links.targ_uuid NOT LIKE 'bad-%'
-			AND links.last_modified_timestamp >= '$after'
+			AND links.last_modified_timestamp >= '$after' $projsTerm
 			ORDER BY links.origin_uuid, t.res_number, t.res_label
 			LIMIT $start, $recs
 			";	
@@ -958,7 +1167,7 @@ class PyExport_PyData {
 			JOIN diary AS t ON t.uuid = links.targ_uuid
 			WHERE links.origin_uuid NOT LIKE 'bad-%'
 			AND links.targ_uuid NOT LIKE 'bad-%'
-			AND links.last_modified_timestamp >= '$after'
+			AND links.last_modified_timestamp >= '$after' $projsTerm
 			ORDER BY links.origin_uuid, t.sort, t.diary_label
 			LIMIT $start, $recs
 			";
@@ -982,7 +1191,7 @@ class PyExport_PyData {
 			AND links.targ_uuid NOT LIKE 'bad-%'
 			AND links.targ_type LIKE '%person%'
 			AND (t.uuid IS NOT NULL OR p.uuid IS NOT NULL)
-			AND links.last_modified_timestamp >= '$after'
+			AND links.last_modified_timestamp >= '$after' $projsTerm
 			ORDER BY links.origin_uuid
 			LIMIT $start, $recs
 			";
@@ -1024,9 +1233,25 @@ class PyExport_PyData {
 		$start = $requestParams["start"];
 		$recs = $requestParams["recs"];
 		
+		$projsTerm = "";
+		if(isset($requestParams["project_uuids"])){
+			$projs = explode(",", $requestParams["project_uuids"]);
+			$projsTerm = false;
+			foreach($projs as $project_uuid){
+				if(!$projsTerm){
+					$projsTerm = " AND ( fk_project_uuid = '".$project_uuid."'";
+				}
+				else{
+					$projsTerm .= " OR fk_project_uuid = '".$project_uuid."'";
+				}
+			}
+			$projsTerm .= ")";
+		}
+		
+		
 		$sql = "SELECT DISTINCT linkedURI, linkedLabel, linkedAbrv, vocabURI
 		FROM linked_data
-		WHERE created >= '$after'
+		WHERE created >= '$after' $projsTerm
 		ORDER BY vocabURI, linkedLabel
 		LIMIT $start, $recs
 		";
@@ -1055,6 +1280,22 @@ class PyExport_PyData {
 		$start = $requestParams["start"];
 		$recs = $requestParams["recs"];
 		
+		$projsTerm = "";
+		if(isset($requestParams["project_uuids"])){
+			$projs = explode(",", $requestParams["project_uuids"]);
+			$projsTerm = false;
+			foreach($projs as $project_uuid){
+				if(!$projsTerm){
+					$projsTerm = " AND ( fk_project_uuid = '".$project_uuid."'";
+				}
+				else{
+					$projsTerm .= " OR fk_project_uuid = '".$project_uuid."'";
+				}
+			}
+			$projsTerm .= ")";
+		}
+		
+		
 		$sql = "SELECT fk_project_uuid,
 		source_id,
 		itemUUID,
@@ -1062,7 +1303,7 @@ class PyExport_PyData {
 		linkedType,
 		linkedURI
 		FROM linked_data
-		WHERE created >= '$after'
+		WHERE created >= '$after' $projsTerm
 		ORDER BY itemUUID
 		LIMIT $start, $recs
 		";
