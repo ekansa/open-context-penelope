@@ -17,6 +17,27 @@ class ZooController extends Zend_Controller_Action {
         require_once 'App/Util/GenericFunctions.php';
     }
 	
+	function pleiadesCountriesAction(){
+		$this->_helper->viewRenderer->setNoRender();
+		Zend_Loader::loadClass('ProjEdits_Periodo');
+		$pObj = new ProjEdits_Periodo;
+		$output = $pObj->countries();
+		header('Content-Type: application/json; charset=utf8');
+		echo Zend_Json::encode($output);
+	}
+	
+	
+	function pleiadesPeriodsAction(){
+		$this->_helper->viewRenderer->setNoRender();
+		Zend_Loader::loadClass('ProjEdits_Periodo');
+		$pObj = new ProjEdits_Periodo;
+		$output = $pObj->periodCountries();
+		header('Content-Type: application/json; charset=utf8');
+		echo Zend_Json::encode($output);
+	}
+	
+	
+	
 	function alabDatesAction(){
 		  
 		  $this->_helper->viewRenderer->setNoRender();

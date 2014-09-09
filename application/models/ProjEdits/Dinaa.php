@@ -552,7 +552,21 @@ class ProjEdits_Dinaa  {
 					  "label" => "label",
 					  "start_bp" => "beginBP",
 					  "end_bp" => "endBP"
-					  )
+					  ),
+		  
+		  "AF0D2F67-2EAB-4C28-9C61-0F019CBF628E" => array("tab" => "z_va_dates",
+					  "id" => "id",
+					  "label" => "label",
+					  "start_bp" => "start_bp",
+					  "end_bp" => "end_bp"
+					  ),
+		  
+		  "F905BD53-C843-4349-0A46-48FF32B5F1BE" => array("tab" => "z_7_c2bb515fa", # alabama
+					  "id" => "id",
+					  "label" => "field_7",
+					  "start_bp" => "field_10",
+					  "end_bp" => "field_11"
+					  ),
 						);
 		 
 		 
