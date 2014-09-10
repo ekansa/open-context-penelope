@@ -452,6 +452,7 @@ class PyExport_PyData {
 				else{
 					$projsTerm .= " OR space.project_id = '".$project_uuid."'";
 				}
+				$projsTerm .= " OR sc.project_id = '".$project_uuid."'";
 			}
 			$projsTerm .= ")";
 		}
@@ -465,6 +466,7 @@ class PyExport_PyData {
 		sp_classes.class_uri
 		FROM space
 		JOIN sp_classes ON space.class_uuid = sp_classes.class_uuid
+		LEFT JOIN space_contain AS sc ON space.uuid = sc.parent_uuid
 		WHERE space.last_modified_timestamp >= '$after'
 		AND space.uuid NOT LIKE 'bad-%' $projsTerm
 		ORDER BY space.uuid
