@@ -17,6 +17,29 @@ class ZooController extends Zend_Controller_Action {
         require_once 'App/Util/GenericFunctions.php';
     }
 	
+	function cyprusGeoAction(){
+		$this->_helper->viewRenderer->setNoRender();
+		Zend_Loader::loadClass('dataEdit_Published');
+		Zend_Loader::loadClass('dataEdit_LinkedData');
+		Zend_Loader::loadClass('dataEdit_SpaceTime');
+		Zend_Loader::loadClass('ProjEdits_CyprusNAA');
+		$pObj = new ProjEdits_CyprusNAA;
+		$output = $pObj->geo_uri_lookup();
+		header('Content-Type: application/json; charset=utf8');
+		echo Zend_Json::encode($output);
+	}
+	
+	function cyprusNaaAction(){
+		$this->_helper->viewRenderer->setNoRender();
+		Zend_Loader::loadClass('dataEdit_Published');
+		Zend_Loader::loadClass('dataEdit_LinkedData');
+		Zend_Loader::loadClass('ProjEdits_CyprusNAA');
+		$pObj = new ProjEdits_CyprusNAA;
+		$output = $pObj->annotate_naa_fields();
+		header('Content-Type: application/json; charset=utf8');
+		echo Zend_Json::encode($output);
+	}
+	
 	function pleiadesCountriesAction(){
 		$this->_helper->viewRenderer->setNoRender();
 		Zend_Loader::loadClass('ProjEdits_Periodo');

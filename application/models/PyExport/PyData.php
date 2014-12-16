@@ -1069,6 +1069,11 @@ class PyExport_PyData {
 					}
 					else{
 						$a_rec['data_date'] = date('Y-m-d h:i:s', strtotime($row['val_text']));
+						if(is_numeric($a_rec['data_date'])){
+							if($a_rec['data_date'] >= 1900 && substr_count($a_rec['data_date'], '-') < 1){
+								$a_rec['data_date'] = $a_rec['data_date'].'-01-01';
+							}
+						}
 					}
 				}
 				else{
