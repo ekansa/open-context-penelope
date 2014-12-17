@@ -17,10 +17,58 @@ class ZooController extends Zend_Controller_Action {
         require_once 'App/Util/GenericFunctions.php';
     }
 	
-	function cyprusGeoAction(){
+	function cyprusTabAction(){
 		$this->_helper->viewRenderer->setNoRender();
+		Zend_Loader::loadClass('dataEdit_editProperties');
 		Zend_Loader::loadClass('dataEdit_Published');
 		Zend_Loader::loadClass('dataEdit_LinkedData');
+		Zend_Loader::loadClass('dataEdit_SpaceContain');
+		Zend_Loader::loadClass('GeoSpace_ToGeoJSON');
+		Zend_Loader::loadClass('dataEdit_SpaceTime');
+		Zend_Loader::loadClass('ProjEdits_CyprusNAA');
+		$pObj = new ProjEdits_CyprusNAA;
+		$output = $pObj->tab_note();
+		header('Content-Type: application/json; charset=utf8');
+		echo Zend_Json::encode($output);
+	}
+	
+	function cyprusChronoAction(){
+		$this->_helper->viewRenderer->setNoRender();
+		Zend_Loader::loadClass('dataEdit_editProperties');
+		Zend_Loader::loadClass('dataEdit_Published');
+		Zend_Loader::loadClass('dataEdit_LinkedData');
+		Zend_Loader::loadClass('dataEdit_SpaceContain');
+		Zend_Loader::loadClass('GeoSpace_ToGeoJSON');
+		Zend_Loader::loadClass('dataEdit_SpaceTime');
+		Zend_Loader::loadClass('ProjEdits_CyprusNAA');
+		$pObj = new ProjEdits_CyprusNAA;
+		$output = $pObj->chrono_lookup();
+		header('Content-Type: application/json; charset=utf8');
+		echo Zend_Json::encode($output);
+	}
+	
+	function cyprusGeoSupAction(){
+		$this->_helper->viewRenderer->setNoRender();
+		Zend_Loader::loadClass('dataEdit_editProperties');
+		Zend_Loader::loadClass('dataEdit_Published');
+		Zend_Loader::loadClass('dataEdit_LinkedData');
+		Zend_Loader::loadClass('dataEdit_SpaceContain');
+		Zend_Loader::loadClass('GeoSpace_ToGeoJSON');
+		Zend_Loader::loadClass('dataEdit_SpaceTime');
+		Zend_Loader::loadClass('ProjEdits_CyprusNAA');
+		$pObj = new ProjEdits_CyprusNAA;
+		$output = $pObj->geo_sup();
+		header('Content-Type: application/json; charset=utf8');
+		echo Zend_Json::encode($output);
+	}
+	
+	function cyprusGeoAction(){
+		$this->_helper->viewRenderer->setNoRender();
+		Zend_Loader::loadClass('dataEdit_editProperties');
+		Zend_Loader::loadClass('dataEdit_Published');
+		Zend_Loader::loadClass('dataEdit_LinkedData');
+		Zend_Loader::loadClass('dataEdit_SpaceContain');
+		Zend_Loader::loadClass('GeoSpace_ToGeoJSON');
 		Zend_Loader::loadClass('dataEdit_SpaceTime');
 		Zend_Loader::loadClass('ProjEdits_CyprusNAA');
 		$pObj = new ProjEdits_CyprusNAA;

@@ -1,6 +1,6 @@
 <?php
 
-class dataEdit_editProprties  {
+class dataEdit_editProperties  {
     
     public $projectUUID;
     public $dataTableName = 'manual';
@@ -16,7 +16,7 @@ class dataEdit_editProprties  {
 		$sql = "SELECT variable_uuid, var_label, var_type
 		FROM var_tab
 		WHERE project_id = '$projectUUID' ;
-		"
+		";
 		
 		$output = array();
 		$varRows = $db->fetchAll($sql, 2);

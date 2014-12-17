@@ -15,8 +15,8 @@ class ProjEdits_CyprusNAA  {
 	 public $importTableName; //name of the import table to add these data too
 	 public $doInsert = false;
 	 public $doCommentUpdate = false;
-	public $project_uuid = 'ABABD13C-A69F-499E-CA7F-5118F3684E4D';
-	public $old_proj = '4B16F48E-6F5D-41E0-F568-FCE64BE6D3FA';
+	 public $project_uuid = 'ABABD13C-A69F-499E-CA7F-5118F3684E4D';
+	 public $old_proj = '4B16F48E-6F5D-41E0-F568-FCE64BE6D3FA';
 	
 	
 	 const GeoUsername = "ekansa"; //geonames API name
@@ -24,8 +24,134 @@ class ProjEdits_CyprusNAA  {
 	 const GeoNamesBaseURI = "http://www.geonames.org/";
 	 const GeoNamesBaseAPI = "http://api.geonames.org/";
 	
+	 function tab_note(){
+		  $output = array();
+		  $propid = "B31035B1-3C8A-4911-83D1-F10BE1BC677F";
+		  $db = $this->startDB();
+		  $sql = "SELECT uuid
+		  FROM space
+		  WHERE space_label LIKE 'Sample Tab. 3:%'
+		  AND source_id = 'z_4_c5193ec15'
+		  ;
+		  ";
+		  $db = $this->startDB();
+		  $result = $db->fetchAll($sql, 2);
+		  foreach($result as $row){
+			   $uuid = $row['uuid'];
+			   $obsHashText = md5($this->project_uuid . "_" . $uuid . "_" . "1" . "_" . $propid);
+			   $where = "hash_obs = '$obsHashText' ";
+			   $db->delete("observe", $where);
+			   $data = array("project_id"=> $this->project_uuid,
+								  "source_id"=> 'script',
+								  "hash_obs" => $obsHashText,
+								  "subject_type" => 'space',
+								  "subject_uuid" => $uuid,
+								  "obs_num" => 1,
+								  "property_uuid" => $propid);
+			   try{            
+				   $db->insert("observe", $data);
+				   $noteOK = true;
+			   } catch (Exception $e) {
+				   echo $e->getMessage(), "\n";
+				   $noteOK = false;
+			   }
+		  }
+		  return $output;
+	 }
 	
 	
+	function chrono_lookup(){
+		  $output = array();
+		  $db = $this->startDB();
+		  $sql = "SELECT DISTINCT field_1 AS item,
+		  field_42 AS tStart,
+		  field_43 AS tEnd
+		  FROM z_4_c5193ec15
+		  ";
+		  
+		  $db = $this->startDB();
+		  $result = $db->fetchAll($sql, 2);
+		  foreach($result as $row){
+			   $item = $row['item'];
+			   $item = "Sample Tab. 3: ".$item;
+			   $uuid = $this->getSiteUUID($item);
+			   if ($uuid != false){
+					$rp = array("projUUID" => $this->project_uuid,
+								 "uuid" =>  $uuid,
+								 'tStart' => $row['tStart'],
+								 'tEnd' => $row['tEnd']);
+					$st = new dataEdit_SpaceTime;
+					$st->requestParams = $rp;
+					$res = $st->chrontoTagItem();
+					$output[$uuid] = array('site' => $item,
+										   'uuid' => $uuid,
+										   'time' => $rp,
+										   'res' => $res);
+			   }
+		  }
+	 return $output;
+	}
+	
+	
+	function geo_sup(){
+		  $output = array();
+		  $db = $this->startDB();
+		  $sql = "SELECT DISTINCT field_6 AS site,
+		  field_11 AS lon,
+		  field_12 AS lat
+		  FROM z_4_5c4dc3344
+		  WHERE 1
+		  ";
+		  $db = $this->startDB();
+		  $result = $db->fetchAll($sql, 2);
+		  foreach($result as $row){
+			   $site = $row['site'];
+			   $uuid = $this->getSiteUUID($site);
+			   $lon = $row['lon'];
+			   $lat = $row['lat'];
+			   if($lon != false && $lat != false && $uuid != false){
+					$noteres = false;
+					$ep = new dataEdit_editProperties;
+					$ep->projectUUID = $this->project_uuid;
+					$note_uuid = $ep->get_make_ValID('Location information provided by data contributors.');
+					$note_prop = $ep->get_make_PropID('NOTES', $note_uuid);
+					$obsHashText = md5($this->project_uuid . "_" . $uuid . "_" . "1" . "_" . $note_prop);
+					$where = "hash_obs = '$obsHashText' ";
+					$db->delete("observe", $where);
+					$data = array("project_id"=> $this->project_uuid,
+									   "source_id"=> 'script',
+									   "hash_obs" => $obsHashText,
+									   "subject_type" => 'space',
+									   "subject_uuid" => $uuid,
+									   "obs_num" => 1,
+									   "property_uuid" => $note_prop);
+					try{            
+						$db->insert("observe", $data);
+						$noteOK = true;
+					} catch (Exception $e) {
+						echo $e->getMessage(), "\n";
+						$noteOK = false;
+					}
+				
+					$rp = array("projUUID" => $this->project_uuid,
+								 "uuid" =>  $uuid,
+								 'lat' => $lat,
+								 'lon' => $lon);
+					$st = new dataEdit_SpaceTime;
+					$st->requestParams = $rp;
+					$res = $st->geoTagItem();
+					$output[$uuid] = array('site' => $site,
+										   'uuid' => $uuid,
+										   'lat' => $lat,
+										   'lon' => $lon,
+										   'noteOK' => $noteOK,
+										   'res' => $res);
+			   }
+		  }
+	 return $output;
+	 
+	 
+	}
 	
 	
 	function geo_uri_lookup(){
@@ -37,15 +163,35 @@ class ProjEdits_CyprusNAA  {
 		FROM z_4_c5193ec15
 		WHERE field_9 = 'http://www.geonames.org/19741'
 		";
+		$sql = "SELECT DISTINCT field_7 AS site,
+		field_8 AS gaz_label,
+		field_9 AS gaz_uri
+		FROM z_4_c5193ec15
+		WHERE 1
 		
+		UNION
+		
+		SELECT DISTINCT field_6 AS site,
+		field_7 AS gaz_label,
+		field_36 AS gaz_uri
+		FROM z_4_8ff79339a
+		WHERE 1
+		
+		";
+		$db = $this->startDB();
 		$result = $db->fetchAll($sql, 2);
 		foreach($result as $row){
+		    $site = $row['site'];
+			$uuid = $this->getSiteUUID($site);
+			$gaz_label = $row['gaz_label'];
+			$prop_uuid = $this->getGazRefPropUUID($gaz_label);
 			$uri = $row['gaz_uri'];
 			$uri_type = false;
 			$lon = false;
 			$lat = false;
-			if (stristr($uri, 'http://pleiades.stoa.org/places')){
-				$uri_type = 'pleiades';
+			
+			if (stristr($uri, 'http://pleiades.stoa.org/')){
+				$uri_type = '<a target="_blank" href="http://pleiades.stoa.org/">Pleiades Gazetteer</a>';
 				$json_url = $uri.'/json';
 				sleep(self::APIsleep);
 				@$json = file_get_contents($json_url);
@@ -56,9 +202,18 @@ class ProjEdits_CyprusNAA  {
 						$lon = $jdata['reprPoint'][0] + 0;
 					}
 				}
+				else{
+					$pid = str_replace('http://pleiades.stoa.org/places/', '', $uri) + 0;
+					$sql = "SELECT * FROM z_pleiades_basic WHERE id = $pid LIMIT 1;";
+					$resp =  $db->fetchAll($sql, 2);
+					if($resp){
+						 $lat = $resp[0]['reprLat'] + 0;
+						 $lon = $resp[0]['reprLong'] + 0;
+					}
+				}
 			}
 			if (stristr($uri, 'http://www.geonames.org/')){
-				$uri_type = 'geo';
+				$uri_type = '<a target="_blank" href="http://pleiades.stoa.org/">Geonames.org Gazetteer</a>';
 				$id = str_replace('http://www.geonames.org/', '', $uri);
 				$xml_url = 'http://sws.geonames.org/'.$id.'/about.rdf';
 				sleep(self::APIsleep);
@@ -76,10 +231,61 @@ class ProjEdits_CyprusNAA  {
 					}
 				}
 			}
-			if($lon != false && $lat != false){
-				$output[$uri] = array('lat' => $lat,
-									  'lon' => $lon);
+			if($lon != false && $lat != false && $uuid != false){
+				$noteres = false;
+				$ep = new dataEdit_editProperties;
+				$ep->projectUUID = $this->project_uuid;
+				$note_uuid = $ep->get_make_ValID('Location information from: '.$uri_type);
+				$note_prop = $ep->get_make_PropID('NOTES', $note_uuid);
+				$obsHashText = md5($this->project_uuid . "_" . $uuid . "_" . "1" . "_" . $note_prop);
+				$where = "hash_obs = '$obsHashText' ";
+				$db->delete("observe", $where);
+			   $data = array("project_id"=> $this->project_uuid,
+								  "source_id"=> 'script',
+								  "hash_obs" => $obsHashText,
+								  "subject_type" => 'space',
+								  "subject_uuid" => $uuid,
+								  "obs_num" => 1,
+								  "property_uuid" => $note_prop);
+					try{            
+						$db->insert("observe", $data);
+						$noteOK = true;
+					} catch (Exception $e) {
+						echo $e->getMessage(), "\n";
+						$noteOK = false;
+					}
 				
+				
+				$ldres = false;
+				if($prop_uuid != false){
+					$ld = new dataEdit_LinkedData();
+					$rp = array("projectUUID" => $this->project_uuid,
+							    "subjectUUID" =>  $prop_uuid,
+							    "subjectType" => "property",
+							    "sourceID" => "script",
+							    "predicateURI" => "type",
+							    "objectURI" => $uri,
+							    "objectLabel" => $gaz_label,
+							    "replacePredicate" => 1);
+				   $ld->requestParams = $rp;
+				   $ldres = $ld->addUpdateLinkedData();
+				}
+				
+				$rp = array("projUUID" => $this->project_uuid,
+						    "uuid" =>  $uuid,
+						    'lat' => $lat,
+						    'lon' => $lon);
+				$st = new dataEdit_SpaceTime;
+				$st->requestParams = $rp;
+				$res = $st->geoTagItem();
+				$output[$uri] = array('site' => $site,
+									  'uuid' => $uuid,
+									  'prop_uuid' => $prop_uuid,
+									  'lat' => $lat,
+									  'lon' => $lon,
+									  'noteOK' => $noteOK,
+									  'res' => $res,
+									  'ldres' => $ldres);
 			}
 		}
 		return $output;
@@ -193,35 +399,47 @@ class ProjEdits_CyprusNAA  {
 	 
 	 
 	 
-	 
-	 function labelSortUpdate($label, $fieldNum){
-		  
+	 function getGazRefPropUUID($label){
+		  $output = false;
 		  $db = $this->startDB();
 		  $label = addslashes($label);
-		  $sql = "SELECT var_label, variable_uuid, sort_order
-		  FROM var_tab
-		  WHERE source_id = '".$this->importTableName."'
-		  AND var_label LIKE '$label%'
+		  
+		  $sql = "SELECT props.property_uuid AS uuid
+		  FROM properties AS props
+		  JOIN val_tab AS vt ON props.value_uuid = vt.value_uuid
+		  JOIN var_tab AS vrt ON props.variable_uuid = vrt.variable_uuid
+		  WHERE vt.val_text = '$label'
+		  AND vrt.var_label = 'Gazetteer reference'
+		  AND props.project_id = '".$this->project_uuid."'
+		  LIMIT 1;
 		  ";
 		  
 		  $result = $db->fetchAll($sql, 2);
-        if($result){
-				foreach($result as $row){
-					 $varUUID = $row["variable_uuid"];
-					 $sort = $row["sort_order"];
-					 if($sort <= 300){
-						  $newSort = $fieldNum + 300;
-					 }
-					 else{
-						  $newSort = ($sort + ($fieldNum + 300))/2;
-						  $newSort = round($newSort, 0);
-					 }
-					 
-					 $data = array("sort_order" => $newSort);
-					 $where = "variable_uuid = '$varUUID' ";
-					 $db->update("var_tab", $data, $where);
-				}
-		  }
+		  if($result){
+			   $output =  $result[0]["uuid"];
+		  }	
+		  return $output;
+	 }
+	 
+	 
+	 
+	 function getSiteUUID($label){
+		  $output = false;
+		  $db = $this->startDB();
+		  $label = addslashes($label);
+		  
+		  $sql = "SELECT uuid
+		  FROM space
+		  WHERE space_label = '$label'
+		  AND project_id = '".$this->project_uuid."'
+		  LIMIT 1;
+		  ";
+		  
+		  $result = $db->fetchAll($sql, 2);
+		  if($result){
+			   $output =  $result[0]["uuid"];
+		  }	
+		  return $output;
 	 }
 	 
 	 
