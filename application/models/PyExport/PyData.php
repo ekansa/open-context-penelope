@@ -1017,6 +1017,11 @@ class PyExport_PyData {
 			$projsTerm .= ")";
 		}
 		
+		$uuidTerm = "";
+		if(isset($requestParams["uuid"])){
+			$uuidTerm = " AND (observe.subject_uuid = '".$requestParams["uuid"]."') ";
+		}
+		
 		$sql = "SELECT observe.project_id,
 		observe.source_id,
 		observe.subject_uuid,
@@ -1037,7 +1042,7 @@ class PyExport_PyData {
 		WHERE observe.subject_uuid NOT LIKE 'bad-%'
 		AND observe.property_uuid NOT LIKE 'bad-%'
 		AND (observe.obs_num > 0 AND observe.obs_num != 100)
-		AND observe.updated >= '$after' $projsTerm
+		AND observe.updated >= '$after' $projsTerm $uuidTerm
 		ORDER BY observe.subject_uuid, var_tab.sort_order
 		LIMIT $start, $recs
 		";
