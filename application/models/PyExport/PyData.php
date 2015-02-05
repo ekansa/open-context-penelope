@@ -748,6 +748,10 @@ class PyExport_PyData {
 			}
 			$projsTerm .= ")";
 		}
+		$uuidTerm = " AND (var_tab.var_type LIKE '%alpha%') ";
+		if(isset($requestParams["uuid"])){
+			$uuidTerm = " AND (properties.value_uuid = '".$requestParams["uuid"]."') ";
+		}
 		
 		$sql = "SELECT properties.property_uuid,
 		properties.project_id,
@@ -760,7 +764,7 @@ class PyExport_PyData {
 		JOIN val_tab ON properties.value_uuid = val_tab.value_uuid
 		WHERE properties.last_modified_timestamp >= '$after'
 		AND properties.property_uuid NOT LIKE 'bad-%'
-		AND (var_tab.var_type LIKE '%alpha%') $projsTerm
+		$uuidTerm $projsTerm
 		ORDER BY properties.value_uuid
 		LIMIT $start, $recs
 		";
