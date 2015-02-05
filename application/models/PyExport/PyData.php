@@ -1267,11 +1267,15 @@ class PyExport_PyData {
 			}
 			$projsTerm .= ")";
 		}
-		
+		$uriTerm = "";
+		if(isset($requestParams["uri"])){
+			$uriTerm = " AND (linkedURI = '".$requestParams["uri"]."') ";
+			$projsTerm = "";
+		}
 		
 		$sql = "SELECT DISTINCT linkedURI, linkedLabel, linkedAbrv, vocabURI
 		FROM linked_data
-		WHERE created >= '$after' $projsTerm
+		WHERE created >= '$after' $uriTerm $projsTerm
 		ORDER BY vocabURI, linkedLabel
 		LIMIT $start, $recs
 		";
