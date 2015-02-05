@@ -26,7 +26,7 @@ class ProjEdits_CyprusNAA  {
 	
 	 function tab_note(){
 		  $output = array();
-		  $propid = "B31035B1-3C8A-4911-83D1-F10BE1BC677F";
+		  $propid =  'F3660BB9-EF17-405D-7F1D-87ABBF03EF7B';
 		  $db = $this->startDB();
 		  $sql = "SELECT uuid
 		  FROM space
@@ -44,7 +44,7 @@ class ProjEdits_CyprusNAA  {
 			   $data = array("project_id"=> $this->project_uuid,
 								  "source_id"=> 'script',
 								  "hash_obs" => $obsHashText,
-								  "subject_type" => 'space',
+								  "subject_type" => 'Locations or Objects',
 								  "subject_uuid" => $uuid,
 								  "obs_num" => 1,
 								  "property_uuid" => $propid);

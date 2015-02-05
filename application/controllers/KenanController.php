@@ -951,7 +951,7 @@ class kenanController extends Zend_Controller_Action {
 	
 	$sql = "SELECT space.uuid, space.space_label, full_context
 	FROM space
-	WHERE project_id = '3F6DCD13-A476-488E-ED10-47D25513FCB2'
+	WHERE project_id = 'ABABD13C-A69F-499E-CA7F-5118F3684E4D'
 	";
 	
 	$result = $db->fetchAll($sql, 2);
