@@ -20,7 +20,9 @@ class PyexController extends Zend_Controller_Action {
 	function getRecordsAction(){
 		$this->_helper->viewRenderer->setNoRender();
 		$requestParams =  $this->_request->getParams();
-		Zend_Loader::loadClass('PyExport_PyData');  
+		Zend_Loader::loadClass('PyExport_PyData');
+		Zend_Loader::loadClass('dbXML_dbLinks');
+		Zend_Loader::loadClass('dbXML_dbSpace');
 		$pyObj = new PyExport_PyData;
 		$output = $pyObj->getData($requestParams);
 		if(isset($output['errors'])){

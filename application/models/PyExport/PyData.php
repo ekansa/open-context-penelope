@@ -167,6 +167,12 @@ class PyExport_PyData {
 				elseif($requestParams['sub'] == "links-persons"){
 					$output = $this->Links('persons');
 				}
+				elseif($requestParams['sub'] == "links-uuids"){
+					$output = $this->RelatedLinks();
+				}
+				elseif($requestParams['sub'] == "links-subjects-inf"){
+					$output = $this->SubjectsLinks();
+				}
 			}
 			elseif($requestParams['tab'] == $this->link_entities){
 				$output = $this->LinkEntities();
@@ -1233,6 +1239,189 @@ class PyExport_PyData {
 			$a_rec['object_uuid'] = $row['targ_uuid'];
 			$a_rec['object_type'] = $this->itemTypeMap($row['targ_type']);
 			
+			$output[$this->oc_assertions][] = $a_rec;
+		}
+		return $output;
+	}
+	
+	
+	function RelatedLinks(){
+		$requestParams = $this->requestParams;
+		$db = $this->startDB();
+		$output = array();
+		$output['requestParams'] = $requestParams;
+		$output['tabs'][] = $this->oc_assertions;
+		$output[$this->oc_assertions] = array();
+		$after = $requestParams["after"];
+		$start = $requestParams["start"];
+		$recs = $requestParams["recs"];
+		
+		$projsTerm = "";
+		if(isset($requestParams["project_uuids"])){
+			$projs = explode(",", $requestParams["project_uuids"]);
+			$projsTerm = false;
+			foreach($projs as $project_uuid){
+				if(!$projsTerm){
+					$projsTerm = " AND ( links.project_id = '".$project_uuid."'";
+				}
+				else{
+					$projsTerm .= " OR links.project_id = '".$project_uuid."'";
+				}
+			}
+			$projsTerm .= ")";
+		}
+		$uuidsTerm = " ";
+		if(isset($requestParams["uuids"])){
+			$uuids = explode(",", $requestParams["uuids"]);
+			$uuidsTerm = false;
+			foreach($uuids as $uuid){
+				$newTerm = "(links.origin_uuid = '".$uuid."' OR links.targ_uuid = '".$uuid."')";
+				if(!$uuidsTerm){
+					$uuidsTerm = " AND (".$newTerm;
+				}
+				else{
+					$uuidsTerm .= " OR ".$newTerm;
+				}
+			}
+			$uuidsTerm .= ")";
+		}
+		
+		$sql = "SELECT links.project_id,
+		links.source_id,
+		links.link_type,
+		links.origin_type,
+		links.origin_uuid,
+		links.origin_obs,
+		links.targ_type,
+		links.targ_uuid,
+		0 AS sort
+		FROM links
+		WHERE links.origin_uuid NOT LIKE 'bad-%'
+		AND links.targ_uuid NOT LIKE 'bad-%'
+		AND links.last_modified_timestamp >= '$after'
+		$uuidsTerm
+		ORDER BY links.origin_uuid
+		LIMIT $start, $recs
+		";
+		
+		$result =  $db->fetchAll($sql);
+		foreach($result as $row){
+			$a_rec = array();
+			$a_rec['uuid'] = $row['origin_uuid'];
+			$a_rec['subject_type'] = $this->itemTypeMap($row['origin_type']);
+			$a_rec['project_uuid'] = $row['project_id'];
+			$a_rec['source_id'] = $row['source_id'];
+			$a_rec['obs_node'] = '#obs-'.$row['origin_obs'];
+			$a_rec['obs_num'] = $row['origin_obs']+0;
+			$a_rec['sort'] = 100 + $row['sort'];
+			$a_rec['visibility'] = 1;
+			$a_rec['predicate_uuid'] = $this->get_linkrel_uuid($row['link_type']);
+			$a_rec['object_uuid'] = $row['targ_uuid'];
+			$a_rec['object_type'] = $this->itemTypeMap($row['targ_type']);
+			
+			$output[$this->oc_assertions][] = $a_rec;
+		}
+		return $output;
+	}
+	
+	
+	function SubjectsLinks(){
+		$requestParams = $this->requestParams;
+		$db = $this->startDB();
+		$output = array();
+		$output['requestParams'] = $requestParams;
+		$output['tabs'][] = $this->oc_assertions;
+		$output[$this->oc_assertions] = array();
+		$after = $requestParams["after"];
+		$start = $requestParams["start"];
+		$recs = $requestParams["recs"];
+		
+		$projsTerm = "";
+		if(isset($requestParams["project_uuids"])){
+			$projs = explode(",", $requestParams["project_uuids"]);
+			$projsTerm = false;
+			foreach($projs as $project_uuid){
+				if(!$projsTerm){
+					$projsTerm = " AND ( links.project_id = '".$project_uuid."'";
+				}
+				else{
+					$projsTerm .= " OR links.project_id = '".$project_uuid."'";
+				}
+			}
+			$projsTerm .= ")";
+		}
+		$uuidsTerm = " ";
+		if(isset($requestParams["uuids"])){
+			$uuid =  $requestParams["uuids"];
+			$uuids = explode(",", $requestParams["uuids"]);
+			$uuidsTerm = false;
+			foreach($uuids as $uuid){
+				$newTerm = "(links.origin_uuid = '".$uuid."' OR links.targ_uuid = '".$uuid."')";
+				if(!$uuidsTerm){
+					$uuidsTerm = " AND (".$newTerm;
+				}
+				else{
+					//$uuidsTerm .= " OR ".$newTerm;
+				}
+			}
+			$uuidsTerm .= ")";
+		}
+		
+		$sql = "SELECT links.project_id,
+		links.source_id,
+		links.link_type,
+		links.origin_type,
+		links.origin_uuid,
+		links.origin_obs,
+		links.targ_type,
+		links.targ_uuid,
+		0 AS sort
+		FROM links
+		WHERE links.origin_uuid NOT LIKE 'bad-%'
+		AND links.targ_uuid NOT LIKE 'bad-%'
+		AND links.last_modified_timestamp >= '$after'
+		AND (links.origin_type LIKE '%location%')
+		$uuidsTerm
+		ORDER BY links.origin_uuid
+		LIMIT $start, $recs
+		";
+		
+		$result =  $db->fetchAll($sql);
+		if($result){
+			foreach($result as $row){
+				$a_rec = array();
+				$a_rec['uuid'] = $row['origin_uuid'];
+				$a_rec['subject_type'] = $this->itemTypeMap($row['origin_type']);
+				$a_rec['project_uuid'] = $row['project_id'];
+				$a_rec['source_id'] = $row['source_id'];
+				$a_rec['obs_node'] = '#obs-'.$row['origin_obs'];
+				$a_rec['obs_num'] = $row['origin_obs']+0;
+				$a_rec['sort'] = 100 + $row['sort'];
+				$a_rec['visibility'] = 1;
+				$a_rec['predicate_uuid'] = $this->get_linkrel_uuid($row['link_type']);
+				$a_rec['object_uuid'] = $row['targ_uuid'];
+				$a_rec['object_type'] = $this->itemTypeMap($row['targ_type']);
+				
+				$output[$this->oc_assertions][] = $a_rec;
+			}
+		}
+		else{
+			$dbObj = new dbXML_dbLinks;
+			$dbObj->initialize($this->db);
+			$dbObj->makeImplicitSpatial($uuid);
+			$impspace = $dbObj->firstSpaceObj;
+			$a_rec = array();
+			$a_rec['uuid'] = $impspace['linkedUUID'];
+			$a_rec['subject_type'] = 'subjects';
+			$a_rec['project_uuid'] = $requestParams["project_uuids"];
+			$a_rec['source_id'] = 'inferred';
+			$a_rec['obs_node'] = '#obs-1';
+			$a_rec['obs_num'] = 1;
+			$a_rec['sort'] = 100;
+			$a_rec['visibility'] = 1;
+			$a_rec['predicate_uuid'] = 'oc-3';
+			$a_rec['object_uuid'] = $uuid;
+			$a_rec['object_type'] = $requestParams["item_type"];
 			$output[$this->oc_assertions][] = $a_rec;
 		}
 		return $output;

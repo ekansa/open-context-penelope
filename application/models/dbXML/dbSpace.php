@@ -120,7 +120,9 @@ class dbXML_dbSpace  {
         if($result){
             $this->projectUUID = $result[0]["project_id"];
             $this->sourceID = $result[0]["source_id"];
-            $this->contain_hash = $result[0]["contain_hash"];
+			if (isset($result[0]["contain_hash"])){
+				$this->contain_hash = $result[0]["contain_hash"];
+			}
             $this->classID = $result[0]["class_uuid"];
 				$this->label = $result[0]["space_label"];
             $this->classLabelGet($this->classID);
